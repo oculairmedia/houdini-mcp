@@ -2,13 +2,108 @@
 
 import logging
 import traceback
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Set
 from io import StringIO
 from contextlib import redirect_stdout, redirect_stderr
 
 from .connection import ensure_connected, is_connected, HoudiniConnectionError
 
 logger = logging.getLogger("houdini_mcp.tools")
+
+
+# Scene state for before/after comparisons (ported from OpenWebUI pipeline)
+_before_scene: List[Dict[str, Any]] = []
+_after_scene: List[Dict[str, Any]] = []
+
+
+def _node_to_dict(node: Any, include_params: bool = True, max_params: int = 100) -> Dict[str, Any]:
+    """
+    Serialize a node to a dictionary (ported from OpenWebUI pipeline).
+    
+    Args:
+        node: Houdini node object
+        include_params: Whether to include parameter values
+        max_params: Maximum number of parameters to include
+        
+    Returns:
+        Dict representation of the node
+    """
+    result: Dict[str, Any] = {
+        "path": node.path(),
+        "type": node.type().name(),
+        "name": node.name(),
+    }
+    
+    if include_params:
+        params: Dict[str, Any] = {}
+        for i, parm in enumerate(node.parms()):
+            if i >= max_params:
+                break
+            try:
+                params[parm.name()] = parm.eval()
+            except Exception:
+                params[parm.name()] = "<unevaluable>"
+        result["parameters"] = params
+    
+    # Recursively serialize children
+    result["children"] = [
+        _node_to_dict(child, include_params=False)  # Don't include params for children to reduce size
+        for child in node.children()
+    ]
+    
+    return result
+
+
+def _serialize_scene_state(hou: Any, root_path: str = "/obj") -> List[Dict[str, Any]]:
+    """
+    Serialize the scene state for comparison (from OpenWebUI pipeline).
+    
+    Args:
+        hou: The hou module
+        root_path: Root node path to serialize from
+        
+    Returns:
+        List of node dictionaries
+    """
+    obj = hou.node(root_path)
+    if obj is None:
+        return []
+    return [_node_to_dict(child) for child in obj.children()]
+
+
+def _get_scene_diff(before: List[Dict[str, Any]], after: List[Dict[str, Any]]) -> Dict[str, Any]:
+    """
+    Compare scene states and return the differences.
+    
+    Args:
+        before: Scene state before operation
+        after: Scene state after operation
+        
+    Returns:
+        Dict with added, removed, and modified nodes
+    """
+    before_paths: Set[str] = {node["path"] for node in before}
+    after_paths: Set[str] = {node["path"] for node in after}
+    
+    added = after_paths - before_paths
+    removed = before_paths - after_paths
+    
+    # Find modified nodes (same path but different content)
+    modified: List[str] = []
+    before_by_path = {node["path"]: node for node in before}
+    after_by_path = {node["path"]: node for node in after}
+    
+    for path in before_paths & after_paths:
+        if before_by_path[path] != after_by_path[path]:
+            modified.append(path)
+    
+    return {
+        "added": list(added),
+        "removed": list(removed),
+        "modified": modified,
+        "added_nodes": [n for n in after if n["path"] in added],
+        "has_changes": bool(added or removed or modified)
+    }
 
 
 def get_scene_info(host: str = "localhost", port: int = 18811) -> Dict[str, Any]:
@@ -24,7 +119,7 @@ def get_scene_info(host: str = "localhost", port: int = 18811) -> Dict[str, Any]
         hip_file = hou.hipFile.path()
         obj_node = hou.node("/obj")
         
-        nodes = []
+        nodes: List[Dict[str, Any]] = []
         if obj_node:
             for child in obj_node.children():
                 nodes.append({
@@ -44,7 +139,7 @@ def get_scene_info(host: str = "localhost", port: int = 18811) -> Dict[str, Any]
         return {"status": "error", "message": str(e)}
     except Exception as e:
         logger.error(f"Error getting scene info: {e}")
-        return {"status": "error", "message": str(e)}
+        return {"status": "error", "message": str(e), "traceback": traceback.format_exc()}
 
 
 def create_node(
@@ -90,39 +185,58 @@ def create_node(
         return {"status": "error", "message": str(e)}
     except Exception as e:
         logger.error(f"Error creating node: {e}")
-        return {"status": "error", "message": str(e)}
+        return {"status": "error", "message": str(e), "traceback": traceback.format_exc()}
 
 
 def execute_code(
     code: str,
     host: str = "localhost",
-    port: int = 18811
+    port: int = 18811,
+    capture_diff: bool = True
 ) -> Dict[str, Any]:
     """
-    Execute Python code in Houdini.
+    Execute Python code in Houdini with optional scene diff tracking.
     
     Args:
         code: Python code to execute. The 'hou' module is available.
+        capture_diff: If True, captures before/after scene state for comparison
         
     Returns:
-        Dict with execution result including any stdout/stderr output.
+        Dict with execution result including stdout/stderr and scene changes.
     """
+    global _before_scene, _after_scene
+    
     try:
         hou = ensure_connected(host, port)
+        
+        # Capture scene state before execution (from OpenWebUI pipeline pattern)
+        if capture_diff:
+            _before_scene = _serialize_scene_state(hou)
         
         # Capture stdout and stderr
         stdout_capture = StringIO()
         stderr_capture = StringIO()
         
         try:
-            with redirect_stdout(stdout_capture), redirect_stderr(stderr_capture):
-                exec(code, {"hou": hou})
+            # Execute in a namespace with hou available
+            exec_globals = {"hou": hou, "__builtins__": __builtins__}
             
-            return {
+            with redirect_stdout(stdout_capture), redirect_stderr(stderr_capture):
+                exec(code, exec_globals)
+            
+            result: Dict[str, Any] = {
                 "status": "success",
                 "stdout": stdout_capture.getvalue(),
                 "stderr": stderr_capture.getvalue()
             }
+            
+            # Capture scene state after execution and compute diff
+            if capture_diff:
+                _after_scene = _serialize_scene_state(hou)
+                result["scene_changes"] = _get_scene_diff(_before_scene, _after_scene)
+            
+            return result
+            
         except Exception as exec_error:
             return {
                 "status": "error",
@@ -135,7 +249,7 @@ def execute_code(
         return {"status": "error", "message": str(e)}
     except Exception as e:
         logger.error(f"Error executing code: {e}")
-        return {"status": "error", "message": str(e)}
+        return {"status": "error", "message": str(e), "traceback": traceback.format_exc()}
 
 
 def set_parameter(
@@ -168,12 +282,23 @@ def set_parameter(
         
         parm = node.parm(param_name)
         if parm is None:
-            return {
-                "status": "error",
-                "message": f"Parameter not found: {param_name} on {node_path}"
-            }
-        
-        parm.set(value)
+            # Try parmTuple for vector parameters
+            parm_tuple = node.parmTuple(param_name)
+            if parm_tuple is None:
+                return {
+                    "status": "error",
+                    "message": f"Parameter not found: {param_name} on {node_path}"
+                }
+            # Set tuple value
+            if isinstance(value, (list, tuple)):
+                parm_tuple.set(value)
+            else:
+                return {
+                    "status": "error",
+                    "message": f"Parameter {param_name} is a tuple, provide a list/tuple value"
+                }
+        else:
+            parm.set(value)
         
         return {
             "status": "success",
@@ -185,7 +310,7 @@ def set_parameter(
         return {"status": "error", "message": str(e)}
     except Exception as e:
         logger.error(f"Error setting parameter: {e}")
-        return {"status": "error", "message": str(e)}
+        return {"status": "error", "message": str(e), "traceback": traceback.format_exc()}
 
 
 def get_node_info(
@@ -216,7 +341,7 @@ def get_node_info(
                 "message": f"Node not found: {node_path}"
             }
         
-        info = {
+        info: Dict[str, Any] = {
             "status": "success",
             "path": node.path(),
             "name": node.name(),
@@ -224,13 +349,16 @@ def get_node_info(
             "type_description": node.type().description(),
             "children": [child.name() for child in node.children()],
             "inputs": [inp.path() if inp else None for inp in node.inputs()],
-            "outputs": [out.path() for out in node.outputs()]
+            "outputs": [out.path() for out in node.outputs()],
+            "is_displayed": node.isDisplayFlagSet() if hasattr(node, 'isDisplayFlagSet') else None,
+            "is_rendered": node.isRenderFlagSet() if hasattr(node, 'isRenderFlagSet') else None
         }
         
         if include_params:
-            params = {}
+            params: Dict[str, Any] = {}
             for i, parm in enumerate(node.parms()):
                 if i >= max_params:
+                    params["_truncated"] = True
                     break
                 try:
                     params[parm.name()] = parm.eval()
@@ -243,7 +371,7 @@ def get_node_info(
         return {"status": "error", "message": str(e)}
     except Exception as e:
         logger.error(f"Error getting node info: {e}")
-        return {"status": "error", "message": str(e)}
+        return {"status": "error", "message": str(e), "traceback": traceback.format_exc()}
 
 
 def delete_node(
@@ -282,7 +410,7 @@ def delete_node(
         return {"status": "error", "message": str(e)}
     except Exception as e:
         logger.error(f"Error deleting node: {e}")
-        return {"status": "error", "message": str(e)}
+        return {"status": "error", "message": str(e), "traceback": traceback.format_exc()}
 
 
 def save_scene(
@@ -311,14 +439,14 @@ def save_scene(
         
         return {
             "status": "success",
-            "message": f"Scene saved",
+            "message": "Scene saved",
             "file_path": saved_path
         }
     except HoudiniConnectionError as e:
         return {"status": "error", "message": str(e)}
     except Exception as e:
         logger.error(f"Error saving scene: {e}")
-        return {"status": "error", "message": str(e)}
+        return {"status": "error", "message": str(e), "traceback": traceback.format_exc()}
 
 
 def load_scene(
@@ -342,14 +470,14 @@ def load_scene(
         
         return {
             "status": "success",
-            "message": f"Scene loaded",
+            "message": "Scene loaded",
             "file_path": file_path
         }
     except HoudiniConnectionError as e:
         return {"status": "error", "message": str(e)}
     except Exception as e:
         logger.error(f"Error loading scene: {e}")
-        return {"status": "error", "message": str(e)}
+        return {"status": "error", "message": str(e), "traceback": traceback.format_exc()}
 
 
 def new_scene(
@@ -375,19 +503,25 @@ def new_scene(
         return {"status": "error", "message": str(e)}
     except Exception as e:
         logger.error(f"Error creating new scene: {e}")
-        return {"status": "error", "message": str(e)}
+        return {"status": "error", "message": str(e), "traceback": traceback.format_exc()}
 
 
 def serialize_scene(
     root_path: str = "/obj",
+    include_params: bool = False,
+    max_depth: int = 10,
     host: str = "localhost",
     port: int = 18811
 ) -> Dict[str, Any]:
     """
     Serialize the scene structure to a dictionary (useful for diffs/comparisons).
     
+    This is an enhanced version ported from the OpenWebUI pipeline.
+    
     Args:
         root_path: Root node path to serialize from
+        include_params: Whether to include parameter values (can be verbose)
+        max_depth: Maximum recursion depth
         
     Returns:
         Dict with serialized scene structure.
@@ -395,19 +529,31 @@ def serialize_scene(
     try:
         hou = ensure_connected(host, port)
         
-        def node_to_dict(node, depth=0, max_depth=10):
+        def node_to_dict_recursive(node: Any, depth: int = 0) -> Dict[str, Any]:
             if depth > max_depth:
                 return {"path": node.path(), "truncated": True}
             
-            return {
+            result: Dict[str, Any] = {
                 "path": node.path(),
                 "type": node.type().name(),
                 "name": node.name(),
-                "children": [
-                    node_to_dict(child, depth + 1, max_depth)
-                    for child in node.children()
-                ]
             }
+            
+            if include_params:
+                params: Dict[str, Any] = {}
+                for parm in node.parms():
+                    try:
+                        params[parm.name()] = parm.eval()
+                    except Exception:
+                        params[parm.name()] = "<unevaluable>"
+                result["parameters"] = params
+            
+            result["children"] = [
+                node_to_dict_recursive(child, depth + 1)
+                for child in node.children()
+            ]
+            
+            return result
         
         root = hou.node(root_path)
         if root is None:
@@ -419,10 +565,74 @@ def serialize_scene(
         return {
             "status": "success",
             "root": root_path,
-            "structure": node_to_dict(root)
+            "structure": node_to_dict_recursive(root)
         }
     except HoudiniConnectionError as e:
         return {"status": "error", "message": str(e)}
     except Exception as e:
         logger.error(f"Error serializing scene: {e}")
+        return {"status": "error", "message": str(e), "traceback": traceback.format_exc()}
+
+
+def get_last_scene_diff() -> Dict[str, Any]:
+    """
+    Get the scene diff from the last execute_code call.
+    
+    Returns:
+        Dict with scene changes from last code execution.
+    """
+    global _before_scene, _after_scene
+    
+    if not _before_scene and not _after_scene:
+        return {
+            "status": "warning",
+            "message": "No scene diff available. Run execute_code with capture_diff=True first."
+        }
+    
+    return {
+        "status": "success",
+        "diff": _get_scene_diff(_before_scene, _after_scene)
+    }
+
+
+def list_node_types(
+    category: Optional[str] = None,
+    host: str = "localhost",
+    port: int = 18811
+) -> Dict[str, Any]:
+    """
+    List available node types, optionally filtered by category.
+    
+    Args:
+        category: Optional category filter (e.g., "Object", "Sop", "Cop2")
+        
+    Returns:
+        Dict with list of node types.
+    """
+    try:
+        hou = ensure_connected(host, port)
+        
+        node_types: List[Dict[str, str]] = []
+        
+        for node_type in hou.nodeTypeCategories().items():
+            cat_name, cat = node_type
+            if category and cat_name.lower() != category.lower():
+                continue
+            
+            for type_name, type_obj in cat.nodeTypes().items():
+                node_types.append({
+                    "category": cat_name,
+                    "name": type_name,
+                    "description": type_obj.description()
+                })
+        
+        return {
+            "status": "success",
+            "count": len(node_types),
+            "node_types": node_types[:100]  # Limit to first 100 to avoid huge responses
+        }
+    except HoudiniConnectionError as e:
         return {"status": "error", "message": str(e)}
+    except Exception as e:
+        logger.error(f"Error listing node types: {e}")
+        return {"status": "error", "message": str(e), "traceback": traceback.format_exc()}

@@ -2,16 +2,23 @@
 
 import os
 import logging
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Optional, Literal
 
 from fastmcp import FastMCP
 
-from .connection import ensure_connected, is_connected, disconnect
+from .connection import (
+    ensure_connected, 
+    is_connected, 
+    disconnect,
+    get_connection_info,
+    ping
+)
 from . import tools
 
 # Configure logging
+log_level = os.getenv("LOG_LEVEL", "INFO").upper()
 logging.basicConfig(
-    level=logging.INFO,
+    level=getattr(logging, log_level, logging.INFO),
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
 logger = logging.getLogger("houdini_mcp.server")
@@ -60,15 +67,16 @@ def create_node(
 
 
 @mcp.tool()
-def execute_code(code: str) -> Dict[str, Any]:
+def execute_code(code: str, capture_diff: bool = True) -> Dict[str, Any]:
     """
-    Execute Python code in Houdini.
+    Execute Python code in Houdini with scene change tracking.
     
     The 'hou' module is available in the execution context.
     Use this for complex operations that aren't covered by other tools.
     
     Args:
         code: Python code to execute
+        capture_diff: If True, captures before/after scene state and returns changes
         
     Example:
         execute_code('''
@@ -76,9 +84,14 @@ def execute_code(code: str) -> Dict[str, Any]:
             geo = obj.createNode("geo", "my_geometry")
             sphere = geo.createNode("sphere")
             sphere.parm("radx").set(2.0)
+            sphere.setDisplayFlag(True)
+            sphere.setRenderFlag(True)
         ''')
+        
+    Returns:
+        Dict with status, stdout, stderr, and scene_changes (if capture_diff=True)
     """
-    return tools.execute_code(code, HOUDINI_HOST, HOUDINI_PORT)
+    return tools.execute_code(code, HOUDINI_HOST, HOUDINI_PORT, capture_diff)
 
 
 @mcp.tool()
@@ -98,6 +111,7 @@ def set_parameter(
     Examples:
         - set_parameter("/obj/geo1/sphere1", "radx", 2.5)
         - set_parameter("/obj/cam1", "tx", 10.0)
+        - set_parameter("/obj/geo1", "t", [1.0, 2.0, 3.0])  # Vector param
     """
     return tools.set_parameter(node_path, param_name, value, HOUDINI_HOST, HOUDINI_PORT)
 
@@ -115,7 +129,7 @@ def get_node_info(
         include_params: Whether to include parameter values (default: True)
         
     Returns:
-        Node information including type, children, connections, and parameters.
+        Node information including type, children, connections, flags, and parameters.
     """
     return tools.get_node_info(node_path, include_params, 50, HOUDINI_HOST, HOUDINI_PORT)
 
@@ -170,44 +184,67 @@ def new_scene() -> Dict[str, Any]:
 
 
 @mcp.tool()
-def serialize_scene(root_path: str = "/obj") -> Dict[str, Any]:
+def serialize_scene(
+    root_path: str = "/obj",
+    include_params: bool = False
+) -> Dict[str, Any]:
     """
     Serialize the scene structure to a dictionary.
     
-    Useful for comparing scene states before and after operations.
+    Useful for comparing scene states before and after operations,
+    or for understanding the scene hierarchy.
     
     Args:
         root_path: Root node path to serialize from (default: "/obj")
+        include_params: Include parameter values (can be verbose, default: False)
     """
-    return tools.serialize_scene(root_path, HOUDINI_HOST, HOUDINI_PORT)
+    return tools.serialize_scene(root_path, include_params, 10, HOUDINI_HOST, HOUDINI_PORT)
+
+
+@mcp.tool()
+def get_last_scene_diff() -> Dict[str, Any]:
+    """
+    Get the scene diff from the last execute_code call.
+    
+    Shows what nodes were added, removed, or modified during the last
+    code execution. Useful for understanding what changes were made.
+    """
+    return tools.get_last_scene_diff()
+
+
+@mcp.tool()
+def list_node_types(category: Optional[str] = None) -> Dict[str, Any]:
+    """
+    List available Houdini node types.
+    
+    Args:
+        category: Optional category filter (e.g., "Object", "Sop", "Cop2", "Vop")
+        
+    Returns:
+        List of node types with their categories and descriptions.
+    """
+    return tools.list_node_types(category, HOUDINI_HOST, HOUDINI_PORT)
 
 
 @mcp.tool()
 def check_connection() -> Dict[str, Any]:
     """
-    Check if connected to Houdini.
+    Check Houdini connection status with detailed info.
     
-    Returns connection status and attempts to connect if not already connected.
+    Returns connection status, Houdini version, build info, and current hip file.
+    Attempts to connect if not already connected.
     """
     try:
-        if is_connected():
-            hou = ensure_connected(HOUDINI_HOST, HOUDINI_PORT)
-            return {
-                "status": "connected",
-                "host": HOUDINI_HOST,
-                "port": HOUDINI_PORT,
-                "houdini_version": hou.applicationVersionString()
-            }
-        else:
+        # First try a quick ping
+        if not is_connected():
             # Try to connect
-            hou = ensure_connected(HOUDINI_HOST, HOUDINI_PORT)
-            return {
-                "status": "connected",
-                "host": HOUDINI_HOST,
-                "port": HOUDINI_PORT,
-                "houdini_version": hou.applicationVersionString(),
-                "message": "Successfully connected"
-            }
+            ensure_connected(HOUDINI_HOST, HOUDINI_PORT)
+        
+        # Get detailed connection info
+        info = get_connection_info(HOUDINI_HOST, HOUDINI_PORT)
+        info["status"] = "connected" if info["connected"] else "disconnected"
+        return info
+        
     except Exception as e:
         return {
             "status": "disconnected",
@@ -217,15 +254,34 @@ def check_connection() -> Dict[str, Any]:
         }
 
 
-def run_server(transport: str = "http", port: int = 3055):
+@mcp.tool()
+def ping_houdini() -> Dict[str, Any]:
+    """
+    Quick connectivity test to Houdini.
+    
+    Returns True if Houdini RPC server is reachable.
+    Does not maintain a persistent connection.
+    """
+    reachable = ping(HOUDINI_HOST, HOUDINI_PORT)
+    return {
+        "status": "success" if reachable else "error",
+        "reachable": reachable,
+        "host": HOUDINI_HOST,
+        "port": HOUDINI_PORT
+    }
+
+
+def run_server(transport: str = "http", port: int = 3055) -> None:
     """Run the MCP server."""
-    from typing import Literal
     logger.info(f"Starting Houdini MCP Server on {transport}://0.0.0.0:{port}")
     logger.info(f"Houdini connection target: {HOUDINI_HOST}:{HOUDINI_PORT}")
+    logger.info(f"Log level: {log_level}")
+    
     # Cast transport to literal type for FastMCP
-    transport_literal: Literal["stdio", "http", "sse", "streamable-http"] = "http"  # type: ignore
+    transport_literal: Literal["stdio", "http", "sse", "streamable-http"] = "http"
     if transport in ("stdio", "http", "sse", "streamable-http"):
         transport_literal = transport  # type: ignore
+    
     mcp.run(transport=transport_literal, port=port)
 
 
