@@ -1,0 +1,4 @@
+fastmcp>=0.1.0
+hrpyc>=0.1.0
+rpyc>=5.0.0
+python-dotenv>=1.0.0

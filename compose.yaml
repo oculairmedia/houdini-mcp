@@ -1,0 +1,25 @@
+services:
+  houdini-mcp:
+    build: .
+    image: houdini-mcp:latest
+    container_name: houdini-mcp
+    restart: unless-stopped
+    ports:
+      - "3055:3055"
+    environment:
+      - HOUDINI_HOST=${HOUDINI_HOST:-192.168.50.90}
+      - HOUDINI_PORT=${HOUDINI_PORT:-18811}
+      - MCP_PORT=${MCP_PORT:-3055}
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+    networks:
+      - mcp-network
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:3055/health')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+networks:
+  mcp-network:
+    external: true
