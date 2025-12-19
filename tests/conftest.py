@@ -27,6 +27,7 @@ class MockHouNode:
         self._outputs: List[Any] = []
         self._display_flag = True
         self._render_flag = True
+        self._destroyed = False
     
     def path(self) -> str:
         return self._path
@@ -82,7 +83,7 @@ class MockHouNode:
         return new_node
     
     def destroy(self) -> None:
-        pass
+        self._destroyed = True
     
     def isDisplayFlagSet(self) -> bool:
         return self._display_flag
@@ -95,6 +96,18 @@ class MockHouNode:
     
     def setRenderFlag(self, value: bool) -> None:
         self._render_flag = value
+
+
+class MockRpycConnection:
+    """Mock rpyc connection object."""
+    
+    def __init__(self, hou_module: "MockHouModule"):
+        self.modules = MagicMock()
+        self.modules.hou = hou_module
+        self._closed = False
+    
+    def close(self) -> None:
+        self._closed = True
 
 
 class MockHouModule:
@@ -132,16 +145,23 @@ class MockHouModule:
         mock_types = {
             "geo": MagicMock(),
             "null": MagicMock(),
-            "cam": MagicMock()
+            "cam": MagicMock(),
+            "sphere": MagicMock(),
+            "box": MagicMock(),
         }
         for name, mock_type in mock_types.items():
             mock_type.description.return_value = f"{name.capitalize()} node"
         mock_category.nodeTypes.return_value = mock_types
-        return {"Object": mock_category}
+        return {"Object": mock_category, "Sop": mock_category}
     
     def add_node(self, node: MockHouNode) -> None:
         """Helper to add a node to the mock."""
         self._nodes[node.path()] = node
+    
+    def remove_node(self, path: str) -> None:
+        """Helper to remove a node from the mock."""
+        if path in self._nodes:
+            del self._nodes[path]
 
 
 @pytest.fixture
@@ -153,17 +173,40 @@ def mock_hou() -> MockHouModule:
 @pytest.fixture
 def mock_connection(mock_hou: MockHouModule) -> Generator[MockHouModule, None, None]:
     """Patch the connection module to use mock hou."""
+    mock_conn = MockRpycConnection(mock_hou)
     with patch('houdini_mcp.connection._hou', mock_hou), \
-         patch('houdini_mcp.connection._connection', MagicMock()):
+         patch('houdini_mcp.connection._connection', mock_conn):
         yield mock_hou
 
 
 @pytest.fixture
-def mock_hrpyc(mock_hou: MockHouModule) -> Generator[MockHouModule, None, None]:
-    """Patch hrpyc.import_remote_module to return mock connection and hou."""
-    mock_conn = MagicMock()
-    mock_hrpyc_module = MagicMock()
-    mock_hrpyc_module.import_remote_module = MagicMock(return_value=(mock_conn, mock_hou))
+def mock_rpyc(mock_hou: MockHouModule) -> Generator[MockHouModule, None, None]:
+    """Patch rpyc.classic.connect to return mock connection."""
+    mock_conn = MockRpycConnection(mock_hou)
     
-    with patch.dict('sys.modules', {'hrpyc': mock_hrpyc_module}):
+    with patch('houdini_mcp.connection.rpyc') as mock_rpyc_module:
+        mock_rpyc_module.classic.connect.return_value = mock_conn
+        yield mock_hou
+
+
+@pytest.fixture
+def reset_connection_state() -> Generator[None, None, None]:
+    """Reset global connection state before and after test."""
+    import houdini_mcp.connection as conn_module
+    # Reset before
+    conn_module._connection = None
+    conn_module._hou = None
+    yield
+    # Reset after
+    conn_module._connection = None
+    conn_module._hou = None
+
+
+@pytest.fixture
+def mock_rpyc_with_reset(mock_hou: MockHouModule, reset_connection_state: None) -> Generator[MockHouModule, None, None]:
+    """Patch rpyc and reset connection state."""
+    mock_conn = MockRpycConnection(mock_hou)
+    
+    with patch('houdini_mcp.connection.rpyc') as mock_rpyc_module:
+        mock_rpyc_module.classic.connect.return_value = mock_conn
         yield mock_hou
