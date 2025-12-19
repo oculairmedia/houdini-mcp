@@ -99,6 +99,9 @@ filterwarnings = [
     "ignore::DeprecationWarning",
     "ignore::PendingDeprecationWarning",
 ]
+markers = [
+    "integration: requires a live Houdini hrpyc server",
+]
 
 # Coverage configuration
 [tool.coverage.run]

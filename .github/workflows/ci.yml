@@ -53,9 +53,9 @@ jobs:
           python -m pip install --upgrade pip
           pip install -e ".[dev]" || pip install fastmcp "rpyc>=5.0.0,<6.0.0" python-dotenv pytest pytest-cov
 
-      - name: Run tests with coverage
+      - name: Run unit tests with coverage
         run: |
-          python -m pytest tests/ -v --cov=houdini_mcp --cov-report=xml --cov-report=term-missing
+          python -m pytest tests/ -v -m 'not integration' --cov=houdini_mcp --cov-report=xml --cov-report=term-missing
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v4
