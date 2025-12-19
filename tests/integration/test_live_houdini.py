@@ -67,3 +67,62 @@ def test_create_and_delete_node() -> None:
     finally:
         if created_path:
             tools.delete_node(created_path, host, port)
+
+
+@pytest.mark.integration
+def test_parameter_schema_recurses_into_folders() -> None:
+    host, port = _houdini_target()
+
+    geo_name = f"mcp_it_schema_{uuid.uuid4().hex[:8]}"
+    geo_path = None
+
+    try:
+        geo = tools.create_node("geo", "/obj", geo_name, host, port)
+        assert geo["status"] == "success"
+        geo_path = geo["node_path"]
+
+        attribnoise = tools.create_node("attribnoise", geo_path, "attribnoise1", host, port)
+        assert attribnoise["status"] == "success"
+        attribnoise_path = attribnoise["node_path"]
+
+        schema = tools.get_parameter_schema(attribnoise_path, max_parms=200, host=host, port=port)
+        assert schema["status"] == "success"
+        assert schema["count"] > 0
+
+        names = {p["name"] for p in schema["parameters"]}
+        # `attribnoise` is folder-heavy; `remapramp` is nested and should appear.
+        assert "remapramp" in names
+
+    finally:
+        if geo_path:
+            tools.delete_node(geo_path, host, port)
+
+
+@pytest.mark.integration
+def test_get_node_info_serializes_ramp_parameter() -> None:
+    host, port = _houdini_target()
+
+    geo_name = f"mcp_it_ramp_{uuid.uuid4().hex[:8]}"
+    geo_path = None
+
+    try:
+        geo = tools.create_node("geo", "/obj", geo_name, host, port)
+        assert geo["status"] == "success"
+        geo_path = geo["node_path"]
+
+        attribnoise = tools.create_node("attribnoise", geo_path, "attribnoise1", host, port)
+        assert attribnoise["status"] == "success"
+        attribnoise_path = attribnoise["node_path"]
+
+        info = tools.get_node_info(attribnoise_path, include_params=True, host=host, port=port)
+        assert info["status"] == "success"
+
+        remapramp = info["parameters"].get("remapramp")
+        assert isinstance(remapramp, dict)
+        assert remapramp.get("type") == "hou.Ramp"
+        assert "keys" in remapramp
+        assert "values" in remapramp
+
+    finally:
+        if geo_path:
+            tools.delete_node(geo_path, host, port)

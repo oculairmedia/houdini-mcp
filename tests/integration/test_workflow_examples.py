@@ -8,7 +8,11 @@ These tests verify that the example workflows function correctly:
 4. Error handling (detect → fix → verify)
 """
 
+import os
+
 import pytest
+
+from houdini_mcp import connection
 from houdini_mcp.tools import (
     create_node,
     connect_nodes,
@@ -20,6 +24,36 @@ from houdini_mcp.tools import (
     list_children,
     set_node_flags,
 )
+
+
+def _integration_enabled() -> bool:
+    return os.getenv("RUN_INTEGRATION_TESTS") == "1"
+
+
+def _houdini_target() -> tuple[str, int]:
+    host = os.getenv("HOUDINI_HOST")
+    port_str = os.getenv("HOUDINI_PORT")
+
+    if not host or not port_str:
+        raise RuntimeError("HOUDINI_HOST and HOUDINI_PORT must both be set")
+
+    return host, int(port_str)
+
+
+pytestmark = pytest.mark.skipif(
+    not _integration_enabled(),
+    reason="set RUN_INTEGRATION_TESTS=1 to enable integration tests",
+)
+
+
+def setup_module() -> None:
+    host, port = _houdini_target()
+    connection.disconnect()
+    connection.connect(host, port)
+
+
+def teardown_module() -> None:
+    connection.disconnect()
 
 
 class TestBuildFromScratch:
@@ -103,8 +137,8 @@ class TestAugmentExistingScene:
         
         grid = create_node("grid", geo_path, "grid1")
         grid_path = grid["node_path"]
-        
-        noise = create_node("noise", geo_path, "noise1")
+        noise = create_node("attribnoise", geo_path, "noise1")
+
         noise_path = noise["node_path"]
         
         # Wire grid → noise
@@ -252,7 +286,7 @@ class TestErrorHandling:
         geo_path = geo_result["node_path"]
         
         # Create noise without input
-        noise = create_node("noise", geo_path, "noise1")
+        noise = create_node("attribnoise", geo_path, "noise1")
         noise_path = noise["node_path"]
         
         # Check cook state

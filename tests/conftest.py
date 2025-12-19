@@ -87,28 +87,58 @@ class MockHouNode:
     
     def parms(self) -> List[MagicMock]:
         mock_parms = []
-        for name, value in self._params.items():
-            mock_parm = MagicMock()
-            mock_parm.name.return_value = name
-            mock_parm.eval.return_value = value
-            mock_parms.append(mock_parm)
+        for name in self._params.keys():
+            parm = self.parm(name)
+            if parm is not None:
+                mock_parms.append(parm)
         return mock_parms
     
     def parm(self, name: str) -> Optional[MagicMock]:
-        if name in self._params:
-            mock_parm = MagicMock()
-            mock_parm.name.return_value = name
-            mock_parm.eval.return_value = self._params[name]
-            mock_parm.set = lambda v, n=name: self._params.update({n: v})
-            return mock_parm
-        return None
+        if name not in self._params:
+            return None
+
+        # Return stable mock objects so tests can patch attributes.
+        if not hasattr(self, "_parm_objects"):
+            self._parm_objects = {}
+
+        if name in self._parm_objects:
+            # Keep current value in sync.
+            self._parm_objects[name].eval.return_value = self._params[name]
+            return self._parm_objects[name]
+
+        mock_parm = MagicMock()
+        mock_parm.name.return_value = name
+        mock_parm.eval.return_value = self._params[name]
+
+        def _setter(v: Any, n: str = name) -> None:
+            self._params.update({n: v})
+            mock_parm.eval.return_value = v
+
+        mock_parm.set = _setter
+        self._parm_objects[name] = mock_parm
+        return mock_parm
     
     def parmTuple(self, name: str) -> Optional[MagicMock]:
-        if name in self._params and isinstance(self._params[name], (list, tuple)):
-            mock_parm = MagicMock()
-            mock_parm.set = lambda v, n=name: self._params.update({n: v})
-            return mock_parm
-        return None
+        if name not in self._params or not isinstance(self._params[name], (list, tuple)):
+            return None
+
+        if not hasattr(self, "_parm_tuple_objects"):
+            self._parm_tuple_objects = {}
+
+        if name in self._parm_tuple_objects:
+            self._parm_tuple_objects[name].eval.return_value = tuple(self._params[name])
+            return self._parm_tuple_objects[name]
+
+        mock_parm = MagicMock()
+        mock_parm.eval.return_value = tuple(self._params[name])
+
+        def _setter(v: Any, n: str = name) -> None:
+            self._params.update({n: v})
+            mock_parm.eval.return_value = tuple(v) if isinstance(v, (list, tuple)) else v
+
+        mock_parm.set = _setter
+        self._parm_tuple_objects[name] = mock_parm
+        return mock_parm
     
     def createNode(self, node_type: str, name: Optional[str] = None) -> "MockHouNode":
         new_name = name if name else f"{node_type}1"
