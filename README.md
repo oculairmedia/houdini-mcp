@@ -72,21 +72,243 @@ Environment variables:
 | `MCP_TRANSPORT` | `http` | Transport type (http, stdio, sse) |
 | `LOG_LEVEL` | `INFO` | Logging level |
 
-## MCP Tools
+## SOP Workflow Tools
+
+The Houdini MCP Server provides specialized tools for building and manipulating SOP (Surface Operator) networks:
+
+### Network Discovery & Inspection
+
+| Tool | Description | Use Case |
+|------|-------------|----------|
+| `list_children` | List child nodes with connection details | Discover existing network topology |
+| `find_nodes` | Find nodes by name pattern or type | Locate specific nodes in large networks |
+| `get_node_info` | Get node details, parameters, and connections | Inspect node state and wiring |
+| `get_parameter_schema` | Get parameter metadata (types, ranges, menus) | Understand what parameters are available |
+| `get_geo_summary` | Get geometry statistics and metadata | Verify results after operations |
+
+### Network Construction & Modification
+
+| Tool | Description | Use Case |
+|------|-------------|----------|
+| `create_node` | Create a new node | Build networks from scratch |
+| `connect_nodes` | Wire nodes together | Create data flow connections |
+| `disconnect_node_input` | Break a connection | Rewire existing networks |
+| `set_node_flags` | Set display/render/bypass flags | Control node visibility and evaluation |
+| `reorder_inputs` | Reorder node inputs | Reorganize merge node inputs |
+
+### Parameter Management
+
+| Tool | Description | Use Case |
+|------|-------------|----------|
+| `set_parameter` | Set a parameter value | Configure node behavior |
+| `get_parameter_schema` | Discover parameter metadata | Understand parameter types and constraints |
+
+### Scene Management
 
 | Tool | Description |
 |------|-------------|
 | `check_connection` | Verify/establish Houdini connection |
 | `get_scene_info` | Get current scene info (file, version, nodes) |
-| `create_node` | Create a node (type, parent, name) |
 | `delete_node` | Delete a node by path |
-| `get_node_info` | Get node details and parameters |
-| `set_parameter` | Set a parameter value |
 | `execute_code` | Execute arbitrary Python with `hou` available |
 | `save_scene` | Save current scene |
 | `load_scene` | Load a .hip file |
 | `new_scene` | Create empty scene |
 | `serialize_scene` | Serialize scene structure for diffs |
+
+## Common Patterns
+
+### Creating SOP Chains
+
+Build a complete SOP network from scratch:
+
+```python
+# 1. Create geo container
+geo = create_node("geo", "/obj", "my_geo")
+
+# 2. Create SOP nodes
+sphere = create_node("sphere", geo["node_path"], "sphere1")
+xform = create_node("xform", geo["node_path"], "xform1")
+color = create_node("color", geo["node_path"], "color1")
+out = create_node("null", geo["node_path"], "OUT")
+
+# 3. Wire nodes together
+connect_nodes(sphere["node_path"], xform["node_path"])
+connect_nodes(xform["node_path"], color["node_path"])
+connect_nodes(color["node_path"], out["node_path"])
+
+# 4. Set display flag
+set_node_flags(out["node_path"], display=True, render=True)
+```
+
+### Inserting Nodes Into Existing Chains
+
+Insert a new node between existing connections:
+
+```python
+# 1. Discover existing network
+children = list_children("/obj/geo1")
+# Find grid and noise nodes from children
+
+# 2. Get current connections
+noise_info = get_node_info("/obj/geo1/noise1", include_input_details=True)
+# See that noise is connected to grid
+
+# 3. Create new node
+mountain = create_node("mountain", "/obj/geo1", "mountain1")
+
+# 4. Rewire: grid → mountain → noise
+disconnect_node_input("/obj/geo1/noise1", 0)  # Break noise ← grid
+connect_nodes("/obj/geo1/grid1", "/obj/geo1/mountain1")  # grid → mountain
+connect_nodes("/obj/geo1/mountain1", "/obj/geo1/noise1")  # mountain → noise
+```
+
+### Setting Parameters Intelligently
+
+Use parameter schema to set values correctly:
+
+```python
+# 1. Discover parameter metadata
+schema = get_parameter_schema("/obj/geo1/sphere1", parm_name="rad")
+param = schema["parameters"][0]
+
+# 2. Check parameter type
+if param["type"] == "vector":
+    # Set vector parameter correctly
+    set_parameter("/obj/geo1/sphere1", "rad", [3.0, 3.0, 3.0])
+elif param["type"] == "menu":
+    # Use menu items
+    first_option = param["menu_items"][0]["value"]
+    set_parameter("/obj/geo1/sphere1", "type", first_option)
+```
+
+### Verifying Results
+
+Always verify geometry after operations:
+
+```python
+# Get comprehensive geometry summary
+summary = get_geo_summary(
+    "/obj/geo1/OUT",
+    max_sample_points=10,
+    include_attributes=True
+)
+
+# Check cook state
+if summary["cook_state"] != "cooked":
+    # Handle errors
+    node_info = get_node_info("/obj/geo1/OUT", include_errors=True)
+    errors = node_info["cook_info"]["errors"]
+    # Fix errors...
+
+# Verify geometry metrics
+assert summary["point_count"] > 0
+assert summary["primitive_count"] > 0
+
+# Check bounding box
+bbox = summary["bounding_box"]
+# Verify expected size/position
+```
+
+## Error Handling Best Practices
+
+### Check Cook State Before Reading Geometry
+
+```python
+# 1. Check cook state first
+node_info = get_node_info(
+    node_path,
+    include_errors=True,
+    force_cook=True
+)
+
+cook_state = node_info["cook_info"]["cook_state"]
+
+# 2. Handle different states
+if cook_state == "error":
+    # Examine errors
+    errors = node_info["cook_info"]["errors"]
+    for err in errors:
+        print(f"Error: {err['message']}")
+    # Fix errors...
+elif cook_state == "cooked":
+    # Safe to access geometry
+    geo = get_geo_summary(node_path)
+```
+
+### Validate Parameter Types
+
+```python
+# Always check parameter schema before setting
+schema = get_parameter_schema(node_path, parm_name="rad")
+param = schema["parameters"][0]
+
+if param["type"] == "vector":
+    # Use list/tuple for vector parameters
+    set_parameter(node_path, "rad", [5.0, 5.0, 5.0])
+else:
+    # Use scalar for single parameters
+    set_parameter(node_path, "rad", 5.0)
+```
+
+### Handle Connection Errors
+
+```python
+# Connection validation
+result = connect_nodes(src_path, dst_path)
+
+if result["status"] == "error":
+    if "incompatible" in result["message"].lower():
+        # Different node categories (e.g., SOP vs OBJ)
+        print("Can't connect nodes of different types")
+    elif "not found" in result["message"].lower():
+        # Node doesn't exist
+        print("Source or destination node not found")
+```
+
+### Debugging with Error Introspection
+
+```python
+# Use include_errors=True to diagnose issues
+node_info = get_node_info(
+    node_path,
+    include_errors=True,
+    force_cook=True
+)
+
+cook_info = node_info["cook_info"]
+
+# Check for errors
+if cook_info["errors"]:
+    print(f"Node has {len(cook_info['errors'])} errors:")
+    for error in cook_info["errors"]:
+        print(f"  - {error['message']}")
+
+# Check for warnings
+if cook_info["warnings"]:
+    print(f"Node has {len(cook_info['warnings'])} warnings:")
+    for warning in cook_info["warnings"]:
+        print(f"  - {warning['message']}")
+```
+
+## Example Workflows
+
+Complete working examples are available in the `examples/` directory:
+
+- **`build_from_scratch.py`** - Build sphere → xform → color → OUT from scratch
+- **`augment_existing_scene.py`** - Insert mountain between grid → noise
+- **`parameter_workflow.py`** - Discover → set → verify parameters
+- **`error_handling.py`** - Detect → fix → verify errors
+
+Run examples:
+
+```bash
+cd examples
+python build_from_scratch.py
+python augment_existing_scene.py
+python parameter_workflow.py
+python error_handling.py
+```
 
 ## Usage Examples
 
@@ -110,10 +332,11 @@ Add as an MCP server in Letta's configuration to give agents Houdini control.
 
 ### Example Prompts
 
-- "Create a sphere at the origin with radius 2"
-- "List all nodes in /obj"
-- "Set the camera's focal length to 50mm"
-- "Execute this Houdini Python code: ..."
+- "Create a sphere → transform → color → OUT network"
+- "Insert a mountain node between the grid and noise"
+- "Discover what parameters are available on the sphere node"
+- "Check if the noise node has any cook errors"
+- "Set the sphere radius to 3.0 using the parameter schema"
 
 ## Development
 
@@ -138,6 +361,46 @@ python -m houdini_mcp
 ### Authentication errors
 - hrpyc uses no authentication by default
 - Ensure you're on a trusted network
+
+## Tool Reference
+
+### Quick Reference Table
+
+| Category | Tool | Key Parameters | Returns | Notes |
+|----------|------|----------------|---------|-------|
+| **Discovery** | `list_children` | `node_path`, `recursive` | Children with input/output connections | Essential for understanding network topology |
+| | `find_nodes` | `root_path`, `pattern`, `node_type` | Matching nodes | Supports glob patterns and type filtering |
+| | `get_node_info` | `node_path`, `include_input_details`, `include_errors` | Node metadata, connections, cook state | Use `include_errors=True` for debugging |
+| | `get_parameter_schema` | `node_path`, `parm_name` | Parameter metadata (type, range, menu) | Critical for intelligent parameter setting |
+| | `get_geo_summary` | `node_path`, `max_sample_points`, `include_attributes` | Geometry stats, bbox, attributes | Verify results after operations |
+| **Construction** | `create_node` | `node_type`, `parent_path`, `name` | Created node path | Start of any workflow |
+| | `connect_nodes` | `src_path`, `dst_path`, `dst_input_index` | Connection result | Validates node category compatibility |
+| | `disconnect_node_input` | `node_path`, `input_index` | Disconnection result | Returns previous source for rewiring |
+| | `set_node_flags` | `node_path`, `display`, `render`, `bypass` | Flags set | Only sets non-None flags |
+| | `reorder_inputs` | `node_path`, `new_order` | Reordering result | Useful for merge nodes |
+| **Parameters** | `set_parameter` | `node_path`, `param_name`, `value` | Set result | Handles both scalar and vector params |
+| | `get_parameter_schema` | `node_path`, `parm_name`, `max_parms` | Parameter metadata | Discovers types, ranges, menus, defaults |
+| **Verification** | `get_geo_summary` | `node_path`, `max_sample_points` | Point/prim counts, bbox, attributes | Comprehensive geometry verification |
+| | `get_node_info` | `node_path`, `include_errors=True` | Cook state, errors, warnings | Error introspection |
+
+### Tool Categories
+
+**Network Discovery**: `list_children`, `find_nodes`, `get_node_info`, `get_parameter_schema`
+- Use these to understand existing networks before making changes
+- Essential for inserting nodes without breaking connections
+
+**Network Construction**: `create_node`, `connect_nodes`, `disconnect_node_input`, `set_node_flags`, `reorder_inputs`
+- Build and modify SOP networks
+- All validate inputs and handle errors gracefully
+
+**Parameter Management**: `set_parameter`, `get_parameter_schema`
+- `get_parameter_schema` tells you what parameters exist and how to set them
+- `set_parameter` handles both scalar and vector parameters automatically
+
+**Verification**: `get_geo_summary`, `get_node_info` (with `include_errors=True`)
+- Always verify results after operations
+- Check cook state before accessing geometry
+- Use geometry summary to confirm expected changes
 
 ## Credits
 
