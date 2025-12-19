@@ -1,6 +1,7 @@
 fastmcp>=0.1.0
-hrpyc>=0.1.0
-rpyc>=5.0.0
+# Note: hrpyc is bundled with Houdini, not on PyPI
+# We use rpyc directly - MUST be 5.x (6.x has protocol incompatibility with Houdini)
+rpyc>=5.0.0,<6.0.0
 python-dotenv>=1.0.0
 
 # Development dependencies

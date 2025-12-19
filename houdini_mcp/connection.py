@@ -1,8 +1,16 @@
-"""Houdini connection manager using hrpyc with retry logic and validation."""
+"""Houdini connection manager using rpyc with retry logic and validation.
+
+Note: We use rpyc.classic directly instead of hrpyc because:
+1. hrpyc is bundled with Houdini and not available on PyPI
+2. rpyc.classic.connect() provides the same functionality
+3. IMPORTANT: rpyc must be version 5.x (6.x has protocol incompatibility)
+"""
 
 import logging
 import time
 from typing import Optional, Any, Tuple, Dict
+
+import rpyc
 
 logger = logging.getLogger("houdini_mcp.connection")
 
@@ -33,7 +41,7 @@ def connect(
     retry_delay: float = DEFAULT_RETRY_DELAY
 ) -> Tuple[Any, Any]:
     """
-    Connect to Houdini RPC server using hrpyc with retry logic.
+    Connect to Houdini RPC server using rpyc with retry logic.
     
     Args:
         host: Houdini server hostname (default: localhost)
@@ -49,29 +57,23 @@ def connect(
     """
     global _connection, _hou
     
-    try:
-        import hrpyc  # type: ignore
-    except ImportError:
-        raise HoudiniConnectionError(
-            "hrpyc not available. This module requires hrpyc to be installed. "
-            "Install with: pip install hrpyc"
-        )
-    
     last_error: Optional[Exception] = None
     current_delay = retry_delay
     
     for attempt in range(max_retries):
         try:
             logger.info(f"Connecting to Houdini at {host}:{port} (attempt {attempt + 1}/{max_retries})")
-            _connection, _hou = hrpyc.import_remote_module(host, port)
+            
+            # Use rpyc.classic.connect - this is what hrpyc uses internally
+            _connection = rpyc.classic.connect(host, port)
+            _hou = _connection.modules.hou
             
             # Validate connection by checking Houdini version
-            hou_module: Any = _hou
-            version = hou_module.applicationVersionString()
+            version = _hou.applicationVersionString()
             logger.info(f"Connected to Houdini version: {version}")
             
             # Additional validation - ensure we can access common nodes
-            obj_node = hou_module.node("/obj")
+            obj_node = _hou.node("/obj")
             if obj_node is None:
                 logger.warning("Connected but /obj node not accessible - unusual state")
             
@@ -149,8 +151,7 @@ def is_connected() -> bool:
     
     try:
         # Try a simple operation to verify connection is alive
-        hou_module: Any = _hou
-        hou_module.applicationVersion()
+        _hou.applicationVersion()
         return True
     except Exception as e:
         logger.debug(f"Connection check failed: {e}")
@@ -197,16 +198,15 @@ def get_connection_info(host: str = "localhost", port: int = 18811) -> Dict[str,
     
     if is_connected():
         try:
-            hou_module: Any = _hou
             info["connected"] = True
-            info["houdini_version"] = hou_module.applicationVersionString()
-            version_tuple = hou_module.applicationVersion()
+            info["houdini_version"] = _hou.applicationVersionString()
+            version_tuple = _hou.applicationVersion()
             info["houdini_build"] = {
                 "major": version_tuple[0],
                 "minor": version_tuple[1],
                 "build": version_tuple[2]
             }
-            info["hip_file"] = hou_module.hipFile.path() or "untitled.hip"
+            info["hip_file"] = _hou.hipFile.path() or "untitled.hip"
         except Exception as e:
             logger.warning(f"Error getting connection info: {e}")
             info["error"] = str(e)
@@ -222,8 +222,8 @@ def ping(host: str = "localhost", port: int = 18811) -> bool:
         True if Houdini RPC server is reachable, False otherwise.
     """
     try:
-        import hrpyc  # type: ignore
-        conn, hou = hrpyc.import_remote_module(host, port)
+        conn = rpyc.classic.connect(host, port)
+        hou = conn.modules.hou
         hou.applicationVersion()  # Validate we can call methods
         conn.close()
         return True

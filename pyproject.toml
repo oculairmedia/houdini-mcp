@@ -1,0 +1,30 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "houdini-mcp"
+version = "0.1.0"
+description = "MCP server for SideFX Houdini integration via rpyc"
+readme = "README.md"
+license = {text = "MIT"}
+requires-python = ">=3.10"
+dependencies = [
+    "fastmcp>=0.1.0",
+    # rpyc MUST be 5.x - version 6.x has protocol incompatibility with Houdini's hrpyc
+    "rpyc>=5.0.0,<6.0.0",
+    "python-dotenv>=1.0.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0.0",
+    "pytest-cov>=4.0.0",
+]
+
+[project.scripts]
+houdini-mcp = "houdini_mcp.server:run_server"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["houdini_mcp*"]
