@@ -619,7 +619,7 @@ def run_server(transport: str = "http", port: int = 3055) -> None:
     if transport in ("stdio", "http", "sse", "streamable-http"):
         transport_literal = transport  # type: ignore
     
-    mcp.run(transport=transport_literal, port=port)
+    mcp.run(transport=transport_literal, host="0.0.0.0", port=port)
 
 
 if __name__ == "__main__":
