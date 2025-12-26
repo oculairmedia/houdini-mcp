@@ -43,3 +43,6 @@ Thumbs.db
 
 # Docker
 .docker/
+
+# OpenCode local config
+opencode.json

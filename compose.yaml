@@ -1,7 +1,9 @@
 services:
   houdini-mcp:
-    build: .
-    image: houdini-mcp:latest
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: houdini-mcp:local
     container_name: houdini-mcp
     restart: unless-stopped
     ports:

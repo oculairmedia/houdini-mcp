@@ -61,7 +61,7 @@ def create_node(
 @mcp.tool()
 def execute_code(
     code: str,
-    capture_diff: bool = True,
+    capture_diff: bool = False,
     max_stdout_size: int = 100000,
     max_stderr_size: int = 100000,
     max_diff_nodes: int = 1000,
@@ -82,7 +82,7 @@ def execute_code(
 
     Args:
         code: Python code to execute
-        capture_diff: If True, captures before/after scene state and returns changes (default: True)
+        capture_diff: If True, captures before/after scene state and returns changes (default: False)
         max_stdout_size: Maximum stdout size in bytes (default: 100000 = 100KB)
         max_stderr_size: Maximum stderr size in bytes (default: 100000 = 100KB)
         max_diff_nodes: Maximum nodes in scene diff added_nodes list (default: 1000)
@@ -114,15 +114,15 @@ def execute_code(
         If dangerous patterns detected and not allowed, returns error with detected patterns.
     """
     return tools.execute_code(
-        code,
-        HOUDINI_HOST,
-        HOUDINI_PORT,
-        capture_diff,
-        max_stdout_size,
-        max_stderr_size,
-        max_diff_nodes,
-        timeout,
-        allow_dangerous,
+        code=code,
+        capture_diff=capture_diff,
+        max_stdout_size=max_stdout_size,
+        max_stderr_size=max_stderr_size,
+        max_diff_nodes=max_diff_nodes,
+        timeout=timeout,
+        allow_dangerous=allow_dangerous,
+        host=HOUDINI_HOST,
+        port=HOUDINI_PORT,
     )
 
 
@@ -185,14 +185,15 @@ def get_node_info(
         get_node_info("/obj/geo1/sphere1", include_errors=True, force_cook=True)
     """
     return tools.get_node_info(
-        node_path,
-        include_params,
-        50,
-        include_input_details,
-        include_errors,
-        force_cook,
-        HOUDINI_HOST,
-        HOUDINI_PORT,
+        node_path=node_path,
+        include_params=include_params,
+        max_params=50,
+        include_input_details=include_input_details,
+        include_errors=include_errors,
+        force_cook=force_cook,
+        compact=False,
+        host=HOUDINI_HOST,
+        port=HOUDINI_PORT,
     )
 
 
@@ -272,17 +273,32 @@ def get_last_scene_diff() -> Dict[str, Any]:
 
 
 @mcp.tool()
-def list_node_types(category: Optional[str] = None) -> Dict[str, Any]:
+def list_node_types(
+    category: Optional[str] = None,
+    max_results: int = 100,
+    name_filter: Optional[str] = None,
+) -> Dict[str, Any]:
     """
     List available Houdini node types.
 
     Args:
         category: Optional category filter (e.g., "Object", "Sop", "Cop2", "Vop")
+        max_results: Maximum number of results to return (default: 100, max: 500)
+        name_filter: Optional substring filter for node type names (case-insensitive)
 
     Returns:
         List of node types with their categories and descriptions.
+
+    Note:
+        Large categories like "Sop" have thousands of node types.
+        Use name_filter to narrow results (e.g., name_filter="noise" for noise-related SOPs).
+
+    Examples:
+        list_node_types(category="Object")  # List Object-level nodes
+        list_node_types(category="Sop", name_filter="noise")  # Find noise SOPs
+        list_node_types(category="Sop", name_filter="vdb", max_results=50)  # VDB SOPs
     """
-    return tools.list_node_types(category, HOUDINI_HOST, HOUDINI_PORT)
+    return tools.list_node_types(category, max_results, name_filter, HOUDINI_HOST, HOUDINI_PORT)
 
 
 @mcp.tool()
