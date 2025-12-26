@@ -398,21 +398,25 @@ def render_viewport(
     resolution: Optional[List[int]] = None,
     renderer: str = "opengl",
     output_format: str = "png",
+    auto_frame: bool = True,
+    orthographic: bool = False,
 ) -> Dict[str, Any]:
     """
     Render the viewport and return the image as base64.
 
-    Creates a temporary camera, positions it, renders the scene,
-    and returns the rendered image encoded as base64. Useful for
-    AI vision analysis of the current scene state.
+    Creates a temporary camera, positions it to frame the scene geometry,
+    renders the scene, and returns the rendered image encoded as base64.
+    Useful for AI vision analysis of the current scene state.
 
     Args:
-        camera_position: [x, y, z] world position for camera (default: [5, 5, 5])
-        camera_rotation: [rx, ry, rz] rotation in degrees (default: auto-calculated to look at origin)
-        look_at: Node path to look at (overrides camera_rotation if set)
-        resolution: [width, height] in pixels (default: [1280, 720])
+        camera_position: [x, y, z] world position for camera (default: auto-calculated)
+        camera_rotation: [rx, ry, rz] rotation in degrees (default: [-30, 45, 0] isometric)
+        look_at: Node path to look at (centers camera on this node's geometry)
+        resolution: [width, height] in pixels (default: [512, 512])
         renderer: Render engine - "opengl" (fast) or "karma" (quality)
         output_format: Image format - "png", "jpg", or "exr"
+        auto_frame: If True, automatically frame all visible geometry (default: True)
+        orthographic: If True, use orthographic projection (default: False)
 
     Returns:
         Dict with:
@@ -420,11 +424,13 @@ def render_viewport(
         - format: Image format used
         - resolution: [width, height]
         - camera_path: Path to the temporary camera used
+        - bounding_box: Scene bounding box if auto_frame was used
 
     Examples:
-        render_viewport()  # Render from default position
-        render_viewport(camera_position=[10, 5, 10], look_at="/obj/geo1")
-        render_viewport(resolution=[1920, 1080], renderer="karma")
+        render_viewport()  # Auto-frame scene with isometric view
+        render_viewport(camera_rotation=[0, 0, 0])  # Front view
+        render_viewport(camera_rotation=[-90, 0, 0])  # Top view
+        render_viewport(look_at="/obj/geo1", orthographic=True)
     """
     return tools.render_viewport(
         camera_position,
@@ -433,6 +439,8 @@ def render_viewport(
         resolution,
         renderer,
         output_format,
+        auto_frame,
+        orthographic,
         HOUDINI_HOST,
         HOUDINI_PORT,
     )
