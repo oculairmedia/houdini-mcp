@@ -237,6 +237,18 @@ class MockHouNode:
         """Helper to set geometry on this node."""
         self._geometry = geo
 
+    def allSubChildren(self) -> List["MockHouNode"]:
+        """Return all descendant nodes recursively."""
+        all_descendants: List["MockHouNode"] = []
+
+        def collect(node: "MockHouNode") -> None:
+            for child in node._children:
+                all_descendants.append(child)
+                collect(child)
+
+        collect(self)
+        return all_descendants
+
 
 class MockRpycConnection:
     """Mock rpyc connection object."""

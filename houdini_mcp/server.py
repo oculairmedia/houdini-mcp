@@ -391,6 +391,90 @@ def find_nodes(
 
 
 @mcp.tool()
+def render_viewport(
+    camera_position: Optional[List[float]] = None,
+    camera_rotation: Optional[List[float]] = None,
+    look_at: Optional[str] = None,
+    resolution: Optional[List[int]] = None,
+    renderer: str = "opengl",
+    output_format: str = "png",
+) -> Dict[str, Any]:
+    """
+    Render the viewport and return the image as base64.
+
+    Creates a temporary camera, positions it, renders the scene,
+    and returns the rendered image encoded as base64. Useful for
+    AI vision analysis of the current scene state.
+
+    Args:
+        camera_position: [x, y, z] world position for camera (default: [5, 5, 5])
+        camera_rotation: [rx, ry, rz] rotation in degrees (default: auto-calculated to look at origin)
+        look_at: Node path to look at (overrides camera_rotation if set)
+        resolution: [width, height] in pixels (default: [1280, 720])
+        renderer: Render engine - "opengl" (fast) or "karma" (quality)
+        output_format: Image format - "png", "jpg", or "exr"
+
+    Returns:
+        Dict with:
+        - image_base64: Base64-encoded image data
+        - format: Image format used
+        - resolution: [width, height]
+        - camera_path: Path to the temporary camera used
+
+    Examples:
+        render_viewport()  # Render from default position
+        render_viewport(camera_position=[10, 5, 10], look_at="/obj/geo1")
+        render_viewport(resolution=[1920, 1080], renderer="karma")
+    """
+    return tools.render_viewport(
+        camera_position,
+        camera_rotation,
+        look_at,
+        resolution,
+        renderer,
+        output_format,
+        HOUDINI_HOST,
+        HOUDINI_PORT,
+    )
+
+
+@mcp.tool()
+def find_error_nodes(
+    root_path: str = "/",
+    include_warnings: bool = True,
+    max_results: int = 100,
+) -> Dict[str, Any]:
+    """
+    Find all nodes with cook errors or warnings in the scene.
+
+    Scans the entire node hierarchy starting from root_path and returns
+    all nodes that have errors or warnings. Essential for debugging
+    complex scenes where error locations are unknown.
+
+    Args:
+        root_path: Root path to start search from (default: "/" for entire scene)
+        include_warnings: Whether to include nodes with warnings (default: True)
+        max_results: Maximum number of results to return (default: 100)
+
+    Returns:
+        Dict with error/warning nodes including:
+        - error_nodes: List of nodes with errors (path, name, type, errors)
+        - warning_nodes: List of nodes with warnings (if include_warnings=True)
+        - error_count: Number of error nodes found
+        - warning_count: Number of warning nodes found
+        - total_scanned: Number of nodes scanned
+
+    Examples:
+        find_error_nodes()  # Find all errors in scene
+        find_error_nodes("/obj/geo1")  # Find errors within a specific network
+        find_error_nodes(include_warnings=False)  # Only errors, no warnings
+    """
+    return tools.find_error_nodes(
+        root_path, include_warnings, max_results, HOUDINI_HOST, HOUDINI_PORT
+    )
+
+
+@mcp.tool()
 def check_connection() -> Dict[str, Any]:
     """
     Check Houdini connection status with detailed info.

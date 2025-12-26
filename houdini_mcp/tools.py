@@ -1468,6 +1468,373 @@ def find_nodes(
         return {"status": "error", "message": str(e), "traceback": traceback.format_exc()}
 
 
+def render_viewport(
+    camera_position: Optional[List[float]] = None,
+    camera_rotation: Optional[List[float]] = None,
+    look_at: Optional[str] = None,
+    resolution: Optional[List[int]] = None,
+    renderer: str = "opengl",
+    output_format: str = "png",
+    host: str = "localhost",
+    port: int = 18811,
+) -> Dict[str, Any]:
+    """
+    Render the viewport and return the image as base64.
+
+    Creates a temporary camera, positions it, renders the scene,
+    and returns the rendered image encoded as base64.
+
+    Args:
+        camera_position: [x, y, z] world position for camera (default: [5, 5, 5])
+        camera_rotation: [rx, ry, rz] rotation in degrees (default: auto-calculated to look at origin)
+        look_at: Node path to look at (overrides camera_rotation if set)
+        resolution: [width, height] in pixels (default: [1280, 720])
+        renderer: Render engine - "opengl" (fast) or "karma" (quality)
+        output_format: Image format - "png", "jpg", or "exr"
+
+    Returns:
+        Dict with:
+        - status: "success" or "error"
+        - image_base64: Base64-encoded image data
+        - format: Image format used
+        - resolution: [width, height]
+        - camera_path: Path to the temporary camera used
+
+    Example:
+        render_viewport()  # Render from default position
+        render_viewport(camera_position=[10, 5, 10], look_at="/obj/geo1")
+        render_viewport(resolution=[1920, 1080], renderer="karma")
+    """
+    try:
+        hou = ensure_connected(host, port)
+        import base64
+        import tempfile
+        import os
+
+        # Set defaults
+        if camera_position is None:
+            camera_position = [5.0, 5.0, 5.0]
+        if resolution is None:
+            resolution = [1280, 720]
+
+        # Validate resolution
+        width, height = resolution[0], resolution[1]
+        if width < 64 or height < 64:
+            return {"status": "error", "message": "Resolution must be at least 64x64"}
+        if width > 4096 or height > 4096:
+            return {"status": "error", "message": "Resolution cannot exceed 4096x4096"}
+
+        # Create or get temporary camera
+        obj_context = hou.node("/obj")
+        if obj_context is None:
+            return {"status": "error", "message": "Cannot find /obj context"}
+
+        camera_name = "_mcp_render_cam"
+        camera = obj_context.node(camera_name)
+        if camera is None:
+            camera = obj_context.createNode("cam", camera_name)
+
+        # Position camera
+        camera.parm("tx").set(camera_position[0])
+        camera.parm("ty").set(camera_position[1])
+        camera.parm("tz").set(camera_position[2])
+
+        # Set rotation or look at target
+        if look_at:
+            target_node = hou.node(look_at)
+            if target_node:
+                # Get target position (use origin if no transform parms)
+                try:
+                    target_pos = [
+                        target_node.parm("tx").eval() if target_node.parm("tx") else 0,
+                        target_node.parm("ty").eval() if target_node.parm("ty") else 0,
+                        target_node.parm("tz").eval() if target_node.parm("tz") else 0,
+                    ]
+                except Exception:
+                    target_pos = [0, 0, 0]
+
+                # Calculate look-at rotation
+                import math
+
+                dx = target_pos[0] - camera_position[0]
+                dy = target_pos[1] - camera_position[1]
+                dz = target_pos[2] - camera_position[2]
+
+                # Calculate rotation angles
+                dist_xz = math.sqrt(dx * dx + dz * dz)
+                rx = -math.degrees(math.atan2(dy, dist_xz))
+                ry = math.degrees(math.atan2(dx, -dz))
+
+                camera.parm("rx").set(rx)
+                camera.parm("ry").set(ry)
+                camera.parm("rz").set(0)
+        elif camera_rotation:
+            camera.parm("rx").set(camera_rotation[0])
+            camera.parm("ry").set(camera_rotation[1])
+            camera.parm("rz").set(camera_rotation[2])
+        else:
+            # Default: look at origin
+            import math
+
+            dx = 0 - camera_position[0]
+            dy = 0 - camera_position[1]
+            dz = 0 - camera_position[2]
+            dist_xz = math.sqrt(dx * dx + dz * dz)
+            rx = -math.degrees(math.atan2(dy, dist_xz)) if dist_xz > 0.001 else 0
+            ry = math.degrees(math.atan2(dx, -dz)) if abs(dz) > 0.001 or abs(dx) > 0.001 else 0
+            camera.parm("rx").set(rx)
+            camera.parm("ry").set(ry)
+            camera.parm("rz").set(0)
+
+        # Set resolution
+        camera.parm("resx").set(width)
+        camera.parm("resy").set(height)
+
+        # Create temp file for output
+        suffix = f".{output_format}"
+        temp_file = tempfile.NamedTemporaryFile(suffix=suffix, delete=False)
+        output_path = temp_file.name
+        temp_file.close()
+
+        try:
+            # Render using OpenGL (flipbook) or Karma
+            if renderer.lower() == "opengl":
+                # Use opengl render
+                # This requires using hou.SceneViewer or flipbook
+                # For headless operation, we'll use hou.opengl.render
+                try:
+                    # Try to use the opengl module for rendering
+                    gl = hou.opengl
+                    frame = hou.frame()
+
+                    # Create render options
+                    gl_opts = {
+                        "camera": camera.path(),
+                        "frame": frame,
+                        "width": width,
+                        "height": height,
+                        "output": output_path,
+                    }
+
+                    # Use hscript command for OpenGL render as fallback
+                    hou.hscript(
+                        f'opengl -c {camera.path()} -f {frame} -f {frame} -r {width} {height} "{output_path}"'
+                    )
+                except Exception as e:
+                    logger.warning(f"OpenGL render failed, trying alternative: {e}")
+                    # Alternative: Use mantra/karma with lower quality
+                    rop = obj_context.node("_mcp_render_rop")
+                    if rop is None:
+                        rop = hou.node("/out").createNode("opengl", "_mcp_render_rop")
+                    rop.parm("camera").set(camera.path())
+                    rop.parm("picture").set(output_path)
+                    rop.parm("res1").set(width)
+                    rop.parm("res2").set(height)
+                    rop.render()
+
+            elif renderer.lower() == "karma":
+                # Create Karma ROP if needed
+                out_context = hou.node("/out")
+                if out_context is None:
+                    return {"status": "error", "message": "Cannot find /out context"}
+
+                rop = out_context.node("_mcp_karma_rop")
+                if rop is None:
+                    rop = out_context.createNode("karma", "_mcp_karma_rop")
+
+                rop.parm("camera").set(camera.path())
+                rop.parm("picture").set(output_path)
+                rop.parm("resolutionx").set(width)
+                rop.parm("resolutiony").set(height)
+                rop.render()
+            else:
+                return {"status": "error", "message": f"Unknown renderer: {renderer}"}
+
+            # Read rendered image and encode as base64
+            if os.path.exists(output_path):
+                with open(output_path, "rb") as f:
+                    image_data = f.read()
+                image_base64 = base64.b64encode(image_data).decode("utf-8")
+
+                return {
+                    "status": "success",
+                    "image_base64": image_base64,
+                    "format": output_format,
+                    "resolution": [width, height],
+                    "camera_path": camera.path(),
+                    "renderer": renderer,
+                }
+            else:
+                return {"status": "error", "message": "Render completed but output file not found"}
+
+        finally:
+            # Clean up temp file
+            if os.path.exists(output_path):
+                try:
+                    os.remove(output_path)
+                except Exception:
+                    pass
+
+    except HoudiniConnectionError as e:
+        return {"status": "error", "message": str(e)}
+    except Exception as e:
+        logger.error(f"Error rendering viewport: {e}")
+        return {"status": "error", "message": str(e), "traceback": traceback.format_exc()}
+
+
+def find_error_nodes(
+    root_path: str = "/",
+    include_warnings: bool = True,
+    max_results: int = 100,
+    host: str = "localhost",
+    port: int = 18811,
+) -> Dict[str, Any]:
+    """
+    Find all nodes with cook errors or warnings in the scene.
+
+    Scans the entire node hierarchy starting from root_path and returns
+    all nodes that have errors or warnings. Essential for debugging
+    complex scenes where error locations are unknown.
+
+    Args:
+        root_path: Root path to start search from (default: "/" for entire scene)
+        include_warnings: Whether to include nodes with warnings (default: True)
+        max_results: Maximum number of results to return (default: 100)
+
+    Returns:
+        Dict with error/warning nodes including:
+        - error_nodes: List of nodes with errors
+        - warning_nodes: List of nodes with warnings (if include_warnings=True)
+        - total_scanned: Number of nodes scanned
+
+    Example:
+        find_error_nodes()  # Find all errors in scene
+        find_error_nodes("/obj/geo1")  # Find errors within a specific network
+        find_error_nodes(include_warnings=False)  # Only errors, no warnings
+    """
+    try:
+        hou = ensure_connected(host, port)
+
+        root = hou.node(root_path)
+        if root is None:
+            return {"status": "error", "message": f"Root node not found: {root_path}"}
+
+        error_nodes: List[Dict[str, Any]] = []
+        warning_nodes: List[Dict[str, Any]] = []
+        total_scanned = 0
+
+        def scan_recursive(node: Any) -> None:
+            nonlocal total_scanned
+
+            # Check if we've hit the limit
+            total_results = len(error_nodes) + (len(warning_nodes) if include_warnings else 0)
+            if total_results >= max_results:
+                return
+
+            try:
+                # Get all descendant nodes
+                all_children = node.allSubChildren()
+
+                for child in all_children:
+                    total_scanned += 1
+
+                    # Check limits again inside loop
+                    total_results = len(error_nodes) + (
+                        len(warning_nodes) if include_warnings else 0
+                    )
+                    if total_results >= max_results:
+                        break
+
+                    try:
+                        # Get errors
+                        errors = child.errors()
+                        if errors:
+                            error_nodes.append(
+                                {
+                                    "path": child.path(),
+                                    "name": child.name(),
+                                    "type": child.type().name(),
+                                    "errors": list(errors) if errors else [],
+                                }
+                            )
+
+                        # Get warnings if requested
+                        if include_warnings:
+                            warnings = child.warnings()
+                            if warnings:
+                                warning_nodes.append(
+                                    {
+                                        "path": child.path(),
+                                        "name": child.name(),
+                                        "type": child.type().name(),
+                                        "warnings": list(warnings) if warnings else [],
+                                    }
+                                )
+
+                    except Exception as e:
+                        logger.debug(f"Could not check errors on {child.path()}: {e}")
+
+            except Exception as e:
+                logger.warning(f"Could not scan children of {node.path()}: {e}")
+
+        # Also check the root node itself if it's not "/"
+        if root_path != "/":
+            total_scanned += 1
+            try:
+                errors = root.errors()
+                if errors:
+                    error_nodes.append(
+                        {
+                            "path": root.path(),
+                            "name": root.name(),
+                            "type": root.type().name(),
+                            "errors": list(errors) if errors else [],
+                        }
+                    )
+                if include_warnings:
+                    warnings = root.warnings()
+                    if warnings:
+                        warning_nodes.append(
+                            {
+                                "path": root.path(),
+                                "name": root.name(),
+                                "type": root.type().name(),
+                                "warnings": list(warnings) if warnings else [],
+                            }
+                        )
+            except Exception:
+                pass
+
+        scan_recursive(root)
+
+        result: Dict[str, Any] = {
+            "status": "success",
+            "root_path": root_path,
+            "error_nodes": error_nodes,
+            "error_count": len(error_nodes),
+            "total_scanned": total_scanned,
+        }
+
+        if include_warnings:
+            result["warning_nodes"] = warning_nodes
+            result["warning_count"] = len(warning_nodes)
+
+        # Add warning if results were limited
+        total_results = len(error_nodes) + (len(warning_nodes) if include_warnings else 0)
+        if total_results >= max_results:
+            result["warning"] = (
+                f"Results limited to {max_results}. Increase max_results to see more."
+            )
+
+        return _add_response_metadata(result)
+
+    except HoudiniConnectionError as e:
+        return {"status": "error", "message": str(e)}
+    except Exception as e:
+        logger.error(f"Error finding error nodes: {e}")
+        return {"status": "error", "message": str(e), "traceback": traceback.format_exc()}
+
+
 def connect_nodes(
     src_path: str,
     dst_path: str,

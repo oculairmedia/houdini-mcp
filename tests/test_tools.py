@@ -1548,6 +1548,79 @@ class TestFindNodes:
         assert len(names1 & names2) == 0  # No overlap
 
 
+class TestFindErrorNodes:
+    """Tests for find_error_nodes function."""
+
+    def test_find_error_nodes_with_errors(self, mock_connection):
+        """Test finding nodes with errors."""
+        from houdini_mcp.tools import find_error_nodes
+
+        # Create nodes with and without errors
+        good_node = MockHouNode(path="/obj/geo1", name="geo1", node_type="geo")
+        error_node = MockHouNode(path="/obj/geo2", name="geo2", node_type="geo")
+        error_node._errors = ["Cook error: missing input"]
+
+        obj_node = mock_connection.node("/obj")
+        obj_node._children = [good_node, error_node]
+
+        # Mock allSubChildren to return descendants
+        def mock_all_sub_children():
+            return [good_node, error_node]
+
+        obj_node.allSubChildren = mock_all_sub_children
+
+        result = find_error_nodes("/obj", include_warnings=False, host="localhost", port=18811)
+
+        assert result["status"] == "success"
+        assert result["error_count"] == 1
+        assert len(result["error_nodes"]) == 1
+        assert result["error_nodes"][0]["path"] == "/obj/geo2"
+        assert "Cook error" in result["error_nodes"][0]["errors"][0]
+
+    def test_find_error_nodes_with_warnings(self, mock_connection):
+        """Test finding nodes with warnings."""
+        from houdini_mcp.tools import find_error_nodes
+
+        # Create node with warnings
+        warn_node = MockHouNode(path="/obj/geo1", name="geo1", node_type="geo")
+        warn_node._warnings = ["Parameter 'tx' has expression error"]
+
+        obj_node = mock_connection.node("/obj")
+        obj_node._children = [warn_node]
+        obj_node.allSubChildren = lambda: [warn_node]
+
+        result = find_error_nodes("/obj", include_warnings=True, host="localhost", port=18811)
+
+        assert result["status"] == "success"
+        assert result["warning_count"] == 1
+        assert len(result["warning_nodes"]) == 1
+        assert "expression error" in result["warning_nodes"][0]["warnings"][0]
+
+    def test_find_error_nodes_no_errors(self, mock_connection):
+        """Test when no errors exist in scene."""
+        from houdini_mcp.tools import find_error_nodes
+
+        good_node = MockHouNode(path="/obj/geo1", name="geo1", node_type="geo")
+        obj_node = mock_connection.node("/obj")
+        obj_node._children = [good_node]
+        obj_node.allSubChildren = lambda: [good_node]
+
+        result = find_error_nodes("/obj", host="localhost", port=18811)
+
+        assert result["status"] == "success"
+        assert result["error_count"] == 0
+        assert result["error_nodes"] == []
+
+    def test_find_error_nodes_root_not_found(self, mock_connection):
+        """Test error when root not found."""
+        from houdini_mcp.tools import find_error_nodes
+
+        result = find_error_nodes("/nonexistent", host="localhost", port=18811)
+
+        assert result["status"] == "error"
+        assert "Root node not found" in result["message"]
+
+
 class TestGetNodeInfoExtended:
     """Tests for get_node_info with input_details (HDMCP-5)."""
 
