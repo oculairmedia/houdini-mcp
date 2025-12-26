@@ -2466,3 +2466,114 @@ class TestMaterialTools:
         assert result["status"] == "success"
         assert result["material_name"] == "principledshader1"
         assert result["material_type"] == "principledshader"
+
+
+class TestLayoutTools:
+    """Tests for node layout and organization tools."""
+
+    def test_layout_children_node_not_found(self, mock_connection):
+        """Test error when parent node doesn't exist."""
+        from houdini_mcp.tools import layout_children
+
+        result = layout_children(
+            node_path="/obj/nonexistent",
+            host="localhost",
+            port=18811,
+        )
+
+        assert result["status"] == "error"
+        assert "not found" in result["message"].lower()
+
+    def test_layout_children_empty(self, mock_connection):
+        """Test layout with no children."""
+        from houdini_mcp.tools import layout_children
+
+        geo = MockHouNode(path="/obj/geo1", name="geo1", node_type="geo")
+        geo._children = []
+        mock_connection.add_node(geo)
+
+        result = layout_children(
+            node_path="/obj/geo1",
+            host="localhost",
+            port=18811,
+        )
+
+        assert result["status"] == "success"
+        assert result["child_count"] == 0
+
+    def test_set_node_color_not_found(self, mock_connection):
+        """Test error when node doesn't exist."""
+        from houdini_mcp.tools import set_node_color
+
+        result = set_node_color(
+            node_path="/obj/nonexistent",
+            color=[1, 0, 0],
+            host="localhost",
+            port=18811,
+        )
+
+        assert result["status"] == "error"
+        assert "not found" in result["message"].lower()
+
+    def test_set_node_color_invalid_color(self, mock_connection):
+        """Test error with invalid color format."""
+        from houdini_mcp.tools import set_node_color
+
+        geo = MockHouNode(path="/obj/geo1", name="geo1", node_type="geo")
+        mock_connection.add_node(geo)
+
+        result = set_node_color(
+            node_path="/obj/geo1",
+            color=[1, 0],  # Only 2 values instead of 3
+            host="localhost",
+            port=18811,
+        )
+
+        assert result["status"] == "error"
+        assert "3 values" in result["message"]
+
+    def test_set_node_position_not_found(self, mock_connection):
+        """Test error when node doesn't exist."""
+        from houdini_mcp.tools import set_node_position
+
+        result = set_node_position(
+            node_path="/obj/nonexistent",
+            x=0,
+            y=0,
+            host="localhost",
+            port=18811,
+        )
+
+        assert result["status"] == "error"
+        assert "not found" in result["message"].lower()
+
+    def test_create_network_box_parent_not_found(self, mock_connection):
+        """Test error when parent doesn't exist."""
+        from houdini_mcp.tools import create_network_box
+
+        result = create_network_box(
+            parent_path="/obj/nonexistent",
+            node_paths=["/obj/nonexistent/sphere1"],
+            host="localhost",
+            port=18811,
+        )
+
+        assert result["status"] == "error"
+        assert "not found" in result["message"].lower()
+
+    def test_create_network_box_empty_nodes(self, mock_connection):
+        """Test error with no nodes specified."""
+        from houdini_mcp.tools import create_network_box
+
+        geo = MockHouNode(path="/obj/geo1", name="geo1", node_type="geo")
+        mock_connection.add_node(geo)
+
+        result = create_network_box(
+            parent_path="/obj/geo1",
+            node_paths=[],
+            host="localhost",
+            port=18811,
+        )
+
+        assert result["status"] == "error"
+        assert "no nodes" in result["message"].lower()

@@ -865,6 +865,103 @@ def get_material_info(material_path: str) -> Dict[str, Any]:
     return tools.get_material_info(material_path, HOUDINI_HOST, HOUDINI_PORT)
 
 
+@mcp.tool()
+def layout_children(
+    node_path: str,
+    horizontal_spacing: float = 2.0,
+    vertical_spacing: float = 1.0,
+) -> Dict[str, Any]:
+    """
+    Auto-layout child nodes in a network.
+
+    Calls Houdini's built-in layoutChildren() to automatically arrange
+    child nodes in a clean, organized layout.
+
+    Args:
+        node_path: Path to the parent node (e.g., "/obj/geo1")
+        horizontal_spacing: Horizontal spacing between nodes (default: 2.0)
+        vertical_spacing: Vertical spacing between nodes (default: 1.0)
+
+    Returns:
+        Dict with node_path and child_count
+
+    Examples:
+        layout_children("/obj/geo1")
+        layout_children("/obj/geo1", horizontal_spacing=3.0, vertical_spacing=2.0)
+    """
+    return tools.layout_children(
+        node_path, horizontal_spacing, vertical_spacing, HOUDINI_HOST, HOUDINI_PORT
+    )
+
+
+@mcp.tool()
+def set_node_color(node_path: str, color: List[float]) -> Dict[str, Any]:
+    """
+    Set the display color of a node in the network editor.
+
+    Args:
+        node_path: Path to the node (e.g., "/obj/geo1/sphere1")
+        color: RGB color values as [r, g, b] where each value is 0.0-1.0
+
+    Returns:
+        Dict with node_path and color
+
+    Examples:
+        set_node_color("/obj/geo1/sphere1", [1, 0, 0])  # Red
+        set_node_color("/obj/geo1/important", [1, 1, 0])  # Yellow
+    """
+    return tools.set_node_color(node_path, color, HOUDINI_HOST, HOUDINI_PORT)
+
+
+@mcp.tool()
+def set_node_position(node_path: str, x: float, y: float) -> Dict[str, Any]:
+    """
+    Set the position of a node in the network editor.
+
+    Args:
+        node_path: Path to the node (e.g., "/obj/geo1/sphere1")
+        x: X position in network editor units
+        y: Y position in network editor units
+
+    Returns:
+        Dict with node_path and position
+
+    Examples:
+        set_node_position("/obj/geo1/sphere1", 0, 0)
+        set_node_position("/obj/geo1/sphere1", 5.0, -3.0)
+    """
+    return tools.set_node_position(node_path, x, y, HOUDINI_HOST, HOUDINI_PORT)
+
+
+@mcp.tool()
+def create_network_box(
+    parent_path: str,
+    node_paths: List[str],
+    label: str = "",
+    color: Optional[List[float]] = None,
+) -> Dict[str, Any]:
+    """
+    Create a network box around a group of nodes.
+
+    Network boxes help organize and visually group related nodes.
+
+    Args:
+        parent_path: Path to the parent network (e.g., "/obj/geo1")
+        node_paths: List of node paths to include in the box
+        label: Optional label text for the network box
+        color: Optional RGB color [r, g, b] for the box (0.0-1.0 each)
+
+    Returns:
+        Dict with network_box_name, nodes_contained, label
+
+    Examples:
+        create_network_box("/obj/geo1", ["/obj/geo1/sphere1", "/obj/geo1/noise1"], "Deform")
+    """
+    return tools.create_network_box(
+        parent_path, node_paths, label, color, HOUDINI_HOST, HOUDINI_PORT
+    )
+
+
 def run_server(transport: str = "http", port: int = 3055) -> None:
     """Run the MCP server."""
     logger.info(f"Starting Houdini MCP Server on {transport}://0.0.0.0:{port}")
