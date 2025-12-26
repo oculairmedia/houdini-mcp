@@ -775,6 +775,96 @@ def get_houdini_help(
     return tools.get_houdini_help(help_type, item_name, timeout)
 
 
+@mcp.tool()
+def create_material(
+    material_type: str = "principledshader",
+    name: Optional[str] = None,
+    parent_path: str = "/mat",
+    parameters: Optional[Dict[str, Any]] = None,
+) -> Dict[str, Any]:
+    """
+    Create a new material/shader node.
+
+    Creates a material node in the specified context (typically /mat or /shop).
+    Supports common material types like Principled Shader, MaterialX, and classic shaders.
+
+    Args:
+        material_type: Type of material to create. Common types:
+            - "principledshader": Houdini's standard PBR shader (recommended)
+            - "mtlxstandard_surface": MaterialX Standard Surface
+            - "classicshader": Classic Mantra shader
+        name: Optional name for the material. Auto-generated if not provided.
+        parent_path: Parent context path (default: "/mat", alternative: "/shop")
+        parameters: Optional dict of parameter values to set on the material.
+            Common principledshader parameters:
+            - basecolor: [r, g, b] base color
+            - rough: float roughness (0-1)
+            - metallic: float metallic (0-1)
+
+    Returns:
+        Dict with material_path, material_name, material_type, parameters_set
+
+    Examples:
+        create_material()  # Create default principled shader
+        create_material("principledshader", "red_metal",
+                       parameters={"basecolor": [1, 0, 0], "metallic": 1.0})
+    """
+    return tools.create_material(
+        material_type, name, parent_path, parameters, HOUDINI_HOST, HOUDINI_PORT
+    )
+
+
+@mcp.tool()
+def assign_material(
+    geometry_path: str,
+    material_path: str,
+    group: str = "",
+) -> Dict[str, Any]:
+    """
+    Assign a material to geometry.
+
+    Creates a Material SOP inside the geometry node to apply the material,
+    or sets the shop_materialpath parameter directly.
+
+    Args:
+        geometry_path: Path to the geometry OBJ node (e.g., "/obj/geo1")
+        material_path: Path to the material node (e.g., "/mat/principledshader1")
+        group: Optional primitive group to apply material to (empty = all primitives)
+
+    Returns:
+        Dict with geometry_path, material_path, material_sop_path, method
+
+    Examples:
+        assign_material("/obj/geo1", "/mat/red_metal")
+        assign_material("/obj/geo1", "/mat/gold", group="top_faces")
+    """
+    return tools.assign_material(geometry_path, material_path, group, HOUDINI_HOST, HOUDINI_PORT)
+
+
+@mcp.tool()
+def get_material_info(material_path: str) -> Dict[str, Any]:
+    """
+    Get detailed information about a material node.
+
+    Returns material type, parameters, and texture references.
+
+    Args:
+        material_path: Path to the material node (e.g., "/mat/principledshader1")
+
+    Returns:
+        Dict with:
+        - material_path: Path to the material
+        - material_name: Name of the material
+        - material_type: Type of material (e.g., "principledshader")
+        - parameters: Dict of parameter names to current values
+        - textures: List of texture file references found
+
+    Examples:
+        get_material_info("/mat/principledshader1")
+    """
+    return tools.get_material_info(material_path, HOUDINI_HOST, HOUDINI_PORT)
+
+
 def run_server(transport: str = "http", port: int = 3055) -> None:
     """Run the MCP server."""
     logger.info(f"Starting Houdini MCP Server on {transport}://0.0.0.0:{port}")

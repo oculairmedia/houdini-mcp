@@ -2372,3 +2372,97 @@ class TestGetHoudiniHelp:
         for help_type in valid_types:
             result = get_houdini_help(help_type, "test_item")
             assert "Unsupported help type" not in result.get("message", "")
+
+
+class TestMaterialTools:
+    """Tests for material creation and assignment tools."""
+
+    def test_create_material_parent_not_found(self, mock_connection):
+        """Test error when parent context doesn't exist."""
+        from houdini_mcp.tools import create_material
+
+        # Remove /mat from the mock
+        mock_connection._nodes.pop("/mat", None)
+
+        result = create_material(
+            parent_path="/nonexistent",
+            host="localhost",
+            port=18811,
+        )
+
+        assert result["status"] == "error"
+        assert (
+            "not found" in result["message"].lower() or "cannot find" in result["message"].lower()
+        )
+
+    def test_assign_material_geometry_not_found(self, mock_connection):
+        """Test error when geometry node doesn't exist."""
+        from houdini_mcp.tools import assign_material
+
+        result = assign_material(
+            geometry_path="/obj/nonexistent_geo",
+            material_path="/mat/test_mat",
+            host="localhost",
+            port=18811,
+        )
+
+        assert result["status"] == "error"
+        assert "not found" in result["message"].lower()
+
+    def test_assign_material_material_not_found(self, mock_connection):
+        """Test error when material node doesn't exist."""
+        from houdini_mcp.tools import assign_material
+
+        # Create a geo node (geo type is recognized as Object in MockHouNode)
+        geo = MockHouNode(path="/obj/geo1", name="geo1", node_type="geo")
+        mock_connection.add_node(geo)
+
+        result = assign_material(
+            geometry_path="/obj/geo1",
+            material_path="/mat/nonexistent_mat",
+            host="localhost",
+            port=18811,
+        )
+
+        assert result["status"] == "error"
+        assert "not found" in result["message"].lower()
+
+    def test_get_material_info_not_found(self, mock_connection):
+        """Test error when material doesn't exist."""
+        from houdini_mcp.tools import get_material_info
+
+        result = get_material_info(
+            material_path="/mat/nonexistent",
+            host="localhost",
+            port=18811,
+        )
+
+        assert result["status"] == "error"
+        assert "not found" in result["message"].lower()
+
+    def test_get_material_info_success(self, mock_connection):
+        """Test successful material info retrieval."""
+        from houdini_mcp.tools import get_material_info
+
+        # Create a mock material node with params dict
+        mat = MockHouNode(
+            path="/mat/principledshader1",
+            name="principledshader1",
+            node_type="principledshader",
+            params={
+                "basecolor": [1.0, 0.0, 0.0],
+                "rough": 0.5,
+                "metallic": 0.0,
+            },
+        )
+        mock_connection.add_node(mat)
+
+        result = get_material_info(
+            material_path="/mat/principledshader1",
+            host="localhost",
+            port=18811,
+        )
+
+        assert result["status"] == "success"
+        assert result["material_name"] == "principledshader1"
+        assert result["material_type"] == "principledshader"
