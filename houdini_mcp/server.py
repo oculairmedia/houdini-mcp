@@ -722,6 +722,59 @@ def get_geo_summary(
     )
 
 
+@mcp.tool()
+def get_houdini_help(
+    help_type: str,
+    item_name: str,
+    timeout: int = 10,
+) -> Dict[str, Any]:
+    """
+    Fetch Houdini documentation from SideFX website.
+
+    Retrieves and parses help documentation for nodes, VEX functions,
+    and Python API. Helps AI understand Houdini concepts without
+    hallucinating parameter names or functionality.
+
+    NOTE: This tool does NOT require a Houdini connection - it fetches
+    documentation directly from the SideFX website.
+
+    Args:
+        help_type: Type of documentation to fetch. Supported types:
+            - "sop": SOP nodes (e.g., "box", "scatter", "vdbfrompolygons")
+            - "obj": Object nodes (e.g., "geo", "cam", "light")
+            - "dop": DOP nodes (e.g., "pyrosolver", "rbdpackedobject")
+            - "cop2": COP nodes (e.g., "mosaic", "blur")
+            - "chop": CHOP nodes (e.g., "math", "wave")
+            - "vop": VOP nodes (e.g., "bind", "noise")
+            - "lop": LOP/Solaris nodes (e.g., "usdimport", "materiallibrary")
+            - "top": TOP/PDG nodes (e.g., "pythonscript", "wedge")
+            - "rop": ROP nodes (e.g., "geometry", "karma")
+            - "vex_function": VEX functions (e.g., "noise", "lerp", "chramp")
+            - "python_hou": Python hou module classes (e.g., "Node", "Geometry")
+        item_name: Name of the node or function (e.g., "box", "noise", "Node")
+        timeout: Request timeout in seconds (default: 10)
+
+    Returns:
+        Dict with:
+        - status: "success" or "error"
+        - title: Documentation title
+        - url: Source URL
+        - description: Summary description
+        - parameters: List of parameters with names, descriptions, and options
+        - inputs: List of input connections (for nodes)
+        - outputs: List of output connections (for nodes)
+        - vex_info: Signature and return type (for VEX functions)
+        - methods: Class methods (for Python hou module)
+
+    Examples:
+        get_houdini_help("sop", "box")  # Get box SOP documentation
+        get_houdini_help("vex_function", "noise")  # Get VEX noise function docs
+        get_houdini_help("python_hou", "Node")  # Get hou.Node class docs
+        get_houdini_help("obj", "cam")  # Get camera object docs
+    """
+    return tools.get_houdini_help(help_type, item_name, timeout)
+
+
 def run_server(transport: str = "http", port: int = 3055) -> None:
     """Run the MCP server."""
     logger.info(f"Starting Houdini MCP Server on {transport}://0.0.0.0:{port}")

@@ -3,6 +3,9 @@ fastmcp>=0.1.0
 # We use rpyc directly - MUST be 5.x (6.x has protocol incompatibility with Houdini)
 rpyc>=5.0.0,<6.0.0
 python-dotenv>=1.0.0
+# For get_houdini_help web scraping
+requests>=2.28.0
+beautifulsoup4>=4.11.0
 
 # Development dependencies
 pytest>=7.0.0

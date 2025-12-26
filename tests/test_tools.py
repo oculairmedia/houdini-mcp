@@ -2148,3 +2148,227 @@ class TestReorderInputs:
         assert merge._inputs[0] == sphere
         assert merge._inputs[1] is None
         assert merge._inputs[2] == grid
+
+
+class TestGetHoudiniHelp:
+    """Tests for get_houdini_help web scraping function."""
+
+    def test_get_houdini_help_unsupported_type(self):
+        """Test error for unsupported help type."""
+        from houdini_mcp.tools import get_houdini_help
+
+        result = get_houdini_help("invalid_type", "box")
+
+        assert result["status"] == "error"
+        assert "Unsupported help type" in result["message"]
+        assert "sop" in result["message"]  # Should list valid types
+
+    @patch("requests.get")
+    def test_get_houdini_help_network_error(self, mock_get):
+        """Test handling of network connection errors."""
+        from houdini_mcp.tools import get_houdini_help
+        import requests
+
+        mock_get.side_effect = requests.exceptions.ConnectionError("Network unreachable")
+
+        result = get_houdini_help("sop", "box")
+
+        assert result["status"] == "error"
+        assert "Network error" in result["message"]
+
+    @patch("requests.get")
+    def test_get_houdini_help_404_error(self, mock_get):
+        """Test handling of 404 Not Found."""
+        from houdini_mcp.tools import get_houdini_help
+
+        mock_response = MagicMock()
+        mock_response.status_code = 404
+        mock_get.return_value = mock_response
+
+        result = get_houdini_help("sop", "nonexistent_node_xyz")
+
+        assert result["status"] == "error"
+        assert "not found" in result["message"].lower()
+        assert "url" in result
+
+    @patch("requests.get")
+    def test_get_houdini_help_server_error(self, mock_get):
+        """Test handling of server errors."""
+        from houdini_mcp.tools import get_houdini_help
+
+        mock_response = MagicMock()
+        mock_response.status_code = 500
+        mock_get.return_value = mock_response
+
+        result = get_houdini_help("sop", "box")
+
+        assert result["status"] == "error"
+        assert "500" in result["message"]
+
+    @patch("requests.get")
+    def test_get_houdini_help_timeout(self, mock_get):
+        """Test handling of request timeout."""
+        from houdini_mcp.tools import get_houdini_help
+        import requests
+
+        mock_get.side_effect = requests.exceptions.Timeout("Connection timed out")
+
+        result = get_houdini_help("sop", "box", timeout=5)
+
+        assert result["status"] == "error"
+        assert "timed out" in result["message"].lower()
+
+    @patch("requests.get")
+    def test_get_houdini_help_success_sop(self, mock_get):
+        """Test successful parsing of SOP node documentation."""
+        from houdini_mcp.tools import get_houdini_help
+
+        # Mock HTML response similar to real SideFX docs
+        mock_html = """
+        <html>
+        <body>
+            <h1 class="title">Box <span class="subtitle">SOP</span></h1>
+            <p class="summary">Creates a box or cube shape.</p>
+            <div class="parameter">
+                <p class="label">Size</p>
+                <div class="content">
+                    <p>The size of the box in each axis.</p>
+                </div>
+            </div>
+            <div class="parameter">
+                <p class="label">Center</p>
+                <div class="content">
+                    <p>The center position of the box.</p>
+                </div>
+            </div>
+            <div id="inputs-body">
+                <div class="def">
+                    <p class="label">Input 1</p>
+                    <div class="content">Optional geometry input</div>
+                </div>
+            </div>
+        </body>
+        </html>
+        """
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        mock_response.text = mock_html
+        mock_get.return_value = mock_response
+
+        result = get_houdini_help("sop", "box")
+
+        assert result["status"] == "success"
+        assert "Box" in result["title"]
+        assert "SOP" in result["title"]
+        assert "box" in result["description"].lower() or "cube" in result["description"].lower()
+        assert "parameters" in result
+        assert len(result["parameters"]) == 2
+        assert result["parameters"][0]["name"] == "Size"
+        assert "inputs" in result
+        assert len(result["inputs"]) == 1
+
+    @patch("requests.get")
+    def test_get_houdini_help_vex_function(self, mock_get):
+        """Test parsing of VEX function documentation."""
+        from houdini_mcp.tools import get_houdini_help
+
+        mock_html = """
+        <html>
+        <body>
+            <h1 class="title">noise <span class="subtitle">VEX function</span></h1>
+            <p class="summary">Generates noise using various algorithms.</p>
+            <div class="signature">float noise(vector pos)</div>
+            <div id="returns-body">Returns a float value between 0 and 1.</div>
+            <div class="parameter">
+                <p class="label">pos</p>
+                <div class="content">
+                    <p>The position to sample noise at.</p>
+                </div>
+            </div>
+        </body>
+        </html>
+        """
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        mock_response.text = mock_html
+        mock_get.return_value = mock_response
+
+        result = get_houdini_help("vex_function", "noise")
+
+        assert result["status"] == "success"
+        assert "noise" in result["title"].lower()
+        assert result["help_type"] == "vex_function"
+        assert "vex_info" in result
+        assert "float noise" in result["vex_info"]["signature"]
+
+    @patch("requests.get")
+    def test_get_houdini_help_parameter_with_options(self, mock_get):
+        """Test parsing parameters with menu options."""
+        from houdini_mcp.tools import get_houdini_help
+
+        mock_html = """
+        <html>
+        <body>
+            <h1 class="title">Copy to Points <span class="subtitle">SOP</span></h1>
+            <p class="summary">Copies geometry to points.</p>
+            <div class="parameter">
+                <p class="label">Pack and Instance</p>
+                <div class="content">
+                    <p>How to handle the copied geometry.</p>
+                    <div class="defs">
+                        <div class="def">
+                            <p class="label">Off</p>
+                            <div class="content">Copy geometry directly.</div>
+                        </div>
+                        <div class="def">
+                            <p class="label">Pack</p>
+                            <div class="content">Pack geometry into packed primitives.</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </body>
+        </html>
+        """
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        mock_response.text = mock_html
+        mock_get.return_value = mock_response
+
+        result = get_houdini_help("sop", "copytopoints")
+
+        assert result["status"] == "success"
+        assert len(result["parameters"]) == 1
+        param = result["parameters"][0]
+        assert "options" in param
+        assert len(param["options"]) == 2
+        assert param["options"][0]["name"] == "Off"
+        assert param["options"][1]["name"] == "Pack"
+
+    @patch("requests.get")
+    def test_get_houdini_help_url_mapping(self, mock_get):
+        """Test that URL mapping covers all documented types."""
+        from houdini_mcp.tools import get_houdini_help
+
+        mock_response = MagicMock()
+        mock_response.status_code = 404
+        mock_get.return_value = mock_response
+
+        # Just verify the function doesn't error on valid types
+        valid_types = [
+            "sop",
+            "obj",
+            "dop",
+            "cop2",
+            "chop",
+            "vop",
+            "lop",
+            "top",
+            "rop",
+            "vex_function",
+            "python_hou",
+        ]
+
+        for help_type in valid_types:
+            result = get_houdini_help(help_type, "test_item")
+            assert "Unsupported help type" not in result.get("message", "")
