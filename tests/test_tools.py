@@ -823,6 +823,33 @@ class TestGetNodeInfo:
         # Should have truncation indicator
         assert result["parameters"].get("_truncated") is True
 
+    def test_get_node_info_compact_mode(self, mock_connection):
+        """Test compact mode returns minimal info."""
+        from houdini_mcp.tools import get_node_info
+
+        child1 = MockHouNode(path="/obj/geo1/sphere1", name="sphere1", node_type="sphere")
+        geo1 = MockHouNode(
+            path="/obj/geo1",
+            name="geo1",
+            node_type="geo",
+            children=[child1],
+            params={"tx": 1.0, "ty": 2.0},
+        )
+        mock_connection.add_node(geo1)
+
+        result = get_node_info("/obj/geo1", compact=True, host="localhost", port=18811)
+
+        assert result["status"] == "success"
+        assert result["path"] == "/obj/geo1"
+        assert result["type"] == "geo"
+        # Compact mode should have counts instead of full data
+        assert "children_count" in result
+        assert result["children_count"] == 1
+        # Compact mode should NOT have full parameters
+        assert "parameters" not in result
+        assert "name" not in result  # Compact omits name
+        assert "type_description" not in result
+
 
 class TestDeleteNode:
     """Tests for the delete_node function."""
@@ -1346,6 +1373,34 @@ class TestListChildren:
         assert result["count"] == 0
         assert result["children"] == []
 
+    def test_list_children_compact_mode(self, mock_connection):
+        """Test compact mode returns minimal info without connections."""
+        from houdini_mcp.tools import list_children
+
+        # Create a parent with children
+        grid = MockHouNode(path="/obj/geo1/grid1", name="grid1", node_type="grid")
+        noise = MockHouNode(path="/obj/geo1/noise1", name="noise1", node_type="noise")
+        noise._inputs = [grid]
+        grid._outputs = [noise]
+
+        geo1 = MockHouNode(path="/obj/geo1", name="geo1", node_type="geo", children=[grid, noise])
+        mock_connection.add_node(geo1)
+
+        result = list_children(
+            "/obj/geo1", False, 10, 1000, compact=True, host="localhost", port=18811
+        )
+
+        assert result["status"] == "success"
+        assert result["count"] == 2
+
+        # In compact mode, only path/name/type should be present
+        for child in result["children"]:
+            assert "path" in child
+            assert "name" in child
+            assert "type" in child
+            assert "inputs" not in child
+            assert "outputs" not in child
+
 
 class TestFindNodes:
     """Tests for find_nodes function (HDMCP-5)."""
@@ -1463,6 +1518,34 @@ class TestFindNodes:
         assert result["status"] == "success"
         assert result["count"] == 0
         assert result["matches"] == []
+
+    def test_find_nodes_pagination_offset(self, mock_connection):
+        """Test find_nodes with offset for pagination."""
+        from houdini_mcp.tools import find_nodes
+
+        obj_node = mock_connection.node("/obj")
+        many_nodes = [
+            MockHouNode(path=f"/obj/node{i}", name=f"node{i}", node_type="null") for i in range(20)
+        ]
+        obj_node._children = many_nodes
+
+        # Get first page
+        result1 = find_nodes("/obj", "*", None, 10, offset=0, host="localhost", port=18811)
+        assert result1["status"] == "success"
+        assert result1["count"] == 10
+        # When max_results is hit, we have a warning about more results
+        assert "warning" in result1
+
+        # Get second page
+        result2 = find_nodes("/obj", "*", None, 10, offset=10, host="localhost", port=18811)
+        assert result2["status"] == "success"
+        assert result2["count"] == 10
+        assert result2.get("offset") == 10
+
+        # Verify different nodes returned
+        names1 = {m["name"] for m in result1["matches"]}
+        names2 = {m["name"] for m in result2["matches"]}
+        assert len(names1 & names2) == 0  # No overlap
 
 
 class TestGetNodeInfoExtended:

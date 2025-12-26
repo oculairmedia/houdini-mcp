@@ -159,6 +159,7 @@ def get_node_info(
     include_input_details: bool = True,
     include_errors: bool = False,
     force_cook: bool = False,
+    compact: bool = False,
 ) -> Dict[str, Any]:
     """
     Get detailed information about a node.
@@ -170,12 +171,14 @@ def get_node_info(
                               output index, and connection index details (default: True)
         include_errors: When True, include cook state and error/warning information (default: False)
         force_cook: When True, force cook the node before checking errors (default: False)
+        compact: When True, return minimal info (path, type, counts only) for reduced payload (default: False)
 
     Returns:
         Node information including type, children, connections, flags, and parameters.
         When include_input_details=True, also includes detailed input_connections array
         showing source nodes and output indices for each connection.
         When include_errors=True, also includes cook_info with cook_state, errors, and warnings.
+        When compact=True, returns only path, type, and child/input/output counts.
 
     Example:
         # Get node info with cook state and errors
@@ -183,6 +186,9 @@ def get_node_info(
 
         # Force cook and check for errors
         get_node_info("/obj/geo1/sphere1", include_errors=True, force_cook=True)
+
+        # Get minimal info for reduced payload
+        get_node_info("/obj/geo1/sphere1", compact=True)
     """
     return tools.get_node_info(
         node_path=node_path,
@@ -191,7 +197,7 @@ def get_node_info(
         include_input_details=include_input_details,
         include_errors=include_errors,
         force_cook=force_cook,
-        compact=False,
+        compact=compact,
         host=HOUDINI_HOST,
         port=HOUDINI_PORT,
     )
@@ -277,6 +283,7 @@ def list_node_types(
     category: Optional[str] = None,
     max_results: int = 100,
     name_filter: Optional[str] = None,
+    offset: int = 0,
 ) -> Dict[str, Any]:
     """
     List available Houdini node types.
@@ -285,9 +292,11 @@ def list_node_types(
         category: Optional category filter (e.g., "Object", "Sop", "Cop2", "Vop")
         max_results: Maximum number of results to return (default: 100, max: 500)
         name_filter: Optional substring filter for node type names (case-insensitive)
+        offset: Number of results to skip for pagination (default: 0)
 
     Returns:
         List of node types with their categories and descriptions.
+        Includes pagination info (has_more, next_offset) when applicable.
 
     Note:
         Large categories like "Sop" have thousands of node types.
@@ -297,13 +306,20 @@ def list_node_types(
         list_node_types(category="Object")  # List Object-level nodes
         list_node_types(category="Sop", name_filter="noise")  # Find noise SOPs
         list_node_types(category="Sop", name_filter="vdb", max_results=50)  # VDB SOPs
+        list_node_types(category="Sop", offset=100)  # Get next page of SOPs
     """
-    return tools.list_node_types(category, max_results, name_filter, HOUDINI_HOST, HOUDINI_PORT)
+    return tools.list_node_types(
+        category, max_results, name_filter, offset, HOUDINI_HOST, HOUDINI_PORT
+    )
 
 
 @mcp.tool()
 def list_children(
-    node_path: str, recursive: bool = False, max_depth: int = 10, max_nodes: int = 1000
+    node_path: str,
+    recursive: bool = False,
+    max_depth: int = 10,
+    max_nodes: int = 1000,
+    compact: bool = False,
 ) -> Dict[str, Any]:
     """
     List child nodes with paths, types, and current input connections.
@@ -318,20 +334,22 @@ def list_children(
         recursive: If True, recursively traverse all descendants (default: False)
         max_depth: Maximum recursion depth to prevent infinite loops (default: 10)
         max_nodes: Maximum number of nodes to return as safety limit (default: 1000)
+        compact: When True, return only path/name/type without connection details (default: False)
 
     Returns:
         Dict with children array containing node info including:
         - path: Full node path
         - name: Node name
         - type: Node type
-        - inputs: Array of input connections with source_node and output_index
-        - outputs: Array of output node paths
+        - inputs: Array of input connections with source_node and output_index (omitted if compact=True)
+        - outputs: Array of output node paths (omitted if compact=True)
 
     Example:
         list_children("/obj/geo1", recursive=True, max_depth=3)
+        list_children("/obj/geo1", compact=True)  # Minimal payload
     """
     return tools.list_children(
-        node_path, recursive, max_depth, max_nodes, HOUDINI_HOST, HOUDINI_PORT
+        node_path, recursive, max_depth, max_nodes, compact, HOUDINI_HOST, HOUDINI_PORT
     )
 
 
@@ -341,6 +359,7 @@ def find_nodes(
     pattern: str = "*",
     node_type: Optional[str] = None,
     max_results: int = 100,
+    offset: int = 0,
 ) -> Dict[str, Any]:
     """
     Find nodes by name pattern or type using glob/substring matching.
@@ -354,16 +373,21 @@ def find_nodes(
                 Examples: "noise*", "*grid*", "sphere"
         node_type: Optional node type filter (e.g., "sphere", "noise", "geo")
         max_results: Maximum number of results to return (default: 100)
+        offset: Number of results to skip for pagination (default: 0)
 
     Returns:
         Dict with matches array containing matching nodes with path, name, and type.
+        Includes pagination info (has_more, next_offset) when applicable.
 
     Examples:
         find_nodes("/obj", "noise*") - Find all nodes starting with "noise"
         find_nodes("/obj/geo1", "*", node_type="sphere") - Find all sphere nodes
         find_nodes("/obj", "grid") - Substring match for "grid"
+        find_nodes("/obj", "*", offset=100) - Get next page of results
     """
-    return tools.find_nodes(root_path, pattern, node_type, max_results, HOUDINI_HOST, HOUDINI_PORT)
+    return tools.find_nodes(
+        root_path, pattern, node_type, max_results, offset, HOUDINI_HOST, HOUDINI_PORT
+    )
 
 
 @mcp.tool()

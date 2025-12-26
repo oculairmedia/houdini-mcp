@@ -61,6 +61,58 @@ def _truncate_output(output: str, max_size: int) -> Tuple[str, bool]:
     return output, False
 
 
+# Response size thresholds (in bytes)
+RESPONSE_SIZE_WARNING_THRESHOLD = 100 * 1024  # 100KB - warn above this
+RESPONSE_SIZE_LARGE_THRESHOLD = 500 * 1024  # 500KB - considered large
+
+
+def _estimate_response_size(data: Any) -> int:
+    """
+    Estimate the JSON-serialized size of a response.
+
+    Args:
+        data: The data structure to estimate size for
+
+    Returns:
+        Estimated size in bytes
+    """
+    import json
+
+    try:
+        return len(json.dumps(data))
+    except (TypeError, ValueError):
+        # Fallback: rough estimate based on str representation
+        return len(str(data))
+
+
+def _add_response_metadata(result: Dict[str, Any], include_size: bool = True) -> Dict[str, Any]:
+    """
+    Add response metadata including size information.
+
+    Args:
+        result: The result dictionary to augment
+        include_size: Whether to include size metadata
+
+    Returns:
+        The result dictionary with added metadata
+    """
+    if not include_size:
+        return result
+
+    size_bytes = _estimate_response_size(result)
+    result["_response_size_bytes"] = size_bytes
+
+    if size_bytes > RESPONSE_SIZE_LARGE_THRESHOLD:
+        result["_response_size_warning"] = (
+            f"Large response ({size_bytes // 1024}KB). "
+            "Consider using compact=True, reducing max_results, or adding filters."
+        )
+    elif size_bytes > RESPONSE_SIZE_WARNING_THRESHOLD:
+        result["_response_size_note"] = f"Response size: {size_bytes // 1024}KB"
+
+    return result
+
+
 def _json_safe_hou_value(
     hou: Any, value: Any, *, max_depth: int = 10, _seen: Optional[Set[int]] = None
 ) -> Any:
@@ -1010,6 +1062,7 @@ def list_node_types(
     category: Optional[str] = None,
     max_results: int = 100,
     name_filter: Optional[str] = None,
+    offset: int = 0,
     host: str = "localhost",
     port: int = 18811,
 ) -> Dict[str, Any]:
@@ -1020,13 +1073,15 @@ def list_node_types(
         category: Optional category filter (e.g., "Object", "Sop", "Cop2", "Vop")
         max_results: Maximum number of results to return (default: 100, max: 500)
         name_filter: Optional substring filter for node type names (case-insensitive)
+        offset: Number of results to skip for pagination (default: 0)
 
     Returns:
-        Dict with list of node types.
+        Dict with list of node types and pagination info.
 
     Note:
         Large categories like "Sop" have thousands of node types.
         Use name_filter to narrow results (e.g., name_filter="noise" for noise-related SOPs).
+        Use offset for pagination through large result sets.
     """
     try:
         hou = ensure_connected(host, port)
@@ -1039,7 +1094,12 @@ def list_node_types(
 
         node_types: List[Dict[str, str]] = []
         total_scanned = 0
+        total_matched = 0
         categories_scanned: List[str] = []
+
+        # Validate offset
+        if offset < 0:
+            offset = 0
 
         # Get category info first (lightweight operation)
         all_categories = list(hou.nodeTypeCategories().items())
@@ -1066,6 +1126,13 @@ def list_node_types(
                         if name_filter.lower() not in type_name.lower():
                             continue
 
+                    # Count matched items for pagination info
+                    total_matched += 1
+
+                    # Skip items before offset
+                    if total_matched <= offset:
+                        continue
+
                     # Early termination check inside the loop
                     if len(node_types) >= max_results:
                         break
@@ -1090,15 +1157,26 @@ def list_node_types(
             "categories_scanned": categories_scanned,
         }
 
+        # Add pagination info
+        if offset > 0:
+            result["offset"] = offset
+
+        # Calculate if there are more results
+        has_more = total_matched > offset + len(node_types)
+        if has_more:
+            result["has_more"] = True
+            result["next_offset"] = offset + len(node_types)
+
         # Add warning if results were limited
         if len(node_types) >= max_results:
             result["warning"] = (
                 f"Results limited to {max_results}. "
-                f"Use name_filter to narrow results or increase max_results (max 500)."
+                f"Use offset={offset + max_results} for next page, or use name_filter to narrow results."
             )
             result["total_scanned"] = total_scanned
 
-        return result
+        # Add response size metadata for large responses
+        return _add_response_metadata(result)
 
     except HoudiniConnectionError as e:
         return {"status": "error", "message": str(e)}
@@ -1112,6 +1190,7 @@ def list_children(
     recursive: bool = False,
     max_depth: int = 10,
     max_nodes: int = 1000,
+    compact: bool = False,
     host: str = "localhost",
     port: int = 18811,
 ) -> Dict[str, Any]:
@@ -1126,9 +1205,11 @@ def list_children(
         recursive: If True, recursively traverse child nodes
         max_depth: Maximum recursion depth (prevents infinite loops)
         max_nodes: Maximum number of nodes to return (safety limit)
+        compact: If True, return only path/name/type without connection details
 
     Returns:
         Dict with child nodes including their connection information.
+        When compact=True, inputs/outputs are omitted for reduced payload size.
 
     Example return:
         {
@@ -1181,43 +1262,52 @@ def list_children(
                     if nodes_collected >= max_nodes:
                         break
 
-                    # Build input connection details
-                    input_connections: List[Dict[str, Any]] = []
-                    child_inputs = child.inputs()
+                    # Compact mode: only path, name, type
+                    if compact:
+                        child_info: Dict[str, Any] = {
+                            "path": child.path(),
+                            "name": child.name(),
+                            "type": child.type().name(),
+                        }
+                    else:
+                        # Full mode: include input/output connection details
+                        # Build input connection details
+                        input_connections: List[Dict[str, Any]] = []
+                        child_inputs = child.inputs()
 
-                    for idx, input_node in enumerate(child_inputs):
-                        if input_node is not None:
-                            # Try to get detailed connection info
-                            try:
-                                # inputConnectors gives us detailed info about each input
-                                connectors = child.inputConnectors()
-                                if idx < len(connectors):
-                                    connector = connectors[idx]
-                                    output_idx = connector[1] if len(connector) > 1 else 0
-                                else:
+                        for idx, input_node in enumerate(child_inputs):
+                            if input_node is not None:
+                                # Try to get detailed connection info
+                                try:
+                                    # inputConnectors gives us detailed info about each input
+                                    connectors = child.inputConnectors()
+                                    if idx < len(connectors):
+                                        connector = connectors[idx]
+                                        output_idx = connector[1] if len(connector) > 1 else 0
+                                    else:
+                                        output_idx = 0
+                                except Exception:
+                                    # Fallback if inputConnectors not available
                                     output_idx = 0
-                            except Exception:
-                                # Fallback if inputConnectors not available
-                                output_idx = 0
 
-                            input_connections.append(
-                                {
-                                    "index": idx,
-                                    "source_node": input_node.path(),
-                                    "output_index": output_idx,
-                                }
-                            )
+                                input_connections.append(
+                                    {
+                                        "index": idx,
+                                        "source_node": input_node.path(),
+                                        "output_index": output_idx,
+                                    }
+                                )
 
-                    # Build output list
-                    output_paths = [out.path() for out in child.outputs()]
+                        # Build output list
+                        output_paths = [out.path() for out in child.outputs()]
 
-                    child_info: Dict[str, Any] = {
-                        "path": child.path(),
-                        "name": child.name(),
-                        "type": child.type().name(),
-                        "inputs": input_connections,
-                        "outputs": output_paths,
-                    }
+                        child_info = {
+                            "path": child.path(),
+                            "name": child.name(),
+                            "type": child.type().name(),
+                            "inputs": input_connections,
+                            "outputs": output_paths,
+                        }
 
                     children_list.append(child_info)
                     nodes_collected += 1
@@ -1242,7 +1332,8 @@ def list_children(
         if nodes_collected >= max_nodes:
             result["warning"] = f"Result limited to {max_nodes} nodes"
 
-        return result
+        # Add response size metadata for large responses
+        return _add_response_metadata(result)
 
     except HoudiniConnectionError as e:
         return {"status": "error", "message": str(e)}
@@ -1256,6 +1347,7 @@ def find_nodes(
     pattern: str = "*",
     node_type: Optional[str] = None,
     max_results: int = 100,
+    offset: int = 0,
     host: str = "localhost",
     port: int = 18811,
 ) -> Dict[str, Any]:
@@ -1267,13 +1359,16 @@ def find_nodes(
         pattern: Glob pattern or substring to match against node names (* for wildcard)
         node_type: Optional node type filter (e.g., "sphere", "noise", "geo")
         max_results: Maximum number of results to return
+        offset: Number of results to skip for pagination (default: 0)
 
     Returns:
         Dict with matching nodes and their types.
+        Includes pagination info (has_more, next_offset) when applicable.
 
     Example:
         find_nodes("/obj", "noise*", max_results=50)
         find_nodes("/obj/geo1", "*", node_type="sphere")
+        find_nodes("/obj", "*", offset=100)  # Get next page
     """
     try:
         hou = ensure_connected(host, port)
@@ -1285,8 +1380,14 @@ def find_nodes(
         import fnmatch
 
         matches: List[Dict[str, str]] = []
+        total_matched = 0
+
+        # Validate offset
+        if offset < 0:
+            offset = 0
 
         def search_recursive(node: Any) -> None:
+            nonlocal total_matched
             if len(matches) >= max_results:
                 return
 
@@ -1307,6 +1408,14 @@ def find_nodes(
                         type_match = child.type().name().lower() == node_type.lower()
 
                     if name_match and type_match:
+                        total_matched += 1
+
+                        # Skip items before offset
+                        if total_matched <= offset:
+                            # Still recurse into children
+                            search_recursive(child)
+                            continue
+
                         matches.append(
                             {
                                 "path": child.path(),
@@ -1334,10 +1443,23 @@ def find_nodes(
         if node_type:
             result["node_type_filter"] = node_type
 
-        if len(matches) >= max_results:
-            result["warning"] = f"Results limited to {max_results} nodes"
+        # Add pagination info
+        if offset > 0:
+            result["offset"] = offset
 
-        return result
+        # Calculate if there are more results
+        has_more = total_matched > offset + len(matches)
+        if has_more:
+            result["has_more"] = True
+            result["next_offset"] = offset + len(matches)
+
+        if len(matches) >= max_results:
+            result["warning"] = (
+                f"Results limited to {max_results} nodes. Use offset={offset + max_results} for next page."
+            )
+
+        # Add response size metadata for large responses
+        return _add_response_metadata(result)
 
     except HoudiniConnectionError as e:
         return {"status": "error", "message": str(e)}
@@ -1885,12 +2007,15 @@ def get_parameter_schema(
                 logger.warning(f"Failed to extract info for parameter {parm_template.name()}: {e}")
                 # Continue with next parameter
 
-        return {
+        result = {
             "status": "success",
             "node_path": node_path,
             "parameters": parameters,
             "count": len(parameters),
         }
+
+        # Add response size metadata for large responses
+        return _add_response_metadata(result)
 
     except HoudiniConnectionError as e:
         return {"status": "error", "message": str(e)}
@@ -2424,7 +2549,8 @@ def get_geo_summary(
 
             result["sample_points"] = sample_points
 
-        return result
+        # Add response size metadata for large responses
+        return _add_response_metadata(result)
 
     except HoudiniConnectionError as e:
         return {"status": "error", "message": str(e)}
