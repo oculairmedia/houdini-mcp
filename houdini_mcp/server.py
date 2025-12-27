@@ -5,6 +5,8 @@ import logging
 from typing import Any, Dict, List, Optional, Literal, Union
 
 from fastmcp import FastMCP
+from starlette.requests import Request
+from starlette.responses import JSONResponse
 
 from .connection import ensure_connected, is_connected, disconnect, get_connection_info, ping
 from . import tools
@@ -23,6 +25,24 @@ HOUDINI_PORT = int(os.getenv("HOUDINI_PORT", "18811"))
 
 # Create FastMCP instance
 mcp = FastMCP("Houdini MCP")
+
+
+# Health check endpoint
+@mcp.custom_route("/health", methods=["GET"])
+async def health_check(request: Request) -> JSONResponse:
+    """Health check endpoint for container orchestration."""
+    # Check if we can reach Houdini
+    houdini_reachable = ping(HOUDINI_HOST, HOUDINI_PORT)
+
+    return JSONResponse(
+        {
+            "status": "healthy",
+            "service": "houdini-mcp",
+            "houdini_host": HOUDINI_HOST,
+            "houdini_port": HOUDINI_PORT,
+            "houdini_reachable": houdini_reachable,
+        }
+    )
 
 
 @mcp.tool()
