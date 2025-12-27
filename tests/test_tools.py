@@ -2577,3 +2577,92 @@ class TestLayoutTools:
 
         assert result["status"] == "error"
         assert "no nodes" in result["message"].lower()
+
+
+class TestResponseSizeMetadata:
+    """Tests for response size warnings and metadata."""
+
+    def test_add_response_metadata_small_response(self):
+        """Test that small responses get size metadata added."""
+        from houdini_mcp.tools import _add_response_metadata
+
+        result = {"status": "success", "data": "small"}
+        augmented = _add_response_metadata(result)
+
+        assert "_response_size_bytes" in augmented
+        assert augmented["_response_size_bytes"] > 0
+        # Small response shouldn't have warnings
+        assert "_response_size_warning" not in augmented
+
+    def test_add_response_metadata_large_response(self):
+        """Test that large responses get warning metadata."""
+        from houdini_mcp.tools import _add_response_metadata, RESPONSE_SIZE_LARGE_THRESHOLD
+
+        # Create a response larger than the threshold
+        large_data = "x" * (RESPONSE_SIZE_LARGE_THRESHOLD + 1000)
+        result = {"status": "success", "data": large_data}
+        augmented = _add_response_metadata(result)
+
+        assert "_response_size_bytes" in augmented
+        assert "_response_size_warning" in augmented
+        assert "Large response" in augmented["_response_size_warning"]
+
+    def test_add_response_metadata_medium_response(self):
+        """Test that medium responses get a note but not a warning."""
+        from houdini_mcp.tools import (
+            _add_response_metadata,
+            RESPONSE_SIZE_WARNING_THRESHOLD,
+            RESPONSE_SIZE_LARGE_THRESHOLD,
+        )
+
+        # Create a response between warning and large thresholds
+        medium_size = (RESPONSE_SIZE_WARNING_THRESHOLD + RESPONSE_SIZE_LARGE_THRESHOLD) // 2
+        medium_data = "x" * medium_size
+        result = {"status": "success", "data": medium_data}
+        augmented = _add_response_metadata(result)
+
+        assert "_response_size_bytes" in augmented
+        assert "_response_size_note" in augmented
+        assert "_response_size_warning" not in augmented
+
+    def test_estimate_response_size(self):
+        """Test response size estimation."""
+        from houdini_mcp.tools import _estimate_response_size
+
+        # Empty dict
+        assert _estimate_response_size({}) == 2  # "{}"
+
+        # Simple dict
+        size = _estimate_response_size({"key": "value"})
+        assert size > 0
+
+        # List of items
+        size = _estimate_response_size([1, 2, 3, 4, 5])
+        assert size > 0
+
+    def test_list_children_includes_response_size(self, mock_connection):
+        """Test that list_children includes response size metadata."""
+        from houdini_mcp.tools import list_children
+
+        geo = MockHouNode(path="/obj/geo1", name="geo1", node_type="geo")
+        sphere = MockHouNode(path="/obj/geo1/sphere1", name="sphere1", node_type="sphere")
+        geo._children = [sphere]
+        mock_connection.add_node(geo)
+        mock_connection.add_node(sphere)
+
+        result = list_children("/obj/geo1", host="localhost", port=18811)
+
+        assert result["status"] == "success"
+        assert "_response_size_bytes" in result
+
+    def test_find_nodes_includes_response_size(self, mock_connection):
+        """Test that find_nodes includes response size metadata."""
+        from houdini_mcp.tools import find_nodes
+
+        geo = MockHouNode(path="/obj/geo1", name="geo1", node_type="geo")
+        mock_connection.add_node(geo)
+
+        result = find_nodes("/obj", "*", host="localhost", port=18811)
+
+        assert result["status"] == "success"
+        assert "_response_size_bytes" in result
