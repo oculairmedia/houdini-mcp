@@ -2666,3 +2666,86 @@ class TestResponseSizeMetadata:
 
         assert result["status"] == "success"
         assert "_response_size_bytes" in result
+
+
+class TestConnectionErrorHandling:
+    """Tests for graceful connection error handling."""
+
+    def test_handle_connection_error_timeout(self):
+        """Test that TimeoutError produces a helpful error response."""
+        from houdini_mcp.tools import _handle_connection_error
+
+        error = TimeoutError("Connection timed out")
+        result = _handle_connection_error(error, "render_viewport")
+
+        assert result["status"] == "error"
+        assert result["error_type"] == "connection_error"
+        assert result["exception"] == "TimeoutError"
+        assert "timed out" in result["message"]
+        assert "render_viewport" in result["message"]
+        assert result["recoverable"] is True
+
+    def test_handle_connection_error_eof(self):
+        """Test that EOFError produces a helpful error response."""
+        from houdini_mcp.tools import _handle_connection_error
+
+        error = EOFError("Connection closed")
+        result = _handle_connection_error(error, "get_scene_info")
+
+        assert result["status"] == "error"
+        assert result["error_type"] == "connection_error"
+        assert result["exception"] == "EOFError"
+        assert "closed unexpectedly" in result["message"]
+        assert result["recoverable"] is True
+
+    def test_handle_connection_error_broken_pipe(self):
+        """Test that BrokenPipeError produces a helpful error response."""
+        from houdini_mcp.tools import _handle_connection_error
+
+        error = BrokenPipeError("Broken pipe")
+        result = _handle_connection_error(error, "create_node")
+
+        assert result["status"] == "error"
+        assert result["error_type"] == "connection_error"
+        assert result["exception"] == "BrokenPipeError"
+        assert "lost" in result["message"]
+        assert result["recoverable"] is True
+
+    def test_handle_connection_error_generic_os_error(self):
+        """Test that generic OSError produces a helpful error response."""
+        from houdini_mcp.tools import _handle_connection_error
+
+        error = OSError("Network unreachable")
+        result = _handle_connection_error(error, "set_parameter")
+
+        assert result["status"] == "error"
+        assert result["error_type"] == "connection_error"
+        assert result["exception"] == "OSError"
+        assert result["recoverable"] is True
+
+    @patch("houdini_mcp.tools.ensure_connected")
+    def test_get_scene_info_handles_timeout(self, mock_ensure):
+        """Test that get_scene_info handles TimeoutError gracefully."""
+        from houdini_mcp.tools import get_scene_info
+
+        mock_ensure.side_effect = TimeoutError("Request timed out")
+
+        result = get_scene_info(host="localhost", port=18811)
+
+        assert result["status"] == "error"
+        assert result["error_type"] == "connection_error"
+        assert "timed out" in result["message"]
+        assert result["recoverable"] is True
+
+    @patch("houdini_mcp.tools.ensure_connected")
+    def test_create_node_handles_eof_error(self, mock_ensure):
+        """Test that create_node handles EOFError gracefully."""
+        from houdini_mcp.tools import create_node
+
+        mock_ensure.side_effect = EOFError("Connection closed")
+
+        result = create_node("geo", host="localhost", port=18811)
+
+        assert result["status"] == "error"
+        assert result["error_type"] == "connection_error"
+        assert result["recoverable"] is True

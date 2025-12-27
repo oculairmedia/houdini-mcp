@@ -8,10 +8,81 @@ import threading
 from typing import Any, Dict, List, Optional, Set, Tuple
 from io import StringIO
 from contextlib import redirect_stdout, redirect_stderr
+from functools import wraps
 
-from .connection import ensure_connected, is_connected, HoudiniConnectionError
+from .connection import ensure_connected, is_connected, HoudiniConnectionError, disconnect
 
 logger = logging.getLogger("houdini_mcp.tools")
+
+
+# RPyC and connection-related exceptions that indicate broken/timed-out connections
+# These should return graceful error responses, not crash the MCP server
+CONNECTION_ERRORS = (
+    EOFError,  # Connection closed unexpectedly
+    BrokenPipeError,  # Pipe broken
+    ConnectionResetError,  # Connection reset by peer
+    ConnectionRefusedError,  # Connection refused
+    ConnectionAbortedError,  # Connection aborted
+    TimeoutError,  # Operation timed out
+    OSError,  # Various OS-level connection errors
+)
+
+
+def _handle_connection_error(e: Exception, operation: str) -> Dict[str, Any]:
+    """
+    Handle connection-related errors gracefully.
+
+    Cleans up the broken connection and returns a proper error response.
+
+    Args:
+        e: The exception that occurred
+        operation: Name of the operation that failed
+
+    Returns:
+        Error response dict
+    """
+    error_type = type(e).__name__
+    error_msg = str(e)
+
+    # Clean up the broken connection so next call can reconnect
+    try:
+        disconnect()
+    except Exception:
+        pass
+
+    logger.error(f"Connection error during {operation}: {error_type}: {error_msg}")
+
+    # Provide helpful messages based on error type
+    if isinstance(e, TimeoutError):
+        message = (
+            f"Operation '{operation}' timed out. Houdini may be busy with a heavy computation. "
+            "The connection has been reset - subsequent calls will reconnect automatically."
+        )
+    elif isinstance(e, EOFError):
+        message = (
+            f"Connection to Houdini closed unexpectedly during '{operation}'. "
+            "Houdini may have crashed or the RPC server stopped. "
+            "The connection has been reset - subsequent calls will attempt to reconnect."
+        )
+    elif isinstance(e, (BrokenPipeError, ConnectionResetError)):
+        message = (
+            f"Connection to Houdini was lost during '{operation}'. "
+            "The connection has been reset - subsequent calls will reconnect automatically."
+        )
+    else:
+        message = (
+            f"Connection error during '{operation}': {error_type}: {error_msg}. "
+            "The connection has been reset - subsequent calls will reconnect automatically."
+        )
+
+    return {
+        "status": "error",
+        "error_type": "connection_error",
+        "exception": error_type,
+        "message": message,
+        "operation": operation,
+        "recoverable": True,
+    }
 
 
 # Dangerous code patterns for safety scanning
@@ -360,6 +431,8 @@ def get_scene_info(host: str = "localhost", port: int = 18811) -> Dict[str, Any]
         }
     except HoudiniConnectionError as e:
         return {"status": "error", "message": str(e)}
+    except CONNECTION_ERRORS as e:
+        return _handle_connection_error(e, "get_scene_info")
     except Exception as e:
         logger.error(f"Error getting scene info: {e}")
         return {"status": "error", "message": str(e), "traceback": traceback.format_exc()}
@@ -403,6 +476,8 @@ def create_node(
         }
     except HoudiniConnectionError as e:
         return {"status": "error", "message": str(e)}
+    except CONNECTION_ERRORS as e:
+        return _handle_connection_error(e, "creating_node")
     except Exception as e:
         logger.error(f"Error creating node: {e}")
         return {"status": "error", "message": str(e), "traceback": traceback.format_exc()}
@@ -580,6 +655,8 @@ def execute_code(
 
     except HoudiniConnectionError as e:
         return {"status": "error", "message": str(e)}
+    except CONNECTION_ERRORS as e:
+        return _handle_connection_error(e, "executing_code")
     except Exception as e:
         logger.error(f"Error executing code: {e}")
         return {"status": "error", "message": str(e), "traceback": traceback.format_exc()}
@@ -634,6 +711,8 @@ def set_parameter(
         }
     except HoudiniConnectionError as e:
         return {"status": "error", "message": str(e)}
+    except CONNECTION_ERRORS as e:
+        return _handle_connection_error(e, "setting_parameter")
     except Exception as e:
         logger.error(f"Error setting parameter: {e}")
         return {"status": "error", "message": str(e), "traceback": traceback.format_exc()}
@@ -870,6 +949,8 @@ def get_node_info(
         return info
     except HoudiniConnectionError as e:
         return {"status": "error", "message": str(e)}
+    except CONNECTION_ERRORS as e:
+        return _handle_connection_error(e, "getting_node_info")
     except Exception as e:
         logger.error(f"Error getting node info: {e}")
         return {"status": "error", "message": str(e), "traceback": traceback.format_exc()}
@@ -902,6 +983,8 @@ def delete_node(node_path: str, host: str = "localhost", port: int = 18811) -> D
         }
     except HoudiniConnectionError as e:
         return {"status": "error", "message": str(e)}
+    except CONNECTION_ERRORS as e:
+        return _handle_connection_error(e, "deleting_node")
     except Exception as e:
         logger.error(f"Error deleting node: {e}")
         return {"status": "error", "message": str(e), "traceback": traceback.format_exc()}
@@ -932,6 +1015,8 @@ def save_scene(
         return {"status": "success", "message": "Scene saved", "file_path": saved_path}
     except HoudiniConnectionError as e:
         return {"status": "error", "message": str(e)}
+    except CONNECTION_ERRORS as e:
+        return _handle_connection_error(e, "saving_scene")
     except Exception as e:
         logger.error(f"Error saving scene: {e}")
         return {"status": "error", "message": str(e), "traceback": traceback.format_exc()}
@@ -955,6 +1040,8 @@ def load_scene(file_path: str, host: str = "localhost", port: int = 18811) -> Di
         return {"status": "success", "message": "Scene loaded", "file_path": file_path}
     except HoudiniConnectionError as e:
         return {"status": "error", "message": str(e)}
+    except CONNECTION_ERRORS as e:
+        return _handle_connection_error(e, "loading_scene")
     except Exception as e:
         logger.error(f"Error loading scene: {e}")
         return {"status": "error", "message": str(e), "traceback": traceback.format_exc()}
@@ -975,6 +1062,8 @@ def new_scene(host: str = "localhost", port: int = 18811) -> Dict[str, Any]:
         return {"status": "success", "message": "New scene created"}
     except HoudiniConnectionError as e:
         return {"status": "error", "message": str(e)}
+    except CONNECTION_ERRORS as e:
+        return _handle_connection_error(e, "creating_new_scene")
     except Exception as e:
         logger.error(f"Error creating new scene: {e}")
         return {"status": "error", "message": str(e), "traceback": traceback.format_exc()}
@@ -1035,6 +1124,8 @@ def serialize_scene(
         return {"status": "success", "root": root_path, "structure": node_to_dict_recursive(root)}
     except HoudiniConnectionError as e:
         return {"status": "error", "message": str(e)}
+    except CONNECTION_ERRORS as e:
+        return _handle_connection_error(e, "serializing_scene")
     except Exception as e:
         logger.error(f"Error serializing scene: {e}")
         return {"status": "error", "message": str(e), "traceback": traceback.format_exc()}
@@ -1180,6 +1271,8 @@ def list_node_types(
 
     except HoudiniConnectionError as e:
         return {"status": "error", "message": str(e)}
+    except CONNECTION_ERRORS as e:
+        return _handle_connection_error(e, "listing_node_types")
     except Exception as e:
         logger.error(f"Error listing node types: {e}")
         return {"status": "error", "message": str(e), "traceback": traceback.format_exc()}
@@ -1337,6 +1430,8 @@ def list_children(
 
     except HoudiniConnectionError as e:
         return {"status": "error", "message": str(e)}
+    except CONNECTION_ERRORS as e:
+        return _handle_connection_error(e, "listing_children")
     except Exception as e:
         logger.error(f"Error listing children: {e}")
         return {"status": "error", "message": str(e), "traceback": traceback.format_exc()}
@@ -1463,6 +1558,8 @@ def find_nodes(
 
     except HoudiniConnectionError as e:
         return {"status": "error", "message": str(e)}
+    except CONNECTION_ERRORS as e:
+        return _handle_connection_error(e, "finding_nodes")
     except Exception as e:
         logger.error(f"Error finding nodes: {e}")
         return {"status": "error", "message": str(e), "traceback": traceback.format_exc()}
@@ -1757,6 +1854,8 @@ def render_viewport(
 
     except HoudiniConnectionError as e:
         return {"status": "error", "message": str(e)}
+    except CONNECTION_ERRORS as e:
+        return _handle_connection_error(e, "rendering_viewport")
     except Exception as e:
         logger.error(f"Error rendering viewport: {e}")
         return {"status": "error", "message": str(e), "traceback": traceback.format_exc()}
@@ -1910,6 +2009,8 @@ def find_error_nodes(
 
     except HoudiniConnectionError as e:
         return {"status": "error", "message": str(e)}
+    except CONNECTION_ERRORS as e:
+        return _handle_connection_error(e, "finding_error_nodes")
     except Exception as e:
         logger.error(f"Error finding error nodes: {e}")
         return {"status": "error", "message": str(e), "traceback": traceback.format_exc()}
@@ -1992,6 +2093,8 @@ def connect_nodes(
 
     except HoudiniConnectionError as e:
         return {"status": "error", "message": str(e)}
+    except CONNECTION_ERRORS as e:
+        return _handle_connection_error(e, "connecting_nodes")
     except Exception as e:
         logger.error(f"Error connecting nodes: {e}")
         return {"status": "error", "message": str(e), "traceback": traceback.format_exc()}
@@ -2057,6 +2160,8 @@ def disconnect_node_input(
 
     except HoudiniConnectionError as e:
         return {"status": "error", "message": str(e)}
+    except CONNECTION_ERRORS as e:
+        return _handle_connection_error(e, "disconnecting_node_input")
     except Exception as e:
         logger.error(f"Error disconnecting node input: {e}")
         return {"status": "error", "message": str(e), "traceback": traceback.format_exc()}
@@ -2146,6 +2251,8 @@ def set_node_flags(
 
     except HoudiniConnectionError as e:
         return {"status": "error", "message": str(e)}
+    except CONNECTION_ERRORS as e:
+        return _handle_connection_error(e, "setting_node_flags")
     except Exception as e:
         logger.error(f"Error setting node flags: {e}")
         return {"status": "error", "message": str(e), "traceback": traceback.format_exc()}
@@ -2253,6 +2360,8 @@ def reorder_inputs(
 
     except HoudiniConnectionError as e:
         return {"status": "error", "message": str(e)}
+    except CONNECTION_ERRORS as e:
+        return _handle_connection_error(e, "reordering_inputs")
     except Exception as e:
         logger.error(f"Error reordering inputs: {e}")
         return {"status": "error", "message": str(e), "traceback": traceback.format_exc()}
@@ -2466,6 +2575,8 @@ def get_parameter_schema(
 
     except HoudiniConnectionError as e:
         return {"status": "error", "message": str(e)}
+    except CONNECTION_ERRORS as e:
+        return _handle_connection_error(e, "getting_parameter_schema")
     except Exception as e:
         logger.error(f"Error getting parameter schema: {e}")
         return {"status": "error", "message": str(e), "traceback": traceback.format_exc()}
@@ -3001,6 +3112,8 @@ def get_geo_summary(
 
     except HoudiniConnectionError as e:
         return {"status": "error", "message": str(e)}
+    except CONNECTION_ERRORS as e:
+        return _handle_connection_error(e, "getting_geometry_summary")
     except Exception as e:
         logger.error(f"Error getting geometry summary: {e}")
         return {"status": "error", "message": str(e), "traceback": traceback.format_exc()}
@@ -3376,6 +3489,8 @@ def create_material(
 
     except HoudiniConnectionError as e:
         return {"status": "error", "message": str(e)}
+    except CONNECTION_ERRORS as e:
+        return _handle_connection_error(e, "creating_material")
     except Exception as e:
         logger.error(f"Error creating material: {e}")
         return {"status": "error", "message": str(e), "traceback": traceback.format_exc()}
@@ -3502,6 +3617,8 @@ def assign_material(
 
     except HoudiniConnectionError as e:
         return {"status": "error", "message": str(e)}
+    except CONNECTION_ERRORS as e:
+        return _handle_connection_error(e, "assigning_material")
     except Exception as e:
         logger.error(f"Error assigning material: {e}")
         return {"status": "error", "message": str(e), "traceback": traceback.format_exc()}
@@ -3629,6 +3746,8 @@ def get_material_info(
 
     except HoudiniConnectionError as e:
         return {"status": "error", "message": str(e)}
+    except CONNECTION_ERRORS as e:
+        return _handle_connection_error(e, "getting_material_info")
     except Exception as e:
         logger.error(f"Error getting material info: {e}")
         return {"status": "error", "message": str(e), "traceback": traceback.format_exc()}
@@ -3696,6 +3815,8 @@ def layout_children(
 
     except HoudiniConnectionError as e:
         return {"status": "error", "message": str(e)}
+    except CONNECTION_ERRORS as e:
+        return _handle_connection_error(e, "laying_out_children")
     except Exception as e:
         logger.error(f"Error laying out children: {e}")
         return {"status": "error", "message": str(e), "traceback": traceback.format_exc()}
@@ -3757,6 +3878,8 @@ def set_node_color(
 
     except HoudiniConnectionError as e:
         return {"status": "error", "message": str(e)}
+    except CONNECTION_ERRORS as e:
+        return _handle_connection_error(e, "setting_node_color")
     except Exception as e:
         logger.error(f"Error setting node color: {e}")
         return {"status": "error", "message": str(e), "traceback": traceback.format_exc()}
@@ -3806,6 +3929,8 @@ def set_node_position(
 
     except HoudiniConnectionError as e:
         return {"status": "error", "message": str(e)}
+    except CONNECTION_ERRORS as e:
+        return _handle_connection_error(e, "setting_node_position")
     except Exception as e:
         logger.error(f"Error setting node position: {e}")
         return {"status": "error", "message": str(e), "traceback": traceback.format_exc()}
@@ -3897,6 +4022,8 @@ def create_network_box(
 
     except HoudiniConnectionError as e:
         return {"status": "error", "message": str(e)}
+    except CONNECTION_ERRORS as e:
+        return _handle_connection_error(e, "creating_network_box")
     except Exception as e:
         logger.error(f"Error creating network box: {e}")
         return {"status": "error", "message": str(e), "traceback": traceback.format_exc()}
