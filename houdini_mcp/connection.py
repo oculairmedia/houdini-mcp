@@ -8,7 +8,10 @@ Note: We use rpyc.classic directly instead of hrpyc because:
 
 import logging
 import time
-from typing import Optional, Any, Tuple, Dict
+import threading
+import concurrent.futures
+from typing import Optional, Any, Tuple, Dict, Callable, TypeVar
+from functools import wraps
 
 import rpyc
 from rpyc.utils.classic import DEFAULT_SERVER_PORT
@@ -19,11 +22,15 @@ logger = logging.getLogger("houdini_mcp.connection")
 _connection: Optional[Any] = None
 _hou: Optional[Any] = None
 
+# Thread pool for controlled execution with timeouts
+_executor: Optional[concurrent.futures.ThreadPoolExecutor] = None
+
 # Connection configuration
 DEFAULT_MAX_RETRIES = 3
 DEFAULT_RETRY_DELAY = 1.0  # seconds
 DEFAULT_TIMEOUT = 10.0  # seconds
-DEFAULT_SYNC_TIMEOUT = 60.0  # timeout for individual RPC calls (seconds)
+DEFAULT_SYNC_TIMEOUT = 30.0  # timeout for individual RPC calls (seconds) - reduced from 60
+DEFAULT_OPERATION_TIMEOUT = 45.0  # max time for any single tool operation
 
 
 class HoudiniConnectionError(Exception):
@@ -251,4 +258,220 @@ def ping(host: str = "localhost", port: int = 18811, timeout: float = 5.0) -> bo
         return True
     except Exception as e:
         logger.debug(f"Ping failed: {e}")
+        return False
+
+
+class HoudiniOperationTimeout(Exception):
+    """Raised when a Houdini operation times out."""
+
+    pass
+
+
+class SafeExecutionResult:
+    """Result wrapper for safe_execute operations."""
+
+    def __init__(
+        self,
+        success: bool,
+        result: Any = None,
+        error: Optional[str] = None,
+        error_type: Optional[str] = None,
+        timed_out: bool = False,
+        connection_lost: bool = False,
+    ):
+        self.success = success
+        self.result = result
+        self.error = error
+        self.error_type = error_type
+        self.timed_out = timed_out
+        self.connection_lost = connection_lost
+
+    def to_error_dict(self, operation: str) -> Dict[str, Any]:
+        """Convert to standardized error response dict."""
+        if self.timed_out:
+            message = (
+                f"Operation '{operation}' timed out. Houdini may be processing heavy geometry. "
+                "Try with less data or simpler operations."
+            )
+        elif self.connection_lost:
+            message = (
+                f"Connection to Houdini was lost during '{operation}'. "
+                "The connection will be re-established on the next call."
+            )
+        else:
+            message = f"Operation '{operation}' failed: {self.error}"
+
+        return {
+            "status": "error",
+            "error_type": self.error_type or "operation_error",
+            "message": message,
+            "operation": operation,
+            "timed_out": self.timed_out,
+            "connection_lost": self.connection_lost,
+            "recoverable": True,
+        }
+
+
+def _get_executor() -> concurrent.futures.ThreadPoolExecutor:
+    """Get or create the thread pool executor."""
+    global _executor
+    if _executor is None:
+        _executor = concurrent.futures.ThreadPoolExecutor(
+            max_workers=4, thread_name_prefix="houdini_rpc"
+        )
+    return _executor
+
+
+def safe_execute(
+    func: Callable[..., Any],
+    *args: Any,
+    timeout: float = DEFAULT_OPERATION_TIMEOUT,
+    operation_name: str = "unknown",
+    **kwargs: Any,
+) -> SafeExecutionResult:
+    """
+    Execute a function with timeout protection and connection error handling.
+
+    This wraps any Houdini RPC operation to ensure:
+    1. It cannot hang indefinitely (controlled timeout)
+    2. Connection errors are caught and reported cleanly
+    3. The connection is cleaned up on failure
+
+    Args:
+        func: The function to execute
+        *args: Arguments to pass to the function
+        timeout: Maximum execution time in seconds
+        operation_name: Name of the operation for error messages
+        **kwargs: Keyword arguments to pass to the function
+
+    Returns:
+        SafeExecutionResult with success/failure info
+    """
+    global _connection, _hou
+
+    executor = _get_executor()
+
+    try:
+        future = executor.submit(func, *args, **kwargs)
+        result = future.result(timeout=timeout)
+        return SafeExecutionResult(success=True, result=result)
+
+    except concurrent.futures.TimeoutError:
+        logger.error(f"Operation '{operation_name}' timed out after {timeout}s")
+        # Cancel the future if possible (though RPyC calls may not be cancellable)
+        future.cancel()
+        # Clean up the potentially broken connection
+        _safe_disconnect()
+        return SafeExecutionResult(
+            success=False,
+            error=f"Timed out after {timeout} seconds",
+            error_type="timeout",
+            timed_out=True,
+        )
+
+    except (EOFError, BrokenPipeError, ConnectionResetError, ConnectionRefusedError, OSError) as e:
+        logger.error(f"Connection error during '{operation_name}': {type(e).__name__}: {e}")
+        _safe_disconnect()
+        return SafeExecutionResult(
+            success=False,
+            error=str(e),
+            error_type="connection_error",
+            connection_lost=True,
+        )
+
+    except Exception as e:
+        logger.error(f"Error during '{operation_name}': {type(e).__name__}: {e}")
+        # Check if this looks like a connection error
+        error_str = str(e).lower()
+        if any(
+            x in error_str for x in ["connection", "eof", "broken", "reset", "refused", "timeout"]
+        ):
+            _safe_disconnect()
+            return SafeExecutionResult(
+                success=False,
+                error=str(e),
+                error_type="connection_error",
+                connection_lost=True,
+            )
+        return SafeExecutionResult(
+            success=False,
+            error=str(e),
+            error_type=type(e).__name__,
+        )
+
+
+def _safe_disconnect() -> None:
+    """Safely disconnect without raising exceptions."""
+    global _connection, _hou
+    try:
+        if _connection is not None:
+            _connection.close()
+    except Exception as e:
+        logger.debug(f"Error during safe disconnect: {e}")
+    finally:
+        _connection = None
+        _hou = None
+
+
+def execute_with_timeout(
+    func: Callable[..., Any],
+    *args: Any,
+    timeout: float = DEFAULT_OPERATION_TIMEOUT,
+    **kwargs: Any,
+) -> Any:
+    """
+    Execute a function with a timeout, raising HoudiniOperationTimeout if exceeded.
+
+    Unlike safe_execute, this raises exceptions rather than returning a result object.
+    Use this for internal operations where you want to handle the exception yourself.
+
+    Args:
+        func: Function to execute
+        *args: Arguments to pass
+        timeout: Maximum execution time in seconds
+        **kwargs: Keyword arguments to pass
+
+    Returns:
+        The function result
+
+    Raises:
+        HoudiniOperationTimeout: If the operation times out
+        Various exceptions: If the operation fails for other reasons
+    """
+    executor = _get_executor()
+
+    try:
+        future = executor.submit(func, *args, **kwargs)
+        return future.result(timeout=timeout)
+    except concurrent.futures.TimeoutError:
+        future.cancel()
+        raise HoudiniOperationTimeout(f"Operation timed out after {timeout} seconds")
+
+
+def quick_health_check(host: str = "localhost", port: int = 18811, timeout: float = 5.0) -> bool:
+    """
+    Quick health check with strict timeout - use before heavy operations.
+
+    Args:
+        host: Houdini server hostname
+        port: Houdini RPC port
+        timeout: Maximum time to wait
+
+    Returns:
+        True if Houdini is responsive, False otherwise
+    """
+    if not is_connected():
+        return False
+
+    def _check():
+        try:
+            _hou.applicationVersion()
+            return True
+        except Exception:
+            return False
+
+    try:
+        result = execute_with_timeout(_check, timeout=timeout)
+        return result
+    except (HoudiniOperationTimeout, Exception):
         return False

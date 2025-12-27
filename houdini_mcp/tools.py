@@ -10,7 +10,15 @@ from io import StringIO
 from contextlib import redirect_stdout, redirect_stderr
 from functools import wraps
 
-from .connection import ensure_connected, is_connected, HoudiniConnectionError, disconnect
+from .connection import (
+    ensure_connected,
+    is_connected,
+    HoudiniConnectionError,
+    disconnect,
+    safe_execute,
+    quick_health_check,
+    DEFAULT_OPERATION_TIMEOUT,
+)
 
 logger = logging.getLogger("houdini_mcp.tools")
 
@@ -2781,6 +2789,9 @@ def get_geo_summary(
     bounding box, attributes, groups, and optionally sample points. Useful for
     agents to verify results after operations.
 
+    This function executes geometry analysis on the Houdini side to avoid
+    slow RPC iteration over large point/primitive counts.
+
     Args:
         node_path: Path to the SOP node (e.g., "/obj/geo1/sphere1")
         max_sample_points: Maximum number of sample points to return (default: 100, max: 10000)
@@ -2809,306 +2820,188 @@ def get_geo_summary(
         - Massive geometry (>1M points): Caps sampling with warning
         - No bounding box: Returns None for bbox fields
     """
+    # Validate max_sample_points
+    if max_sample_points < 0:
+        max_sample_points = 0
+    elif max_sample_points > 10000:
+        logger.warning(f"max_sample_points capped at 10000 (was {max_sample_points})")
+        max_sample_points = 10000
+
+    # Build Houdini-side code that does all the heavy lifting locally
+    # This avoids slow RPC iteration over geometry elements
+    geo_analysis_code = f"""
+import json
+
+node_path = {repr(node_path)}
+max_sample_points = {max_sample_points}
+include_attributes = {include_attributes}
+include_groups = {include_groups}
+
+result = {{"status": "success", "node_path": node_path}}
+
+# Get node
+node = hou.node(node_path)
+if node is None:
+    result = {{"status": "error", "message": f"Node not found: {{node_path}}"}}
+else:
+    # Check cook state
+    cook_state = "unknown"
     try:
-        hou = ensure_connected(host, port)
-
-        # Validate max_sample_points
-        if max_sample_points < 0:
-            max_sample_points = 0
-        elif max_sample_points > 10000:
-            logger.warning(f"max_sample_points capped at 10000 (was {max_sample_points})")
-            max_sample_points = 10000
-
-        # Get the node
-        node = hou.node(node_path)
-        if node is None:
-            return {"status": "error", "message": f"Node not found: {node_path}"}
-
-        # Check cook state using available methods (cookState not available in Houdini 20.5+)
-        try:
-            cook_state_map = {
-                "Cooked": "cooked",
-                "CookFailed": "error",
-                "Dirty": "dirty",
-                "Uncooked": "uncooked",
-            }
-
-            def get_cook_state(n):
-                """Get cook state using available methods."""
-                if hasattr(n, "cookState"):
-                    state_obj = n.cookState()
-                    state_name = state_obj.name() if hasattr(state_obj, "name") else str(state_obj)
-                    return cook_state_map.get(state_name, state_name.lower())
-                elif hasattr(n, "needsToCook"):
-                    return "dirty" if n.needsToCook() else "cooked"
-                return "unknown"
-
-            cook_state = get_cook_state(node)
-
-            # If not cooked, try to cook
-            if cook_state in ("dirty", "uncooked"):
-                logger.info(f"Node {node_path} is {cook_state}, attempting to cook")
+        if hasattr(node, "needsToCook"):
+            if node.needsToCook():
+                cook_state = "dirty"
                 node.cook(force=True)
-                cook_state = get_cook_state(node)
-        except Exception as e:
-            logger.warning(f"Could not determine cook state for {node_path}: {e}")
-            cook_state = "unknown"
+            cook_state = "cooked"
+    except:
+        pass
+    result["cook_state"] = cook_state
 
-        # Get geometry
-        try:
-            geo = node.geometry()
-            if geo is None:
-                return {
-                    "status": "error",
-                    "message": f"Node {node_path} has no geometry (not a SOP node or no output)",
-                }
-        except Exception as e:
-            return {
-                "status": "error",
-                "message": f"Failed to get geometry from {node_path}: {str(e)}",
-            }
+    # Get geometry
+    geo = None
+    try:
+        geo = node.geometry()
+    except:
+        pass
 
-        # Get point and primitive counts
-        try:
-            points_list = list(geo.points())
-            point_count = len(points_list)
-        except Exception:
-            points_list = []
-            point_count = 0
+    if geo is None:
+        result = {{"status": "error", "message": f"Node {{node_path}} has no geometry"}}
+    else:
+        # Counts - these are fast native calls
+        result["point_count"] = geo.intrinsicValue("pointcount")
+        result["primitive_count"] = geo.intrinsicValue("primitivecount")
+        result["vertex_count"] = geo.intrinsicValue("vertexcount")
 
-        try:
-            prims_list = list(geo.prims())
-            prim_count = len(prims_list)
-        except Exception:
-            prims_list = []
-            prim_count = 0
-
-        # Calculate total vertex count
-        vertex_count = 0
-        try:
-            for prim in prims_list:
-                try:
-                    vertex_count += prim.numVertices()
-                except Exception:
-                    pass
-        except Exception as e:
-            logger.warning(f"Error counting vertices: {e}")
-
-        # Build result dict
-        result: Dict[str, Any] = {
-            "status": "success",
-            "node_path": node_path,
-            "cook_state": cook_state,
-            "point_count": point_count,
-            "primitive_count": prim_count,
-            "vertex_count": vertex_count,
-        }
-
-        # Get bounding box
+        # Bounding box
         try:
             bbox = geo.boundingBox()
-            if bbox is not None:
-                min_vec = list(bbox.minvec())
-                max_vec = list(bbox.maxvec())
-                size_vec = list(bbox.sizevec())
-                center_vec = list(bbox.center())
-
-                result["bounding_box"] = {
-                    "min": min_vec,
-                    "max": max_vec,
-                    "size": size_vec,
-                    "center": center_vec,
-                }
-            else:
-                result["bounding_box"] = None
-        except Exception as e:
-            logger.warning(f"Could not get bounding box: {e}")
+            result["bounding_box"] = {{
+                "min": list(bbox.minvec()),
+                "max": list(bbox.maxvec()),
+                "size": list(bbox.sizevec()),
+                "center": list(bbox.center()),
+            }}
+        except:
             result["bounding_box"] = None
 
-        # Get attributes
+        # Attributes
         if include_attributes:
-            attributes: Dict[str, List[Dict[str, Any]]] = {
-                "point": [],
-                "primitive": [],
-                "vertex": [],
-                "detail": [],
-            }
-
-            try:
-                # Point attributes
-                for attrib in geo.pointAttribs():
-                    try:
-                        data_type = attrib.dataType()
-                        data_type_name = (
-                            data_type.name() if hasattr(data_type, "name") else str(data_type)
-                        )
-
-                        attributes["point"].append(
-                            {
-                                "name": attrib.name(),
-                                "type": data_type_name.lower(),
-                                "size": attrib.size(),
-                            }
-                        )
-                    except Exception as e:
-                        logger.debug(f"Error reading point attribute: {e}")
-            except Exception as e:
-                logger.warning(f"Error getting point attributes: {e}")
-
-            try:
-                # Primitive attributes
-                for attrib in geo.primAttribs():
-                    try:
-                        data_type = attrib.dataType()
-                        data_type_name = (
-                            data_type.name() if hasattr(data_type, "name") else str(data_type)
-                        )
-
-                        attributes["primitive"].append(
-                            {
-                                "name": attrib.name(),
-                                "type": data_type_name.lower(),
-                                "size": attrib.size(),
-                            }
-                        )
-                    except Exception as e:
-                        logger.debug(f"Error reading primitive attribute: {e}")
-            except Exception as e:
-                logger.warning(f"Error getting primitive attributes: {e}")
-
-            try:
-                # Vertex attributes
-                for attrib in geo.vertexAttribs():
-                    try:
-                        data_type = attrib.dataType()
-                        data_type_name = (
-                            data_type.name() if hasattr(data_type, "name") else str(data_type)
-                        )
-
-                        attributes["vertex"].append(
-                            {
-                                "name": attrib.name(),
-                                "type": data_type_name.lower(),
-                                "size": attrib.size(),
-                            }
-                        )
-                    except Exception as e:
-                        logger.debug(f"Error reading vertex attribute: {e}")
-            except Exception as e:
-                logger.warning(f"Error getting vertex attributes: {e}")
-
-            try:
-                # Detail (global) attributes
-                for attrib in geo.globalAttribs():
-                    try:
-                        data_type = attrib.dataType()
-                        data_type_name = (
-                            data_type.name() if hasattr(data_type, "name") else str(data_type)
-                        )
-
-                        attributes["detail"].append(
-                            {
-                                "name": attrib.name(),
-                                "type": data_type_name.lower(),
-                                "size": attrib.size(),
-                            }
-                        )
-                    except Exception as e:
-                        logger.debug(f"Error reading detail attribute: {e}")
-            except Exception as e:
-                logger.warning(f"Error getting detail attributes: {e}")
-
+            attributes = {{"point": [], "primitive": [], "vertex": [], "detail": []}}
+            
+            for attrib in geo.pointAttribs():
+                try:
+                    dt = attrib.dataType()
+                    dt_name = dt.name() if hasattr(dt, "name") else str(dt)
+                    attributes["point"].append({{"name": attrib.name(), "type": dt_name.lower(), "size": attrib.size()}})
+                except:
+                    pass
+                    
+            for attrib in geo.primAttribs():
+                try:
+                    dt = attrib.dataType()
+                    dt_name = dt.name() if hasattr(dt, "name") else str(dt)
+                    attributes["primitive"].append({{"name": attrib.name(), "type": dt_name.lower(), "size": attrib.size()}})
+                except:
+                    pass
+                    
+            for attrib in geo.vertexAttribs():
+                try:
+                    dt = attrib.dataType()
+                    dt_name = dt.name() if hasattr(dt, "name") else str(dt)
+                    attributes["vertex"].append({{"name": attrib.name(), "type": dt_name.lower(), "size": attrib.size()}})
+                except:
+                    pass
+                    
+            for attrib in geo.globalAttribs():
+                try:
+                    dt = attrib.dataType()
+                    dt_name = dt.name() if hasattr(dt, "name") else str(dt)
+                    attributes["detail"].append({{"name": attrib.name(), "type": dt_name.lower(), "size": attrib.size()}})
+                except:
+                    pass
+                    
             result["attributes"] = attributes
 
-        # Get groups
+        # Groups
         if include_groups:
-            groups: Dict[str, List[str]] = {"point": [], "primitive": []}
-
-            try:
-                for group in geo.pointGroups():
-                    try:
-                        groups["point"].append(group.name())
-                    except Exception as e:
-                        logger.debug(f"Error reading point group: {e}")
-            except Exception as e:
-                logger.warning(f"Error getting point groups: {e}")
-
-            try:
-                for group in geo.primGroups():
-                    try:
-                        groups["primitive"].append(group.name())
-                    except Exception as e:
-                        logger.debug(f"Error reading primitive group: {e}")
-            except Exception as e:
-                logger.warning(f"Error getting primitive groups: {e}")
-
+            groups = {{"point": [], "primitive": []}}
+            for g in geo.pointGroups():
+                try:
+                    groups["point"].append(g.name())
+                except:
+                    pass
+            for g in geo.primGroups():
+                try:
+                    groups["primitive"].append(g.name())
+                except:
+                    pass
             result["groups"] = groups
 
-        # Sample points
+        # Sample points - use numpy-style array access if possible
+        point_count = result["point_count"]
         if max_sample_points > 0 and point_count > 0:
-            # Check for massive geometry and add warning
             if point_count > 1000000:
-                result["warning"] = (
-                    f"Geometry has {point_count} points (>1M). Sampling limited to {max_sample_points} points."
-                )
-
-            sample_points: List[Dict[str, Any]] = []
+                result["warning"] = f"Geometry has {{point_count}} points (>1M). Sampling limited."
+            
             sample_count = min(max_sample_points, point_count)
-
-            try:
-                # Get list of point attribute names for sampling
-                point_attrib_names: List[str] = []
-                if include_attributes:
+            sample_points = []
+            
+            # Get point attribute names
+            point_attrib_names = [a.name() for a in geo.pointAttribs()]
+            
+            # Sample using efficient access
+            for i in range(sample_count):
+                pt = geo.point(i)
+                if pt is None:
+                    continue
+                point_data = {{"index": i}}
+                for aname in point_attrib_names:
                     try:
-                        for attrib in geo.pointAttribs():
-                            point_attrib_names.append(attrib.name())
-                    except Exception:
+                        val = pt.attribValue(aname)
+                        if val is not None:
+                            if isinstance(val, (tuple, list, hou.Vector2, hou.Vector3, hou.Vector4)):
+                                point_data[aname] = list(val)
+                            else:
+                                point_data[aname] = val
+                    except:
                         pass
-
-                # Sample first N points
-                for i, pt in enumerate(points_list):
-                    if i >= sample_count:
-                        break
-
-                    try:
-                        point_data: Dict[str, Any] = {"index": i}
-
-                        # Get position (P attribute)
-                        try:
-                            pos = pt.attribValue("P")
-                            if pos is not None:
-                                point_data["P"] = (
-                                    list(pos) if isinstance(pos, (tuple, list)) else pos
-                                )
-                        except Exception:
-                            pass
-
-                        # Get other attributes
-                        for attrib_name in point_attrib_names:
-                            if attrib_name == "P":
-                                continue  # Already got P
-                            try:
-                                value = pt.attribValue(attrib_name)
-                                if value is not None:
-                                    # Convert tuples/vectors to lists for JSON serialization
-                                    if isinstance(value, (tuple, list)):
-                                        point_data[attrib_name] = list(value)
-                                    else:
-                                        point_data[attrib_name] = value
-                            except Exception:
-                                pass
-
-                        sample_points.append(point_data)
-
-                    except Exception as e:
-                        logger.debug(f"Error sampling point {i}: {e}")
-            except Exception as e:
-                logger.warning(f"Error sampling points: {e}")
-
+                sample_points.append(point_data)
+            
             result["sample_points"] = sample_points
 
-        # Add response size metadata for large responses
-        return _add_response_metadata(result)
+# Return JSON string
+print(json.dumps(result))
+"""
+
+    try:
+        # Use execute_code to run the analysis on Houdini side
+        exec_result = execute_code(
+            code=geo_analysis_code,
+            capture_diff=False,
+            max_stdout_size=500000,  # Allow larger output for geo data
+            timeout=30,
+            host=host,
+            port=port,
+        )
+
+        if exec_result.get("status") == "error":
+            return exec_result
+
+        # Parse the JSON output from stdout
+        stdout = exec_result.get("stdout", "").strip()
+        if not stdout:
+            return {"status": "error", "message": "No output from geometry analysis"}
+
+        import json
+
+        try:
+            result = json.loads(stdout)
+            return _add_response_metadata(result)
+        except json.JSONDecodeError as e:
+            return {
+                "status": "error",
+                "message": f"Failed to parse geometry data: {e}",
+                "raw_output": stdout[:500],
+            }
 
     except HoudiniConnectionError as e:
         return {"status": "error", "message": str(e)}
