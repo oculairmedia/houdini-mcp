@@ -53,6 +53,11 @@ __all__ = [
     "_serialize_scene_state",
     "_get_scene_diff",
     "_flatten_parm_templates",
+    # Parallel execution utilities
+    "SEMAPHORE_LIMIT",
+    "semaphore_gather",
+    "batch_items",
+    "run_in_executor",
     # Exceptions
     "ExecutionTimeoutError",
     # Logging
@@ -571,3 +576,104 @@ def _flatten_parm_templates(hou: Any, parm_templates: List[Any], max_depth: int 
         unique.append(template)
 
     return unique
+
+
+# =============================================================================
+# Parallel Execution Utilities
+# =============================================================================
+
+import asyncio
+import os
+from typing import Awaitable, TypeVar, Coroutine
+
+T = TypeVar("T")
+
+# Default semaphore limit for bounded parallel execution
+# Can be overridden via environment variable
+SEMAPHORE_LIMIT = int(os.getenv("HOUDINI_MCP_SEMAPHORE_LIMIT", "10"))
+
+
+async def semaphore_gather(
+    *coroutines: Coroutine[Any, Any, T],
+    max_concurrent: Optional[int] = None,
+    return_exceptions: bool = False,
+) -> List[Any]:
+    """
+    Execute coroutines with bounded concurrency using a semaphore.
+
+    Prevents overwhelming Houdini with too many concurrent operations.
+    This is critical for batch operations like creating many nodes or
+    setting many parameters simultaneously.
+
+    Args:
+        *coroutines: Variable number of coroutines to execute
+        max_concurrent: Maximum concurrent executions (default: SEMAPHORE_LIMIT)
+        return_exceptions: If True, exceptions are returned instead of raised
+
+    Returns:
+        List of results in the same order as input coroutines
+
+    Example:
+        # Create 100 nodes with max 10 concurrent operations
+        results = await semaphore_gather(
+            *[create_node_async(f"node_{i}") for i in range(100)],
+            max_concurrent=10
+        )
+    """
+    limit = max_concurrent or SEMAPHORE_LIMIT
+    semaphore = asyncio.Semaphore(limit)
+
+    async def _bounded_execute(coro: Coroutine[Any, Any, T]) -> T:
+        async with semaphore:
+            return await coro
+
+    results = await asyncio.gather(
+        *(_bounded_execute(c) for c in coroutines), return_exceptions=return_exceptions
+    )
+    return list(results)
+
+
+def batch_items(items: List[Any], batch_size: int) -> List[List[Any]]:
+    """
+    Split a list into batches of specified size.
+
+    Useful for breaking up large operations into manageable chunks
+    that can be processed sequentially or in parallel.
+
+    Args:
+        items: List of items to batch
+        batch_size: Maximum size of each batch
+
+    Returns:
+        List of batches (each batch is a list)
+
+    Example:
+        nodes = ["node1", "node2", "node3", "node4", "node5"]
+        batches = batch_items(nodes, 2)
+        # Returns: [["node1", "node2"], ["node3", "node4"], ["node5"]]
+    """
+    return [items[i : i + batch_size] for i in range(0, len(items), batch_size)]
+
+
+async def run_in_executor(func: Any, *args: Any, **kwargs: Any) -> Any:
+    """
+    Run a synchronous function in a thread pool executor.
+
+    Useful for wrapping blocking Houdini RPC calls in async context.
+
+    Args:
+        func: Synchronous function to execute
+        *args: Positional arguments for the function
+        **kwargs: Keyword arguments for the function
+
+    Returns:
+        Result of the function
+
+    Example:
+        result = await run_in_executor(sync_houdini_operation, param1, param2)
+    """
+    import functools
+
+    loop = asyncio.get_event_loop()
+    partial_func = functools.partial(func, *args, **kwargs)
+    return await loop.run_in_executor(None, partial_func)

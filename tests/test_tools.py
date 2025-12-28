@@ -1,5 +1,6 @@
 """Tests for the Houdini MCP tools."""
 
+import asyncio
 import pytest
 from unittest.mock import MagicMock, patch
 
@@ -2919,3 +2920,99 @@ class TestConnectionErrorHandling:
         assert result["status"] == "error"
         assert result["error_type"] == "connection_error"
         assert result["recoverable"] is True
+
+
+class TestParallelExecution:
+    """Tests for parallel execution utilities."""
+
+    @pytest.mark.asyncio
+    async def test_semaphore_gather_basic(self):
+        """Test basic semaphore_gather functionality."""
+        from houdini_mcp.tools._common import semaphore_gather
+
+        async def slow_task(n: int) -> int:
+            await asyncio.sleep(0.01)
+            return n * 2
+
+        results = await semaphore_gather(slow_task(1), slow_task(2), slow_task(3), max_concurrent=2)
+
+        assert results == [2, 4, 6]
+
+    @pytest.mark.asyncio
+    async def test_semaphore_gather_limits_concurrency(self):
+        """Test that semaphore limits concurrent executions."""
+        from houdini_mcp.tools._common import semaphore_gather
+        import time
+
+        concurrent_count = 0
+        max_concurrent_seen = 0
+
+        async def track_concurrent(n: int) -> int:
+            nonlocal concurrent_count, max_concurrent_seen
+            concurrent_count += 1
+            max_concurrent_seen = max(max_concurrent_seen, concurrent_count)
+            await asyncio.sleep(0.05)
+            concurrent_count -= 1
+            return n
+
+        # Run 10 tasks with max 3 concurrent
+        await semaphore_gather(*[track_concurrent(i) for i in range(10)], max_concurrent=3)
+
+        # Should never exceed 3 concurrent
+        assert max_concurrent_seen <= 3
+
+    @pytest.mark.asyncio
+    async def test_semaphore_gather_return_exceptions(self):
+        """Test semaphore_gather with return_exceptions=True."""
+        from houdini_mcp.tools._common import semaphore_gather
+
+        async def maybe_fail(n: int) -> int:
+            if n == 2:
+                raise ValueError("Task 2 failed")
+            return n
+
+        results = await semaphore_gather(
+            maybe_fail(1), maybe_fail(2), maybe_fail(3), return_exceptions=True
+        )
+
+        assert results[0] == 1
+        assert isinstance(results[1], ValueError)
+        assert results[2] == 3
+
+    def test_batch_items_basic(self):
+        """Test basic batch_items functionality."""
+        from houdini_mcp.tools._common import batch_items
+
+        items = [1, 2, 3, 4, 5]
+        batches = batch_items(items, 2)
+
+        assert batches == [[1, 2], [3, 4], [5]]
+
+    def test_batch_items_empty(self):
+        """Test batch_items with empty list."""
+        from houdini_mcp.tools._common import batch_items
+
+        batches = batch_items([], 3)
+        assert batches == []
+
+    def test_batch_items_larger_batch_size(self):
+        """Test batch_items when batch size exceeds list length."""
+        from houdini_mcp.tools._common import batch_items
+
+        items = [1, 2, 3]
+        batches = batch_items(items, 10)
+
+        assert batches == [[1, 2, 3]]
+
+    @pytest.mark.asyncio
+    async def test_run_in_executor(self):
+        """Test run_in_executor wraps sync functions."""
+        from houdini_mcp.tools._common import run_in_executor
+        import time
+
+        def slow_sync_function(x: int, y: int) -> int:
+            time.sleep(0.01)
+            return x + y
+
+        result = await run_in_executor(slow_sync_function, 5, 3)
+        assert result == 8
