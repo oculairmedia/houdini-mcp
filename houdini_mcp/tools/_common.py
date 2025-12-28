@@ -15,6 +15,7 @@ from typing import Any, Dict, List, Optional, Set, Tuple
 from ..connection import (
     ensure_connected,
     is_connected,
+    get_connection,
     HoudiniConnectionError,
     disconnect,
     safe_execute,
@@ -27,6 +28,7 @@ __all__ = [
     # Connection utilities
     "ensure_connected",
     "is_connected",
+    "get_connection",
     "HoudiniConnectionError",
     "disconnect",
     "safe_execute",

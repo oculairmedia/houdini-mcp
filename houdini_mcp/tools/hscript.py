@@ -33,17 +33,31 @@ class HscriptBatch:
     that minimize RPC round-trips.
     """
 
-    def __init__(self, hou: Any):
+    def __init__(self, hou: Any, conn: Optional[Any] = None):
         """
         Initialize with the hou module.
 
         Args:
             hou: The Houdini hou module (real or mock)
+            conn: Optional RPyC connection. If not provided, attempts to get
+                  from hou.____conn__ or via get_connection().
         """
         self.hou = hou
         self._has_hscript = hasattr(hou, "hscript")
         # RPyC connection for true remote execution (avoids per-attribute RPC)
-        self._conn = getattr(hou, "____conn__", None)
+        # Priority: explicit conn > hou.____conn__ > get_connection()
+        if conn is not None:
+            self._conn = conn
+        elif hasattr(hou, "____conn__"):
+            self._conn = hou.____conn__
+        else:
+            # Try to get connection from connection manager
+            try:
+                from ._common import get_connection
+
+                self._conn = get_connection()
+            except ImportError:
+                self._conn = None
 
     def is_available(self) -> bool:
         """Check if hscript commands are available."""
