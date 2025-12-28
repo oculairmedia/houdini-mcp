@@ -58,12 +58,36 @@ logger = logging.getLogger("houdini_mcp.tools.pane_screenshot")
 
 # All valid pane type names from hou.paneTabType
 VALID_PANE_TYPES: List[str] = [
-    "ApexEditor", "AssetBrowser", "BundleList", "ChannelEditor", "ChannelList",
-    "ChannelViewer", "CompositorViewer", "ContextViewer", "DataTree", "DetailsView",
-    "EngineSessionSync", "HandleList", "HelpBrowser", "IPRViewer", "LightLinker",
-    "MaterialPalette", "NetworkEditor", "OutputViewer", "Parm", "ParmSpreadsheet",
-    "PerformanceMonitor", "PythonPanel", "PythonShell", "RenderGallery", "SceneGraphTree",
-    "SceneViewer", "ShaderViewer", "TakeList", "Textport", "TreeView"
+    "ApexEditor",
+    "AssetBrowser",
+    "BundleList",
+    "ChannelEditor",
+    "ChannelList",
+    "ChannelViewer",
+    "CompositorViewer",
+    "ContextViewer",
+    "DataTree",
+    "DetailsView",
+    "EngineSessionSync",
+    "HandleList",
+    "HelpBrowser",
+    "IPRViewer",
+    "LightLinker",
+    "MaterialPalette",
+    "NetworkEditor",
+    "OutputViewer",
+    "Parm",
+    "ParmSpreadsheet",
+    "PerformanceMonitor",
+    "PythonPanel",
+    "PythonShell",
+    "RenderGallery",
+    "SceneGraphTree",
+    "SceneViewer",
+    "ShaderViewer",
+    "TakeList",
+    "Textport",
+    "TreeView",
 ]
 
 
@@ -80,13 +104,13 @@ def _get_qt_modules(hou: Any) -> Tuple[Any, Any, Any]:
     Raises:
         HoudiniConnectionError: If cannot get RPyC connection
     """
-    conn = object.__getattribute__(hou, '____conn__')
+    conn = object.__getattribute__(hou, "____conn__")
     if conn is None:
         raise HoudiniConnectionError("Cannot get RPyC connection from hou module")
 
-    QtWidgets = conn.modules['PySide2.QtWidgets']
-    QtCore = conn.modules['PySide2.QtCore']
-    QtGui = conn.modules['PySide2.QtGui']
+    QtWidgets = conn.modules["PySide2.QtWidgets"]
+    QtCore = conn.modules["PySide2.QtCore"]
+    QtGui = conn.modules["PySide2.QtGui"]
 
     return QtWidgets, QtCore, QtGui
 
@@ -102,9 +126,46 @@ def _get_available_pane_types(hou: Any) -> List[str]:
         List of pane type names (strings)
     """
     try:
-        return [t for t in dir(hou.paneTabType) if not t.startswith('_') and t != 'thisown']
+        return [t for t in dir(hou.paneTabType) if not t.startswith("_") and t != "thisown"]
     except Exception:
         return VALID_PANE_TYPES
+
+
+def _fit_pane_contents(pane: Any, pane_type_name: str) -> Optional[str]:
+    """
+    Fit/frame the contents of a pane to show all items.
+
+    Args:
+        pane: The pane tab object
+        pane_type_name: Name of the pane type
+
+    Returns:
+        None on success, error message string on failure
+    """
+    try:
+        if pane_type_name == "NetworkEditor":
+            # NetworkEditor has homeAll() to frame all nodes
+            # or homeToSelection() for selected nodes
+            if hasattr(pane, "homeAll"):
+                pane.homeAll()
+            else:
+                return "NetworkEditor does not support homeAll()"
+        elif pane_type_name == "SceneViewer":
+            # SceneViewer can frame geometry
+            if hasattr(pane, "homeAll"):
+                pane.homeAll()
+            elif hasattr(pane, "homeSelected"):
+                pane.homeSelected()
+        elif pane_type_name == "CompositorViewer":
+            if hasattr(pane, "homeAll"):
+                pane.homeAll()
+        elif pane_type_name == "ChannelEditor":
+            if hasattr(pane, "homeAll"):
+                pane.homeAll()
+        # Other pane types may not support fitting
+        return None
+    except Exception as e:
+        return f"Failed to fit contents: {e}"
 
 
 def _capture_pane_to_bytes(
@@ -112,6 +173,7 @@ def _capture_pane_to_bytes(
     pane_type_name: str,
     QtWidgets: Any,
     QtCore: Any,
+    fit_contents: bool = False,
 ) -> Dict[str, Any]:
     """
     Internal function to capture a pane screenshot and return raw bytes.
@@ -121,6 +183,7 @@ def _capture_pane_to_bytes(
         pane_type_name: Name of the pane type to capture
         QtWidgets: PySide2.QtWidgets module reference
         QtCore: PySide2.QtCore module reference
+        fit_contents: If True, fit/frame contents before capture (for supported panes)
 
     Returns:
         Dict with either success data (including raw_bytes) or error info
@@ -131,7 +194,7 @@ def _capture_pane_to_bytes(
         return {
             "status": "error",
             "message": f"Unknown pane type: {pane_type_name}",
-            "available_types": _get_available_pane_types(hou)
+            "available_types": _get_available_pane_types(hou),
         }
 
     # Find pane
@@ -140,8 +203,14 @@ def _capture_pane_to_bytes(
         return {
             "status": "error",
             "message": f"No pane of type {pane_type_name} found in the current Houdini layout. "
-                       "Make sure a pane of this type is visible in the UI."
+            "Make sure a pane of this type is visible in the UI.",
         }
+
+    # Fit contents if requested
+    if fit_contents:
+        fit_error = _fit_pane_contents(pane, pane_type_name)
+        if fit_error:
+            logger.warning(fit_error)
 
     # Get geometry
     screen_geom = pane.qtScreenGeometry()
@@ -155,7 +224,7 @@ def _capture_pane_to_bytes(
         return {
             "status": "error",
             "message": f"Pane {pane_type_name} has invalid geometry ({geom_width}x{geom_height}). "
-                       "It may be on an inactive desktop or minimized."
+            "It may be on an inactive desktop or minimized.",
         }
 
     # Get QApplication and screen
@@ -163,15 +232,12 @@ def _capture_pane_to_bytes(
     if app is None:
         return {
             "status": "error",
-            "message": "No QApplication instance found. Houdini UI may not be initialized."
+            "message": "No QApplication instance found. Houdini UI may not be initialized.",
         }
 
     screen = app.primaryScreen()
     if screen is None:
-        return {
-            "status": "error",
-            "message": "No primary screen found."
-        }
+        return {"status": "error", "message": "No primary screen found."}
 
     # Capture screen region
     pixmap = screen.grabWindow(0, geom_x, geom_y, geom_width, geom_height)
@@ -179,7 +245,7 @@ def _capture_pane_to_bytes(
     if pixmap.isNull():
         return {
             "status": "error",
-            "message": "Screen grab returned null pixmap. The screen region may not be accessible."
+            "message": "Screen grab returned null pixmap. The screen region may not be accessible.",
         }
 
     # Convert to PNG bytes
@@ -200,13 +266,8 @@ def _capture_pane_to_bytes(
         "status": "success",
         "pane_type": pane_type_name,
         "pane_name": pane_name,
-        "geometry": {
-            "x": geom_x,
-            "y": geom_y,
-            "width": geom_width,
-            "height": geom_height
-        },
-        "raw_bytes": raw_bytes
+        "geometry": {"x": geom_x, "y": geom_y, "width": geom_width, "height": geom_height},
+        "raw_bytes": raw_bytes,
     }
 
 
@@ -214,6 +275,7 @@ def _capture_pane_to_bytes(
 def capture_pane_screenshot(
     pane_type_name: str = "NetworkEditor",
     save_path: Optional[str] = None,
+    fit_contents: bool = False,
     host: str = "localhost",
     port: int = 18811,
 ) -> Dict[str, Any]:
@@ -237,6 +299,10 @@ def capture_pane_screenshot(
             - "PythonShell": Python shell
         save_path: Optional path to save PNG file. If provided, saves to disk
             instead of returning base64. Parent directories are created if needed.
+        fit_contents: If True, fit/frame all contents before capture (default: False).
+            Supported for: NetworkEditor (frames all nodes), SceneViewer (frames geometry),
+            CompositorViewer, ChannelEditor. When False, captures the current view
+            (useful for showing what you're actively working on).
         host: Houdini RPC server hostname (default: "localhost")
         port: Houdini RPC server port (default: 18811)
 
@@ -257,14 +323,11 @@ def capture_pane_screenshot(
         - available_types: List of available pane types (if pane type not found)
 
     Example:
-        # Capture the network editor
+        # Capture the network editor as-is (current view)
         result = capture_pane_screenshot("NetworkEditor")
-        if result["status"] == "success":
-            # Decode and save the image
-            import base64
-            image_data = base64.b64decode(result["image_base64"])
-            with open("network_editor.png", "wb") as f:
-                f.write(image_data)
+
+        # Capture with all nodes framed
+        result = capture_pane_screenshot("NetworkEditor", fit_contents=True)
 
         # Capture and save directly to disk
         result = capture_pane_screenshot("SceneViewer", save_path="/tmp/scene.png")
@@ -280,11 +343,11 @@ def capture_pane_screenshot(
         return {
             "status": "error",
             "message": f"Failed to access PySide2 modules: {e}. "
-                       "Ensure Houdini has PySide2 available."
+            "Ensure Houdini has PySide2 available.",
         }
 
     # Capture pane to bytes
-    result = _capture_pane_to_bytes(hou, pane_type_name, QtWidgets, QtCore)
+    result = _capture_pane_to_bytes(hou, pane_type_name, QtWidgets, QtCore, fit_contents)
 
     if result["status"] != "success":
         return result
@@ -301,7 +364,7 @@ def capture_pane_screenshot(
         path.write_bytes(raw_bytes)
         result["file_path"] = str(path.absolute())
     else:
-        result["image_base64"] = base64.b64encode(raw_bytes).decode('utf-8')
+        result["image_base64"] = base64.b64encode(raw_bytes).decode("utf-8")
 
     return result
 
@@ -358,7 +421,9 @@ def list_visible_panes(
             for pane_tab in desktop.paneTabs():
                 try:
                     pane_type = pane_tab.type()
-                    pane_type_name = pane_type.name() if hasattr(pane_type, 'name') else str(pane_type)
+                    pane_type_name = (
+                        pane_type.name() if hasattr(pane_type, "name") else str(pane_type)
+                    )
 
                     # Get geometry
                     geom = pane_tab.qtScreenGeometry()
@@ -368,25 +433,23 @@ def list_visible_panes(
                     # Check if visible (geometry > 0, not -1x-1)
                     is_visible = geom_width > 0 and geom_height > 0
 
-                    panes_info.append({
-                        "name": str(pane_tab.name()),
-                        "type": pane_type_name,
-                        "desktop": desktop_name,
-                        "is_current_desktop": is_current,
-                        "is_visible": is_visible,
-                        "geometry": {
-                            "width": geom_width,
-                            "height": geom_height
-                        } if is_visible else None,
-                        "capturable": is_visible and is_current
-                    })
+                    panes_info.append(
+                        {
+                            "name": str(pane_tab.name()),
+                            "type": pane_type_name,
+                            "desktop": desktop_name,
+                            "is_current_desktop": is_current,
+                            "is_visible": is_visible,
+                            "geometry": {"width": geom_width, "height": geom_height}
+                            if is_visible
+                            else None,
+                            "capturable": is_visible and is_current,
+                        }
+                    )
                 except Exception as e:
                     logger.debug(f"Failed to get pane info: {e}")
     except Exception as e:
-        return {
-            "status": "error",
-            "message": f"Failed to enumerate panes: {e}"
-        }
+        return {"status": "error", "message": f"Failed to enumerate panes: {e}"}
 
     # Sort: capturable first, then by type name
     panes_info.sort(key=lambda p: (not p["capturable"], p["type"]))
@@ -397,7 +460,7 @@ def list_visible_panes(
         "panes": panes_info,
         "capturable_count": sum(1 for p in panes_info if p["capturable"]),
         "total_count": len(panes_info),
-        "available_types": VALID_PANE_TYPES
+        "available_types": VALID_PANE_TYPES,
     }
 
 
@@ -453,7 +516,7 @@ def capture_multiple_panes(
         return {
             "status": "error",
             "message": f"Failed to access PySide2 modules: {e}. "
-                       "Ensure Houdini has PySide2 available."
+            "Ensure Houdini has PySide2 available.",
         }
 
     results: Dict[str, Dict[str, Any]] = {}
@@ -473,7 +536,7 @@ def capture_multiple_panes(
                 path.write_bytes(raw_bytes)
                 result["file_path"] = str(path.absolute())
             else:
-                result["image_base64"] = base64.b64encode(raw_bytes).decode('utf-8')
+                result["image_base64"] = base64.b64encode(raw_bytes).decode("utf-8")
 
             success_count += 1
 
@@ -483,5 +546,5 @@ def capture_multiple_panes(
         "status": "success" if success_count > 0 else "error",
         "success_count": success_count,
         "total_requested": len(pane_types),
-        "results": results
+        "results": results,
     }

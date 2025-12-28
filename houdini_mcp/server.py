@@ -1289,33 +1289,36 @@ def get_summarization_status() -> Dict[str, Any]:
     return tools.get_summarization_status()
 
 
-
 @mcp.tool()
 def capture_pane_screenshot(
     pane_type_name: str = "NetworkEditor",
     save_path: Optional[str] = None,
+    fit_contents: bool = False,
 ) -> Dict[str, Any]:
     """
     Capture a screenshot of a Houdini pane tab.
-    
+
     Uses Qt screen grab to capture the specified pane type. Returns
     base64-encoded PNG or saves to disk if save_path provided.
-    
+
     Args:
         pane_type_name: Pane type to capture (default: "NetworkEditor")
             Common types: NetworkEditor, SceneViewer, Parm, IPRViewer,
             CompositorViewer, ChannelEditor, PythonShell, Textport
         save_path: Optional path to save PNG file (returns base64 if not provided)
-        
+        fit_contents: If True, fit/frame all contents before capture (default: False).
+            When False, captures the current view (what the user is looking at).
+            Supported for: NetworkEditor, SceneViewer, CompositorViewer, ChannelEditor.
+
     Returns:
         Dict with status, geometry, and either image_base64 or file_path
-        
+
     Note:
         Panes on inactive desktops cannot be captured (invalid geometry).
         Use list_visible_panes() to find capturable panes.
     """
     return tools.capture_pane_screenshot(
-        pane_type_name, save_path, HOUDINI_HOST, HOUDINI_PORT
+        pane_type_name, save_path, fit_contents, HOUDINI_HOST, HOUDINI_PORT
     )
 
 
@@ -1323,10 +1326,10 @@ def capture_pane_screenshot(
 def list_visible_panes() -> Dict[str, Any]:
     """
     List all visible pane tabs in the current Houdini layout.
-    
+
     Returns information about all panes across all desktops, including
     which ones are capturable (visible on current desktop with valid geometry).
-    
+
     Returns:
         Dict with:
         - current_desktop: Name of active desktop
@@ -1345,15 +1348,15 @@ def capture_multiple_panes(
 ) -> Dict[str, Any]:
     """
     Capture screenshots of multiple pane types in one call.
-    
+
     More efficient than calling capture_pane_screenshot multiple times
     as it reuses Qt module references.
-    
+
     Args:
         pane_types: List of pane type names to capture
             e.g., ["NetworkEditor", "SceneViewer", "Parm"]
         save_dir: Optional directory to save PNGs (returns base64 if not provided)
-        
+
     Returns:
         Dict with:
         - status: "success" if any captures succeeded
@@ -1361,9 +1364,7 @@ def capture_multiple_panes(
         - total_requested: Number of pane types requested
         - results: Per-pane results with image_base64 or file_path
     """
-    return tools.capture_multiple_panes(
-        pane_types, save_dir, HOUDINI_HOST, HOUDINI_PORT
-    )
+    return tools.capture_multiple_panes(pane_types, save_dir, HOUDINI_HOST, HOUDINI_PORT)
 
 
 def run_server(transport: str = "http", port: int = 3055) -> None:
