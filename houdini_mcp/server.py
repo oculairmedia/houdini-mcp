@@ -420,6 +420,7 @@ def render_viewport(
     output_format: str = "png",
     auto_frame: bool = True,
     orthographic: bool = False,
+    karma_engine: str = "cpu",
 ) -> Dict[str, Any]:
     """
     Render the viewport and return the image as base64.
@@ -437,6 +438,7 @@ def render_viewport(
         output_format: Image format - "png", "jpg", or "exr"
         auto_frame: If True, automatically frame all visible geometry (default: True)
         orthographic: If True, use orthographic projection (default: False)
+        karma_engine: Karma render engine - "cpu" (quality) or "gpu" (fast XPU). Only used when renderer="karma"
 
     Returns:
         Dict with:
@@ -451,6 +453,7 @@ def render_viewport(
         render_viewport(camera_rotation=[0, 0, 0])  # Front view
         render_viewport(camera_rotation=[-90, 0, 0])  # Top view
         render_viewport(look_at="/obj/geo1", orthographic=True)
+        render_viewport(renderer="karma", karma_engine="gpu")  # Fast GPU render
     """
     return tools.render_viewport(
         camera_position,
@@ -461,6 +464,7 @@ def render_viewport(
         output_format,
         auto_frame,
         orthographic,
+        karma_engine,
         HOUDINI_HOST,
         HOUDINI_PORT,
     )
@@ -473,6 +477,7 @@ def render_quad_view(
     output_format: str = "png",
     orthographic: bool = True,
     include_perspective: bool = True,
+    karma_engine: str = "cpu",
 ) -> Dict[str, Any]:
     """
     Render 4 canonical views (Front, Left, Top, Perspective) in one call.
@@ -488,6 +493,7 @@ def render_quad_view(
         output_format: Image format - "png", "jpg", or "exr"
         orthographic: If True, use orthographic projection for Front/Left/Top views (default: True)
         include_perspective: If True, include perspective view; if False, only orthographic views (default: True)
+        karma_engine: Karma render engine - "cpu" (quality) or "gpu" (fast XPU). Only used when renderer="karma"
 
     Returns:
         Dict with:
@@ -508,6 +514,7 @@ def render_quad_view(
         render_quad_view(orthographic=False)  # All views with perspective
         render_quad_view(resolution=[1024, 1024], renderer="karma")  # Higher quality
         render_quad_view(include_perspective=False)  # Only 3 orthographic views
+        render_quad_view(renderer="karma", karma_engine="gpu")  # Fast GPU renders
     """
     return tools.render_quad_view(
         resolution,
@@ -515,6 +522,7 @@ def render_quad_view(
         output_format,
         orthographic,
         include_perspective,
+        karma_engine,
         HOUDINI_HOST,
         HOUDINI_PORT,
     )

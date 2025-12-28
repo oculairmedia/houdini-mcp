@@ -548,3 +548,60 @@ class TestRenderQuadViewTiming:
         if result["status"] == "success":
             assert "total_render_time_ms" in result
             assert isinstance(result["total_render_time_ms"], (int, float))
+
+
+class TestKarmaEngineParameter:
+    """Tests for karma_engine parameter in render functions."""
+
+    def test_render_viewport_accepts_karma_engine_cpu(self, mock_connection):
+        """Test render_viewport accepts karma_engine='cpu'."""
+        from houdini_mcp.tools import render_viewport
+
+        # Should not raise an error
+        result = render_viewport(renderer="karma", karma_engine="cpu", host="localhost", port=18811)
+        assert "status" in result
+
+    def test_render_viewport_accepts_karma_engine_gpu(self, mock_connection):
+        """Test render_viewport accepts karma_engine='gpu'."""
+        from houdini_mcp.tools import render_viewport
+
+        # Should not raise an error
+        result = render_viewport(renderer="karma", karma_engine="gpu", host="localhost", port=18811)
+        assert "status" in result
+
+    def test_render_quad_view_accepts_karma_engine_cpu(self, mock_connection):
+        """Test render_quad_view accepts karma_engine='cpu'."""
+        from houdini_mcp.tools import render_quad_view
+
+        result = render_quad_view(
+            renderer="karma", karma_engine="cpu", host="localhost", port=18811
+        )
+        assert "status" in result
+
+    def test_render_quad_view_accepts_karma_engine_gpu(self, mock_connection):
+        """Test render_quad_view accepts karma_engine='gpu'."""
+        from houdini_mcp.tools import render_quad_view
+
+        result = render_quad_view(
+            renderer="karma", karma_engine="gpu", host="localhost", port=18811
+        )
+        assert "status" in result
+
+    def test_karma_engine_ignored_for_opengl(self, mock_connection):
+        """Test karma_engine is ignored when renderer is opengl."""
+        from houdini_mcp.tools import render_viewport
+
+        # Should work fine - karma_engine is ignored for opengl
+        result = render_viewport(
+            renderer="opengl", karma_engine="gpu", host="localhost", port=18811
+        )
+        assert "status" in result
+
+    def test_karma_engine_default_is_cpu(self, mock_connection):
+        """Test karma_engine defaults to 'cpu'."""
+        from houdini_mcp.tools import render_viewport
+        import inspect
+
+        sig = inspect.signature(render_viewport)
+        default_value = sig.parameters["karma_engine"].default
+        assert default_value == "cpu"

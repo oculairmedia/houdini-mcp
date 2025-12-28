@@ -41,6 +41,7 @@ def render_viewport(
     output_format: str = "png",
     auto_frame: bool = True,
     orthographic: bool = False,
+    karma_engine: str = "cpu",
     host: str = "localhost",
     port: int = 18811,
 ) -> Dict[str, Any]:
@@ -59,6 +60,7 @@ def render_viewport(
         output_format: Image format - "png", "jpg", or "exr"
         auto_frame: If True, automatically frame all visible geometry (default: True)
         orthographic: If True, use orthographic projection (default: False)
+        karma_engine: Karma render engine - "cpu" (quality) or "gpu" (fast XPU). Only used when renderer="karma"
 
     Returns:
         Dict with:
@@ -74,6 +76,7 @@ def render_viewport(
         render_viewport(camera_rotation=[0, 0, 0])  # Front view
         render_viewport(camera_rotation=[-90, 0, 0])  # Top view
         render_viewport(look_at="/obj/geo1", orthographic=True)
+        render_viewport(renderer="karma", karma_engine="gpu")  # Fast GPU render
     """
     try:
         hou = ensure_connected(host, port)
@@ -285,6 +288,10 @@ def render_viewport(
                     rop.parm("resolutiony").set(height)
                 if rop.parm("trange"):
                     rop.parm("trange").set(0)
+                # Set Karma engine (CPU or GPU/XPU)
+                if rop.parm("engine"):
+                    engine_value = "xpu" if karma_engine.lower() == "gpu" else "cpu"
+                    rop.parm("engine").set(engine_value)
                 rop.render()
             else:
                 return {"status": "error", "message": f"Unknown renderer: {renderer}"}
@@ -332,6 +339,7 @@ def render_quad_view(
     output_format: str = "png",
     orthographic: bool = True,
     include_perspective: bool = True,
+    karma_engine: str = "cpu",
     host: str = "localhost",
     port: int = 18811,
 ) -> Dict[str, Any]:
@@ -349,6 +357,7 @@ def render_quad_view(
         output_format: Image format - "png", "jpg", or "exr"
         orthographic: If True, use orthographic projection for Front/Left/Top views (default: True)
         include_perspective: If True, include perspective view; if False, only orthographic views (default: True)
+        karma_engine: Karma render engine - "cpu" (quality) or "gpu" (fast XPU). Only used when renderer="karma"
 
     Returns:
         Dict with:
@@ -369,6 +378,7 @@ def render_quad_view(
         render_quad_view(orthographic=False)  # All views with perspective
         render_quad_view(resolution=[1024, 1024], renderer="karma")  # Higher quality
         render_quad_view(include_perspective=False)  # Only 3 orthographic views
+        render_quad_view(renderer="karma", karma_engine="gpu")  # Fast GPU renders
     """
     import time
 
@@ -578,6 +588,10 @@ def render_quad_view(
                             rop.parm("resolutiony").set(height)
                         if rop.parm("trange"):
                             rop.parm("trange").set(0)
+                        # Set Karma engine (CPU or GPU/XPU)
+                        if rop.parm("engine"):
+                            engine_value = "xpu" if karma_engine.lower() == "gpu" else "cpu"
+                            rop.parm("engine").set(engine_value)
                         rop.render()
 
                     # Read and encode image from REMOTE MACHINE
