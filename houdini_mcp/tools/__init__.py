@@ -20,6 +20,7 @@ Usage:
 from .help import get_houdini_help
 from .errors import find_error_nodes
 from .layout import layout_children, set_node_color, set_node_position, create_network_box
+from .materials import create_material, assign_material, get_material_info
 
 # Import remaining functions from legacy module
 from ..tools_legacy import (
@@ -49,10 +50,6 @@ from ..tools_legacy import (
     get_geo_summary,
     # Rendering
     render_viewport,
-    # Materials
-    create_material,
-    assign_material,
-    get_material_info,
     # Code execution
     execute_code,
     # Internal utilities (needed by some tests)
