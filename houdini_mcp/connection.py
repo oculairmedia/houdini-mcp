@@ -7,16 +7,20 @@ Note: We use rpyc.classic directly instead of hrpyc because:
 """
 
 import logging
+import random
 import time
 import threading
 import concurrent.futures
-from typing import Optional, Any, Tuple, Dict, Callable, TypeVar
+from typing import Optional, Any, Tuple, Dict, Callable, TypeVar, Type
 from functools import wraps
 
 import rpyc
 from rpyc.utils.classic import DEFAULT_SERVER_PORT
 
 logger = logging.getLogger("houdini_mcp.connection")
+
+# Type variable for generic retry decorator
+F = TypeVar("F", bound=Callable[..., Any])
 
 # Global connection state
 _connection: Optional[Any] = None
@@ -28,9 +32,21 @@ _executor: Optional[concurrent.futures.ThreadPoolExecutor] = None
 # Connection configuration
 DEFAULT_MAX_RETRIES = 3
 DEFAULT_RETRY_DELAY = 1.0  # seconds
+DEFAULT_MAX_DELAY = 30.0  # maximum delay cap
 DEFAULT_TIMEOUT = 10.0  # seconds
 DEFAULT_SYNC_TIMEOUT = 30.0  # timeout for individual RPC calls (seconds) - reduced from 60
 DEFAULT_OPERATION_TIMEOUT = 45.0  # max time for any single tool operation
+
+# Retryable exceptions for connection and RPC operations
+RETRYABLE_EXCEPTIONS = (
+    ConnectionError,
+    ConnectionRefusedError,
+    ConnectionResetError,
+    TimeoutError,
+    EOFError,
+    BrokenPipeError,
+    OSError,
+)
 
 
 class HoudiniConnectionError(Exception):
@@ -45,22 +61,135 @@ class HoudiniOperationError(Exception):
     pass
 
 
+def retry_with_backoff(
+    max_retries: int = DEFAULT_MAX_RETRIES,
+    base_delay: float = DEFAULT_RETRY_DELAY,
+    max_delay: float = DEFAULT_MAX_DELAY,
+    exponential_base: float = 2.0,
+    jitter: bool = True,
+    retryable_exceptions: Tuple[Type[Exception], ...] = RETRYABLE_EXCEPTIONS,
+) -> Callable[[F], F]:
+    """
+    Decorator that retries a function with exponential backoff and optional jitter.
+
+    This prevents thundering herd problems when multiple clients try to reconnect
+    simultaneously, and provides graceful degradation under load.
+
+    Args:
+        max_retries: Maximum number of retry attempts (default: 3)
+        base_delay: Initial delay in seconds (default: 1.0)
+        max_delay: Maximum delay cap in seconds (default: 30.0)
+        exponential_base: Base for exponential backoff (default: 2.0)
+        jitter: If True, add random jitter to prevent thundering herd (default: True)
+        retryable_exceptions: Tuple of exception types that trigger retry
+
+    Returns:
+        Decorated function that retries on specified exceptions
+
+    Example:
+        @retry_with_backoff(max_retries=5, jitter=True)
+        def connect_to_houdini():
+            ...
+    """
+
+    def decorator(func: F) -> F:
+        @wraps(func)
+        def wrapper(*args: Any, **kwargs: Any) -> Any:
+            last_exception: Optional[Exception] = None
+            current_delay = base_delay
+
+            for attempt in range(max_retries):
+                try:
+                    return func(*args, **kwargs)
+                except retryable_exceptions as e:
+                    last_exception = e
+
+                    if attempt < max_retries - 1:
+                        # Calculate delay with exponential backoff
+                        delay = min(current_delay, max_delay)
+
+                        # Add jitter to prevent thundering herd
+                        if jitter:
+                            # Add up to 10% random jitter
+                            delay += random.uniform(0, delay * 0.1)
+
+                        logger.warning(
+                            f"Attempt {attempt + 1}/{max_retries} failed: {e}. "
+                            f"Retrying in {delay:.2f}s..."
+                        )
+                        time.sleep(delay)
+                        current_delay *= exponential_base
+                    else:
+                        logger.error(f"All {max_retries} attempts failed. Last error: {e}")
+
+            # Re-raise the last exception after all retries exhausted
+            if last_exception:
+                raise last_exception
+            return None  # Should never reach here
+
+        return wrapper  # type: ignore
+
+    return decorator
+
+
+def _do_connect(
+    host: str,
+    port: int,
+    sync_timeout: float,
+) -> Tuple[Any, Any]:
+    """
+    Internal function to establish a single connection attempt.
+
+    This is wrapped by connect() with retry logic.
+    """
+    global _connection, _hou
+
+    logger.info(f"Connecting to Houdini at {host}:{port}")
+
+    # Use rpyc.classic.connect for simple SlaveService connection
+    # Note: rpyc.classic.connect() does not accept config parameter
+    _connection = rpyc.classic.connect(host, port)
+
+    # Set sync_request_timeout on the connection after establishing it
+    # This prevents hangs when Houdini is busy (e.g., cooking heavy geometry)
+    if hasattr(_connection, "_config"):
+        _connection._config["sync_request_timeout"] = sync_timeout
+
+    _hou = _connection.modules.hou
+
+    # Validate connection by checking Houdini version
+    version = _hou.applicationVersionString()
+    logger.info(f"Connected to Houdini version: {version}")
+
+    # Additional validation - ensure we can access common nodes
+    obj_node = _hou.node("/obj")
+    if obj_node is None:
+        logger.warning("Connected but /obj node not accessible - unusual state")
+
+    return _connection, _hou
+
+
 def connect(
     host: str = "localhost",
     port: int = 18811,
     max_retries: int = DEFAULT_MAX_RETRIES,
     retry_delay: float = DEFAULT_RETRY_DELAY,
     sync_timeout: float = DEFAULT_SYNC_TIMEOUT,
+    jitter: bool = True,
 ) -> Tuple[Any, Any]:
     """
     Connect to Houdini RPC server using rpyc with retry logic.
 
+    Uses exponential backoff with optional jitter to prevent thundering herd
+    problems when multiple clients reconnect simultaneously.
+
     Args:
         host: Houdini server hostname (default: localhost)
         port: Houdini RPC port (default: 18811)
-        max_retries: Maximum number of connection attempts
-        retry_delay: Initial delay between retries (doubles each attempt)
-        sync_timeout: Timeout for synchronous RPC calls in seconds (default: 60)
+        max_retries: Maximum number of connection attempts (default: 3)
+        retry_delay: Initial delay between retries in seconds (default: 1.0)
+        sync_timeout: Timeout for synchronous RPC calls in seconds (default: 30)
+        jitter: If True, add random jitter to delays (default: True)
 
     Returns:
         Tuple of (connection, hou module)
@@ -68,47 +197,34 @@ def connect(
     Raises:
         HoudiniConnectionError: If connection fails after all retries
     """
-    global _connection, _hou
-
     last_error: Optional[Exception] = None
     current_delay = retry_delay
 
     for attempt in range(max_retries):
         try:
-            logger.info(
-                f"Connecting to Houdini at {host}:{port} (attempt {attempt + 1}/{max_retries})"
-            )
+            return _do_connect(host, port, sync_timeout)
 
-            # Use rpyc.classic.connect for simple SlaveService connection
-            # Note: rpyc.classic.connect() does not accept config parameter
-            _connection = rpyc.classic.connect(host, port)
-
-            # Set sync_request_timeout on the connection after establishing it
-            # This prevents hangs when Houdini is busy (e.g., cooking heavy geometry)
-            if hasattr(_connection, "_config"):
-                _connection._config["sync_request_timeout"] = sync_timeout
-
-            _hou = _connection.modules.hou
-
-            # Validate connection by checking Houdini version
-            version = _hou.applicationVersionString()
-            logger.info(f"Connected to Houdini version: {version}")
-
-            # Additional validation - ensure we can access common nodes
-            obj_node = _hou.node("/obj")
-            if obj_node is None:
-                logger.warning("Connected but /obj node not accessible - unusual state")
-
-            return _connection, _hou
-
-        except Exception as e:
+        except RETRYABLE_EXCEPTIONS as e:
             last_error = e
-            logger.warning(f"Connection attempt {attempt + 1} failed: {e}")
+            logger.warning(f"Connection attempt {attempt + 1}/{max_retries} failed: {e}")
 
             if attempt < max_retries - 1:
-                logger.info(f"Retrying in {current_delay:.1f} seconds...")
-                time.sleep(current_delay)
+                # Calculate delay with cap
+                delay = min(current_delay, DEFAULT_MAX_DELAY)
+
+                # Add jitter to prevent thundering herd
+                if jitter:
+                    delay += random.uniform(0, delay * 0.1)
+
+                logger.info(f"Retrying in {delay:.2f} seconds...")
+                time.sleep(delay)
                 current_delay *= 2  # Exponential backoff
+
+        except Exception as e:
+            # Non-retryable exception - fail immediately
+            raise HoudiniConnectionError(
+                f"Non-retryable error connecting to Houdini at {host}:{port}: {e}"
+            ) from e
 
     raise HoudiniConnectionError(
         f"Failed to connect to Houdini at {host}:{port} after {max_retries} attempts. "

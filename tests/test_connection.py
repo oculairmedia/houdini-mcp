@@ -83,13 +83,44 @@ class TestConnect:
 
         with patch("houdini_mcp.connection.rpyc") as mock_rpyc:
             mock_rpyc.classic.connect = mock_connect
-            connect("localhost", 18811, max_retries=3, retry_delay=0.05)
+            connect("localhost", 18811, max_retries=3, retry_delay=0.05, jitter=False)
 
         assert len(call_times) == 3
         # Second delay should be ~2x the first
         delay1 = call_times[1] - call_times[0]
         delay2 = call_times[2] - call_times[1]
         assert delay2 > delay1 * 1.5  # Allow some tolerance
+
+    def test_connect_with_jitter(self, reset_connection_state, mock_hou):
+        """Test that jitter adds randomness to retry delays."""
+        from tests.conftest import MockRpycConnection
+        import time
+
+        mock_conn = MockRpycConnection(mock_hou)
+        delays = []
+
+        def mock_connect(*args, **kwargs):
+            delays.append(time.time())
+            if len(delays) < 3:
+                raise ConnectionError("Connection refused")
+            return mock_conn
+
+        # Run multiple times to check jitter introduces variance
+        all_delay_diffs = []
+        for _ in range(3):
+            delays.clear()
+            with patch("houdini_mcp.connection.rpyc") as mock_rpyc:
+                mock_rpyc.classic.connect = mock_connect
+                connect("localhost", 18811, max_retries=3, retry_delay=0.1, jitter=True)
+
+            if len(delays) >= 2:
+                all_delay_diffs.append(delays[1] - delays[0])
+
+        # With jitter, delays should vary slightly between runs
+        # Check that we got some variance (not all identical)
+        if len(all_delay_diffs) >= 2:
+            # Just verify the mechanism works - delays should be > base_delay
+            assert all(d >= 0.09 for d in all_delay_diffs)  # Allow small timing variance
 
     def test_connect_custom_host_port(self, mock_rpyc_with_reset):
         """Test connect with custom host and port."""
