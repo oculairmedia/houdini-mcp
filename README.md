@@ -88,7 +88,21 @@ The Houdini plugin runs the MCP server directly inside Houdini, using stdio tran
 
 ### Option 2: Docker (Remote mode)
 
-For production use or when Houdini runs on a different machine, use the Docker-based remote mode. This requires starting the hrpyc server in Houdini.
+For production use or when Houdini runs on a different machine, use the Docker-based remote mode. This connects to Houdini via hrpyc/RPyC.
+
+**Step 1: Start hrpyc in Houdini**
+
+If you have the Houdini MCP plugin installed:
+- Click "Start Remote" on the Houdini MCP shelf
+- Note the IP and port shown in the dialog
+
+Or manually in Houdini's Python Shell:
+```python
+import hrpyc
+hrpyc.start_server(port=18811)
+```
+
+**Step 2: Run the Docker MCP server**
 
 ```bash
 # Clone the repository
@@ -97,11 +111,29 @@ cd houdini-mcp
 
 # Copy and configure environment
 cp .env.example .env
-# Edit .env with your Houdini host IP
+# Edit .env with your Houdini host IP (from Step 1)
 
 # Run with Docker Compose
 docker compose up -d
 ```
+
+**Step 3: Configure your MCP client**
+
+```json
+{
+  "mcpServers": {
+    "houdini": {
+      "url": "http://localhost:3055"
+    }
+  }
+}
+```
+
+**Benefits of Remote Mode:**
+- Houdini can run on a different machine (e.g., render farm)
+- MCP server runs in Docker for easy deployment
+- Full tool set with advanced features
+- Server-side processing capabilities
 
 ### Local Development
 

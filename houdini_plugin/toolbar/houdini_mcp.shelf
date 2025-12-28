@@ -5,6 +5,8 @@
     <memberTool name="mcp_start"/>
     <memberTool name="mcp_stop"/>
     <memberTool name="mcp_status"/>
+    <memberTool name="hrpyc_start"/>
+    <memberTool name="hrpyc_stop"/>
   </toolshelf>
 
   <tool name="mcp_start" label="Start MCP" icon="MISC_python">
@@ -122,6 +124,112 @@ except ImportError as e:
     hou.ui.displayMessage(
         f"Failed to import houdini_mcp_plugin:\n{e}",
         title="Houdini MCP",
+        severity=hou.severityType.Error
+    )
+    ]]></script>
+  </tool>
+
+  <tool name="hrpyc_start" label="Start Remote" icon="NETWORKS_top">
+    <helpText><![CDATA[
+Start the hrpyc server for remote connections.
+
+This enables external MCP servers (like the Docker-based server)
+to connect to this Houdini instance via RPyC.
+
+Use this for:
+- Production pipelines with server-side AI processing
+- Multi-machine setups
+- Docker-based MCP deployments
+    ]]></helpText>
+    <script scriptType="python"><![CDATA[
+import hou
+
+try:
+    from houdini_mcp_plugin import start_hrpyc_server, is_hrpyc_running
+    
+    if is_hrpyc_running():
+        hou.ui.displayMessage(
+            "Remote server (hrpyc) is already running.",
+            title="Houdini MCP Remote"
+        )
+    else:
+        # Ask for port
+        result = hou.ui.readInput(
+            "Enter port for hrpyc server:",
+            initial_contents="18811",
+            title="Houdini MCP Remote"
+        )
+        
+        if result[0] == 0:  # OK pressed
+            try:
+                port = int(result[1])
+            except ValueError:
+                port = 18811
+            
+            status = start_hrpyc_server(port=port)
+            
+            if status["status"] == "success":
+                hou.ui.displayMessage(
+                    f"Remote server started!\n\n"
+                    f"Port: {status['port']}\n"
+                    f"IP: {status.get('local_ip', 'unknown')}\n\n"
+                    f"Connect with:\n{status['message']}",
+                    title="Houdini MCP Remote"
+                )
+            else:
+                hou.ui.displayMessage(
+                    f"Failed to start remote server:\n{status['message']}",
+                    title="Houdini MCP Remote",
+                    severity=hou.severityType.Error
+                )
+except ImportError as e:
+    hou.ui.displayMessage(
+        f"Failed to import houdini_mcp_plugin:\n{e}",
+        title="Houdini MCP Remote",
+        severity=hou.severityType.Error
+    )
+except Exception as e:
+    hou.ui.displayMessage(
+        f"Error: {e}",
+        title="Houdini MCP Remote",
+        severity=hou.severityType.Error
+    )
+    ]]></script>
+  </tool>
+
+  <tool name="hrpyc_stop" label="Stop Remote" icon="NETWORKS_top">
+    <helpText><![CDATA[
+Stop the hrpyc server for remote connections.
+    ]]></helpText>
+    <script scriptType="python"><![CDATA[
+import hou
+
+try:
+    from houdini_mcp_plugin import stop_hrpyc_server, is_hrpyc_running
+    
+    if not is_hrpyc_running():
+        hou.ui.displayMessage(
+            "Remote server (hrpyc) is not running.",
+            title="Houdini MCP Remote"
+        )
+    else:
+        status = stop_hrpyc_server()
+        
+        if status["status"] == "success":
+            hou.ui.displayMessage(
+                "Remote server stopped.",
+                title="Houdini MCP Remote"
+            )
+        else:
+            hou.ui.displayMessage(
+                f"Failed to stop remote server:\n{status['message']}",
+                title="Houdini MCP Remote",
+                severity=hou.severityType.Warning
+            )
+except ImportError as e:
+    hou.ui.displayMessage(
+        f"Failed to import houdini_mcp_plugin:\n{e}",
+        title="Houdini MCP Remote",
         severity=hou.severityType.Error
     )
     ]]></script>
