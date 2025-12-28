@@ -21,6 +21,7 @@ from .rendering import render_viewport
 from .wiring import connect_nodes, disconnect_node_input, reorder_inputs, set_node_flags
 from .code import execute_code, get_last_scene_diff
 from .scene import get_scene_info, save_scene, load_scene, new_scene, serialize_scene
+from .hscript import HscriptBatch, get_batch, fast_list_paths, fast_get_scene_tree
 from .nodes import (
     create_node,
     get_node_info,

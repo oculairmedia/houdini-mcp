@@ -463,69 +463,11 @@ def _serialize_scene_state_fast(hou: Any, root_path: str = "/obj") -> List[Dict[
     Returns:
         List of node dictionaries with path, name, type, children
     """
-    # Get recursive listing of all nodes
-    result, _ = hou.hscript(f"opls -R {root_path}")
-    if not result:
-        return []
+    # Use the dedicated hscript module for fast operations
+    from .hscript import HscriptBatch
 
-    # Parse hierarchical output into flat dict
-    # Format:
-    #   /obj:
-    #   geo1
-    #   cam1
-    #   /obj/geo1:
-    #   sphere1
-    nodes_by_path: Dict[str, Dict[str, Any]] = {}
-    children_by_parent: Dict[str, List[str]] = {}  # parent_path -> [child_paths]
-    current_parent = root_path
-
-    for line in result.strip().split("\n"):
-        if line.endswith(":"):
-            current_parent = line[:-1]
-        elif line.strip():
-            name = line.strip()
-            full_path = f"{current_parent}/{name}"
-            nodes_by_path[full_path] = {
-                "path": full_path,
-                "name": name,
-                "type": "unknown",
-                "children": [],
-            }
-            # Track parent-child relationships
-            if current_parent not in children_by_parent:
-                children_by_parent[current_parent] = []
-            children_by_parent[current_parent].append(full_path)
-
-    # Get types for immediate children of root
-    type_result, _ = hou.hscript(f"optype {root_path}/*")
-    if type_result:
-        current_name = None
-        for line in type_result.strip().split("\n"):
-            if line.startswith("Name: "):
-                current_name = line[6:]
-            elif line.startswith("Op Type: ") and current_name:
-                path = f"{root_path}/{current_name}"
-                if path in nodes_by_path:
-                    nodes_by_path[path]["type"] = line[9:]
-
-    # Build tree using O(n) algorithm with children_by_parent index
-    def build_tree(node_path: str) -> Dict[str, Any]:
-        node = nodes_by_path.get(node_path)
-        if node is None:
-            return {
-                "path": node_path,
-                "name": node_path.split("/")[-1],
-                "type": "unknown",
-                "children": [],
-            }
-        # Recursively build children
-        child_paths = children_by_parent.get(node_path, [])
-        node["children"] = [build_tree(cp) for cp in child_paths]
-        return node
-
-    # Build result for immediate children of root
-    root_children = children_by_parent.get(root_path, [])
-    return [build_tree(path) for path in root_children]
+    batch = HscriptBatch(hou)
+    return batch.get_scene_tree(root_path)
 
 
 def _get_scene_diff(before: List[Dict[str, Any]], after: List[Dict[str, Any]]) -> Dict[str, Any]:
