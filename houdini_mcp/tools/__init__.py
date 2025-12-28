@@ -23,6 +23,7 @@ from .layout import layout_children, set_node_color, set_node_position, create_n
 from .materials import create_material, assign_material, get_material_info
 from .geometry import get_geo_summary
 from .parameters import set_parameter, get_parameter_schema
+from .rendering import render_viewport
 
 # Import remaining functions from legacy module
 from ..tools_legacy import (
@@ -45,8 +46,6 @@ from ..tools_legacy import (
     disconnect_node_input,
     reorder_inputs,
     set_node_flags,
-    # Rendering
-    render_viewport,
     # Code execution
     execute_code,
     # Internal utilities (needed by some tests)
