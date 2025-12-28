@@ -25,6 +25,7 @@ from .geometry import get_geo_summary
 from .parameters import set_parameter, get_parameter_schema
 from .rendering import render_viewport
 from .wiring import connect_nodes, disconnect_node_input, reorder_inputs, set_node_flags
+from .code import execute_code, get_last_scene_diff
 
 # Import remaining functions from legacy module
 from ..tools_legacy import (
@@ -34,7 +35,6 @@ from ..tools_legacy import (
     new_scene,
     save_scene,
     load_scene,
-    get_last_scene_diff,
     # Node management
     create_node,
     delete_node,
@@ -42,8 +42,6 @@ from ..tools_legacy import (
     list_children,
     find_nodes,
     list_node_types,
-    # Code execution
-    execute_code,
     # Internal utilities (needed by some tests)
     _handle_connection_error,
     _add_response_metadata,

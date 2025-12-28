@@ -67,7 +67,7 @@ def get_geo_summary(
         - No bounding box: Returns None for bbox fields
     """
     # Import execute_code here to avoid circular imports
-    from ..tools_legacy import execute_code
+    from .code import execute_code
 
     # Validate max_sample_points
     if max_sample_points < 0:

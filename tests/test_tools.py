@@ -454,7 +454,7 @@ pass
             else:
                 return after_state  # After execution
 
-        with patch("houdini_mcp.tools_legacy._serialize_scene_state", side_effect=mock_serialize):
+        with patch("houdini_mcp.tools.code._serialize_scene_state", side_effect=mock_serialize):
             result = execute_code(
                 "pass", host="localhost", port=18811, capture_diff=True, max_diff_nodes=5
             )
@@ -1048,11 +1048,11 @@ class TestSceneDiff:
     def test_get_last_scene_diff_with_changes(self):
         """Test getting scene diff with actual changes."""
         from houdini_mcp.tools import get_last_scene_diff
-        import houdini_mcp.tools_legacy as tools_legacy
+        import houdini_mcp.tools.code as code_module
 
-        # Simulate before/after state (these globals live in tools_legacy)
-        tools_legacy._before_scene = []
-        tools_legacy._after_scene = [
+        # Simulate before/after state (these globals live in code.py)
+        code_module._before_scene = []
+        code_module._after_scene = [
             {"path": "/obj/new_node", "type": "geo", "name": "new_node", "children": []}
         ]
 
