@@ -13,11 +13,17 @@ An MCP (Model Context Protocol) server for controlling SideFX Houdini via `hrpyc
 
 ## Features
 
+- **43 MCP tools** across 15 modular categories
 - **Full hou module access** - Execute any Houdini Python code remotely
 - **Scene management** - Create, load, save scenes
 - **Node operations** - Create, delete, modify nodes and parameters
+- **Rendering** - Viewport renders, quad views, Karma GPU/CPU support
+- **Pane screenshots** - Capture NetworkEditor, SceneViewer, and other panes
 - **Scene serialization** - Diff scene states before/after operations
-- **Connection management** - Auto-reconnect on connection loss
+- **Connection management** - Auto-reconnect with exponential backoff + jitter
+- **Error handling** - Consistent error responses with recovery hints
+- **Response optimization** - Size limits, truncation, AI summarization
+- **In-memory caching** - Node type cache with TTL for performance
 
 ## Prerequisites
 
@@ -159,49 +165,94 @@ Environment variables:
 | `MCP_TRANSPORT` | `http` | Transport type (http, stdio, sse) |
 | `LOG_LEVEL` | `INFO` | Logging level |
 
-## SOP Workflow Tools
+## Tool Categories (43 Tools)
 
-The Houdini MCP Server provides specialized tools for building and manipulating SOP (Surface Operator) networks:
+The server is organized into 15 modular tool categories in `houdini_mcp/tools/`:
 
-### Network Discovery & Inspection
-
-| Tool | Description | Use Case |
-|------|-------------|----------|
-| `list_children` | List child nodes with connection details | Discover existing network topology |
-| `find_nodes` | Find nodes by name pattern or type | Locate specific nodes in large networks |
-| `get_node_info` | Get node details, parameters, and connections | Inspect node state and wiring |
-| `get_parameter_schema` | Get parameter metadata (types, ranges, menus) | Understand what parameters are available |
-| `get_geo_summary` | Get geometry statistics and metadata | Verify results after operations |
-
-### Network Construction & Modification
-
-| Tool | Description | Use Case |
-|------|-------------|----------|
-| `create_node` | Create a new node | Build networks from scratch |
-| `connect_nodes` | Wire nodes together | Create data flow connections |
-| `disconnect_node_input` | Break a connection | Rewire existing networks |
-| `set_node_flags` | Set display/render/bypass flags | Control node visibility and evaluation |
-| `reorder_inputs` | Reorder node inputs | Reorganize merge node inputs |
-
-### Parameter Management
-
-| Tool | Description | Use Case |
-|------|-------------|----------|
-| `set_parameter` | Set a parameter value | Configure node behavior |
-| `get_parameter_schema` | Discover parameter metadata | Understand parameter types and constraints |
-
-### Scene Management
-
+### Scene & Nodes (`scene.py`, `nodes.py`)
 | Tool | Description |
 |------|-------------|
-| `check_connection` | Verify/establish Houdini connection |
 | `get_scene_info` | Get current scene info (file, version, nodes) |
-| `delete_node` | Delete a node by path |
-| `execute_code` | Execute arbitrary Python with `hou` available |
+| `serialize_scene` | Serialize scene structure for diffs |
+| `new_scene` | Create empty scene |
 | `save_scene` | Save current scene |
 | `load_scene` | Load a .hip file |
-| `new_scene` | Create empty scene |
-| `serialize_scene` | Serialize scene structure for diffs |
+| `create_node` | Create a new node |
+| `delete_node` | Delete a node by path |
+| `get_node_info` | Get node details, parameters, connections, errors |
+| `list_children` | List child nodes with connection details |
+| `find_nodes` | Find nodes by name pattern or type |
+| `list_node_types` | List available node types by category |
+
+### Wiring & Layout (`wiring.py`, `layout.py`)
+| Tool | Description |
+|------|-------------|
+| `connect_nodes` | Wire nodes together |
+| `disconnect_node_input` | Break a connection |
+| `reorder_inputs` | Reorder node inputs |
+| `set_node_flags` | Set display/render/bypass flags |
+| `layout_children` | Auto-layout child nodes |
+| `set_node_position` | Set node position in network |
+| `set_node_color` | Set node color |
+| `create_network_box` | Create network box around nodes |
+
+### Parameters (`parameters.py`)
+| Tool | Description |
+|------|-------------|
+| `set_parameter` | Set a parameter value |
+| `get_parameter_schema` | Get parameter metadata (types, ranges, menus) |
+
+### Geometry & Materials (`geometry.py`, `materials.py`)
+| Tool | Description |
+|------|-------------|
+| `get_geo_summary` | Get geometry statistics and metadata |
+| `create_material` | Create a new material |
+| `assign_material` | Assign material to geometry |
+| `get_material_info` | Get material parameters and shaders |
+
+### Rendering (`rendering.py`)
+| Tool | Description |
+|------|-------------|
+| `render_viewport` | Render viewport with camera control |
+| `render_quad_view` | Render Front/Left/Top/Perspective views |
+| `list_render_nodes` | List all ROPs in /out |
+| `get_render_settings` | Get ROP configuration |
+| `set_render_settings` | Modify ROP settings |
+| `create_render_node` | Create new ROP with settings |
+
+### Pane Screenshots (`pane_screenshot.py`)
+| Tool | Description |
+|------|-------------|
+| `capture_pane_screenshot` | Capture any Houdini pane as PNG |
+| `list_visible_panes` | List capturable panes |
+| `capture_multiple_panes` | Batch capture multiple panes |
+| `render_node_network` | Navigate to node and capture network |
+
+### Code Execution (`code.py`, `hscript.py`)
+| Tool | Description |
+|------|-------------|
+| `execute_code` | Execute Python with `hou` available |
+| `execute_hscript` | Execute HScript commands |
+
+### Error Handling (`errors.py`)
+| Tool | Description |
+|------|-------------|
+| `find_error_nodes` | Find all nodes with cook errors |
+
+### Help & Summarization (`help.py`, `summarization.py`)
+| Tool | Description |
+|------|-------------|
+| `get_houdini_help` | Get help for node types |
+| `summarize_response` | AI-summarize large responses |
+| `estimate_tokens` | Estimate token count |
+| `get_summarization_status` | Get summarization config |
+
+### Infrastructure (`_common.py`, `cache.py`)
+- **Error handling**: `@handle_connection_errors` decorator
+- **Connection retry**: Exponential backoff with jitter
+- **Response size**: Thresholds, truncation, metadata
+- **Caching**: Node type cache with TTL
+- **Parallel execution**: `semaphore_gather`, `batch_items`
 
 ## Common Patterns
 
@@ -449,45 +500,39 @@ python -m houdini_mcp
 - hrpyc uses no authentication by default
 - Ensure you're on a trusted network
 
-## Tool Reference
+## Project Structure
 
-### Quick Reference Table
+```
+houdini_mcp/
+├── server.py              # FastMCP server with 43 tool wrappers
+├── connection.py          # RPyC connection with retry/backoff
+└── tools/                 # Modular tool implementations
+    ├── _common.py         # Shared utilities, error handling
+    ├── cache.py           # Node type caching with TTL
+    ├── code.py            # Python/HScript execution
+    ├── errors.py          # Error node detection
+    ├── geometry.py        # Geometry introspection
+    ├── help.py            # Houdini help access
+    ├── hscript.py         # HScript command execution
+    ├── layout.py          # Node layout tools
+    ├── materials.py       # Material creation/assignment
+    ├── nodes.py           # Node CRUD operations
+    ├── pane_screenshot.py # Pane capture tools
+    ├── parameters.py      # Parameter get/set
+    ├── rendering.py       # Viewport/Karma rendering
+    ├── scene.py           # Scene management
+    ├── summarization.py   # AI response summarization
+    └── wiring.py          # Node connection tools
 
-| Category | Tool | Key Parameters | Returns | Notes |
-|----------|------|----------------|---------|-------|
-| **Discovery** | `list_children` | `node_path`, `recursive` | Children with input/output connections | Essential for understanding network topology |
-| | `find_nodes` | `root_path`, `pattern`, `node_type` | Matching nodes | Supports glob patterns and type filtering |
-| | `get_node_info` | `node_path`, `include_input_details`, `include_errors` | Node metadata, connections, cook state | Use `include_errors=True` for debugging |
-| | `get_parameter_schema` | `node_path`, `parm_name` | Parameter metadata (type, range, menu) | Critical for intelligent parameter setting |
-| | `get_geo_summary` | `node_path`, `max_sample_points`, `include_attributes` | Geometry stats, bbox, attributes | Verify results after operations |
-| **Construction** | `create_node` | `node_type`, `parent_path`, `name` | Created node path | Start of any workflow |
-| | `connect_nodes` | `src_path`, `dst_path`, `dst_input_index` | Connection result | Validates node category compatibility |
-| | `disconnect_node_input` | `node_path`, `input_index` | Disconnection result | Returns previous source for rewiring |
-| | `set_node_flags` | `node_path`, `display`, `render`, `bypass` | Flags set | Only sets non-None flags |
-| | `reorder_inputs` | `node_path`, `new_order` | Reordering result | Useful for merge nodes |
-| **Parameters** | `set_parameter` | `node_path`, `param_name`, `value` | Set result | Handles both scalar and vector params |
-| | `get_parameter_schema` | `node_path`, `parm_name`, `max_parms` | Parameter metadata | Discovers types, ranges, menus, defaults |
-| **Verification** | `get_geo_summary` | `node_path`, `max_sample_points` | Point/prim counts, bbox, attributes | Comprehensive geometry verification |
-| | `get_node_info` | `node_path`, `include_errors=True` | Cook state, errors, warnings | Error introspection |
+houdini_plugin/            # Houdini plugin for stdio mode
+├── python/houdini_mcp_plugin/
+├── toolbar/               # Shelf tools
+└── houdini_mcp.json       # Package descriptor
 
-### Tool Categories
-
-**Network Discovery**: `list_children`, `find_nodes`, `get_node_info`, `get_parameter_schema`
-- Use these to understand existing networks before making changes
-- Essential for inserting nodes without breaking connections
-
-**Network Construction**: `create_node`, `connect_nodes`, `disconnect_node_input`, `set_node_flags`, `reorder_inputs`
-- Build and modify SOP networks
-- All validate inputs and handle errors gracefully
-
-**Parameter Management**: `set_parameter`, `get_parameter_schema`
-- `get_parameter_schema` tells you what parameters exist and how to set them
-- `set_parameter` handles both scalar and vector parameters automatically
-
-**Verification**: `get_geo_summary`, `get_node_info` (with `include_errors=True`)
-- Always verify results after operations
-- Check cook state before accessing geometry
-- Use geometry summary to confirm expected changes
+tests/                     # 418 tests (406 passing)
+docs/                      # Implementation documentation
+examples/                  # Working example scripts
+```
 
 ## Credits
 
