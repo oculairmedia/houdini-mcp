@@ -1,0 +1,15 @@
+{
+    "env": [
+        {
+            "HOUDINI_MCP_ROOT": "$HOUDINI_PACKAGE_PATH"
+        },
+        {
+            "PYTHONPATH": {
+                "value": "$HOUDINI_MCP_ROOT/python",
+                "method": "prepend"
+            }
+        }
+    ],
+    "hpath": "$HOUDINI_MCP_ROOT",
+    "show": true
+}

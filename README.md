@@ -33,7 +33,62 @@ An MCP (Model Context Protocol) server for controlling SideFX Houdini via `hrpyc
 
 ## Installation
 
-### Docker (Recommended)
+### Option 1: Houdini Plugin (stdio mode)
+
+The Houdini plugin runs the MCP server directly inside Houdini, using stdio transport. This is the simplest setup with no network configuration required.
+
+**Installation:**
+
+1. Copy the `houdini_plugin` folder to your Houdini packages directory:
+   ```bash
+   # Windows
+   copy houdini_plugin %USERPROFILE%\Documents\houdini20.5\packages\houdini_mcp
+   
+   # Linux/Mac
+   cp -r houdini_plugin ~/houdini20.5/packages/houdini_mcp
+   ```
+
+2. Copy the package JSON:
+   ```bash
+   # Windows
+   copy houdini_plugin\houdini_mcp.json %USERPROFILE%\Documents\houdini20.5\packages\
+   
+   # Linux/Mac
+   cp houdini_plugin/houdini_mcp.json ~/houdini20.5/packages/
+   ```
+
+3. Install FastMCP in Houdini's Python:
+   ```bash
+   # Windows (from Houdini's Python)
+   hython -m pip install fastmcp
+   
+   # Or from Houdini's Python Shell
+   import subprocess
+   subprocess.run(["pip", "install", "fastmcp"])
+   ```
+
+4. Restart Houdini and find the "Houdini MCP" shelf
+
+**Usage:**
+- Click "Start MCP" on the shelf to start the server
+- Configure your MCP client (Claude Desktop, Cursor, etc.) to use stdio transport
+- Click "Stop MCP" to stop the server
+
+**MCP Client Configuration (stdio mode):**
+```json
+{
+  "mcpServers": {
+    "houdini": {
+      "command": "hython",
+      "args": ["-c", "from houdini_mcp_plugin import start_server; start_server(use_thread=False)"]
+    }
+  }
+}
+```
+
+### Option 2: Docker (Remote mode)
+
+For production use or when Houdini runs on a different machine, use the Docker-based remote mode. This requires starting the hrpyc server in Houdini.
 
 ```bash
 # Clone the repository

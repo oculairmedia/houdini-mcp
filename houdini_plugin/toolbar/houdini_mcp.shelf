@@ -1,0 +1,129 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<shelfDocument>
+  <!-- Houdini MCP Shelf -->
+  <toolshelf name="houdini_mcp" label="Houdini MCP">
+    <memberTool name="mcp_start"/>
+    <memberTool name="mcp_stop"/>
+    <memberTool name="mcp_status"/>
+  </toolshelf>
+
+  <tool name="mcp_start" label="Start MCP" icon="MISC_python">
+    <helpText><![CDATA[
+Start the Houdini MCP Server.
+
+The MCP server allows AI assistants to control Houdini
+through the Model Context Protocol.
+
+In stdio mode, the server runs in-process and communicates
+via standard input/output.
+    ]]></helpText>
+    <script scriptType="python"><![CDATA[
+import hou
+
+try:
+    from houdini_mcp_plugin import start_server, is_server_running
+    
+    if is_server_running():
+        hou.ui.displayMessage(
+            "MCP Server is already running.",
+            title="Houdini MCP"
+        )
+    else:
+        if start_server(use_thread=True):
+            hou.ui.displayMessage(
+                "MCP Server started successfully.\n\n"
+                "The server is now listening for MCP connections via stdio.",
+                title="Houdini MCP"
+            )
+        else:
+            hou.ui.displayMessage(
+                "Failed to start MCP Server.\n\n"
+                "Check the Houdini console for error details.",
+                title="Houdini MCP",
+                severity=hou.severityType.Error
+            )
+except ImportError as e:
+    hou.ui.displayMessage(
+        f"Failed to import houdini_mcp_plugin:\n{e}\n\n"
+        "Make sure the plugin is properly installed.",
+        title="Houdini MCP",
+        severity=hou.severityType.Error
+    )
+except Exception as e:
+    hou.ui.displayMessage(
+        f"Error starting MCP Server:\n{e}",
+        title="Houdini MCP",
+        severity=hou.severityType.Error
+    )
+    ]]></script>
+  </tool>
+
+  <tool name="mcp_stop" label="Stop MCP" icon="MISC_python">
+    <helpText><![CDATA[
+Stop the Houdini MCP Server.
+    ]]></helpText>
+    <script scriptType="python"><![CDATA[
+import hou
+
+try:
+    from houdini_mcp_plugin import stop_server, is_server_running
+    
+    if not is_server_running():
+        hou.ui.displayMessage(
+            "MCP Server is not running.",
+            title="Houdini MCP"
+        )
+    else:
+        if stop_server():
+            hou.ui.displayMessage(
+                "MCP Server stopped.",
+                title="Houdini MCP"
+            )
+        else:
+            hou.ui.displayMessage(
+                "Failed to stop MCP Server.",
+                title="Houdini MCP",
+                severity=hou.severityType.Warning
+            )
+except ImportError as e:
+    hou.ui.displayMessage(
+        f"Failed to import houdini_mcp_plugin:\n{e}",
+        title="Houdini MCP",
+        severity=hou.severityType.Error
+    )
+    ]]></script>
+  </tool>
+
+  <tool name="mcp_status" label="MCP Status" icon="MISC_python">
+    <helpText><![CDATA[
+Check the status of the Houdini MCP Server.
+    ]]></helpText>
+    <script scriptType="python"><![CDATA[
+import hou
+
+try:
+    from houdini_mcp_plugin import is_server_running, get_connection
+    
+    if is_server_running():
+        conn = get_connection()
+        info = conn.get_info()
+        
+        status_text = "MCP Server Status: RUNNING\n\n"
+        status_text += f"Mode: {info.get('mode', 'unknown')}\n"
+        status_text += f"Houdini Version: {info.get('houdini_version', 'unknown')}\n"
+        status_text += f"Hip File: {info.get('hip_file', 'unknown')}\n"
+    else:
+        status_text = "MCP Server Status: STOPPED\n\n"
+        status_text += "Click 'Start MCP' to start the server."
+    
+    hou.ui.displayMessage(status_text, title="Houdini MCP Status")
+    
+except ImportError as e:
+    hou.ui.displayMessage(
+        f"Failed to import houdini_mcp_plugin:\n{e}",
+        title="Houdini MCP",
+        severity=hou.severityType.Error
+    )
+    ]]></script>
+  </tool>
+</shelfDocument>
