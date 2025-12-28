@@ -22,6 +22,7 @@ from .errors import find_error_nodes
 from .layout import layout_children, set_node_color, set_node_position, create_network_box
 from .materials import create_material, assign_material, get_material_info
 from .geometry import get_geo_summary
+from .parameters import set_parameter, get_parameter_schema
 
 # Import remaining functions from legacy module
 from ..tools_legacy import (
@@ -44,9 +45,6 @@ from ..tools_legacy import (
     disconnect_node_input,
     reorder_inputs,
     set_node_flags,
-    # Parameters
-    set_parameter,
-    get_parameter_schema,
     # Rendering
     render_viewport,
     # Code execution
