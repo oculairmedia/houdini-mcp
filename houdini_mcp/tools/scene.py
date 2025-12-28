@@ -19,6 +19,7 @@ from ._common import (
     _handle_connection_error,
     _json_safe_hou_value,
 )
+from .cache import invalidate_all_caches
 
 logger = logging.getLogger("houdini_mcp.tools.scene")
 
@@ -106,6 +107,9 @@ def load_scene(file_path: str, host: str = "localhost", port: int = 18811) -> Di
 
         hou.hipFile.load(file_path)
 
+        # Invalidate caches since scene context changed
+        invalidate_all_caches()
+
         return {"status": "success", "message": "Scene loaded", "file_path": file_path}
     except HoudiniConnectionError as e:
         return {"status": "error", "message": str(e)}
@@ -127,6 +131,9 @@ def new_scene(host: str = "localhost", port: int = 18811) -> Dict[str, Any]:
         hou = ensure_connected(host, port)
 
         hou.hipFile.clear()
+
+        # Invalidate caches since scene context changed
+        invalidate_all_caches()
 
         return {"status": "success", "message": "New scene created"}
     except HoudiniConnectionError as e:

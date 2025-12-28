@@ -1187,15 +1187,16 @@ class TestListNodeTypes:
             assert node_type["category"] == "Object"
             assert "geo" in node_type["name"].lower()
 
-    def test_list_node_types_returns_categories_scanned(self, mock_connection):
-        """Test that categories_scanned is included in response."""
+    def test_list_node_types_returns_category_info(self, mock_connection):
+        """Test that category info is included in response."""
         from houdini_mcp.tools import list_node_types
 
         result = list_node_types("Object", host="localhost", port=18811)
 
         assert result["status"] == "success"
-        assert "categories_scanned" in result
-        assert "Object" in result["categories_scanned"]
+        # When filtering by category, the category is echoed back
+        assert "category" in result
+        assert result["category"] == "Object"
 
     def test_list_node_types_warning_when_limited(self, mock_connection):
         """Test that warning is included when results are limited."""
@@ -1209,7 +1210,8 @@ class TestListNodeTypes:
             # If we hit the limit, warning should be present
             assert "warning" in result
             assert "limited to 5" in result["warning"]
-            assert "total_scanned" in result
+            # New cached implementation uses total_matched instead of total_scanned
+            assert "total_matched" in result
 
     def test_list_node_types_early_termination(self, mock_connection):
         """Test that iteration stops early when max_results reached."""

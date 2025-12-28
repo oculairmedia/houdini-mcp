@@ -22,6 +22,7 @@ from .wiring import connect_nodes, disconnect_node_input, reorder_inputs, set_no
 from .code import execute_code, get_last_scene_diff
 from .scene import get_scene_info, save_scene, load_scene, new_scene, serialize_scene
 from .hscript import HscriptBatch, get_batch, fast_list_paths, fast_get_scene_tree
+from .cache import node_type_cache, invalidate_all_caches, get_cache_stats
 from .nodes import (
     create_node,
     get_node_info,
@@ -90,4 +91,8 @@ __all__ = [
     "execute_code",
     # Help/documentation
     "get_houdini_help",
+    # Cache management
+    "node_type_cache",
+    "invalidate_all_caches",
+    "get_cache_stats",
 ]
