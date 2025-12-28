@@ -30,6 +30,15 @@ from .code import execute_code, get_last_scene_diff
 from .scene import get_scene_info, save_scene, load_scene, new_scene, serialize_scene
 from .hscript import HscriptBatch, get_batch, fast_list_paths, fast_get_scene_tree
 from .cache import node_type_cache, invalidate_all_caches, get_cache_stats
+from .summarization import (
+    summarize_geometry,
+    summarize_errors,
+    summarize_scene,
+    summarize_render_settings,
+    get_summarization_status,
+    should_summarize,
+    estimate_tokens,
+)
 from .nodes import (
     create_node,
     get_node_info,
@@ -107,4 +116,12 @@ __all__ = [
     "node_type_cache",
     "invalidate_all_caches",
     "get_cache_stats",
+    # AI Summarization
+    "summarize_geometry",
+    "summarize_errors",
+    "summarize_scene",
+    "summarize_render_settings",
+    "get_summarization_status",
+    "should_summarize",
+    "estimate_tokens",
 ]

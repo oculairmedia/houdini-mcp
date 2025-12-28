@@ -273,7 +273,11 @@ def new_scene() -> Dict[str, Any]:
 
 
 @mcp.tool()
-def serialize_scene(root_path: str = "/obj", include_params: bool = False) -> Dict[str, Any]:
+async def serialize_scene(
+    root_path: str = "/obj",
+    include_params: bool = False,
+    summarize: bool = False,
+) -> Dict[str, Any]:
     """
     Serialize the scene structure to a dictionary.
 
@@ -283,8 +287,20 @@ def serialize_scene(root_path: str = "/obj", include_params: bool = False) -> Di
     Args:
         root_path: Root node path to serialize from (default: "/obj")
         include_params: Include parameter values (can be verbose, default: False)
+        summarize: If True, use AI to analyze scene structure (default: False).
+                  Identifies complexity hotspots and optimization opportunities.
+
+    Returns:
+        Dict with scene structure, optionally with ai_summary field containing
+        insights about organization, complexity, and optimization opportunities.
     """
-    return tools.serialize_scene(root_path, include_params, 10, HOUDINI_HOST, HOUDINI_PORT)
+    result = tools.serialize_scene(root_path, include_params, 10, HOUDINI_HOST, HOUDINI_PORT)
+
+    # Apply AI summarization if requested or if scene is very large
+    if summarize or tools.should_summarize(result):
+        result = await tools.summarize_scene(result)
+
+    return result
 
 
 @mcp.tool()
@@ -638,10 +654,11 @@ def create_render_node(
 
 
 @mcp.tool()
-def find_error_nodes(
+async def find_error_nodes(
     root_path: str = "/",
     include_warnings: bool = True,
     max_results: int = 100,
+    summarize: bool = False,
 ) -> Dict[str, Any]:
     """
     Find all nodes with cook errors or warnings in the scene.
@@ -654,6 +671,8 @@ def find_error_nodes(
         root_path: Root path to start search from (default: "/" for entire scene)
         include_warnings: Whether to include nodes with warnings (default: True)
         max_results: Maximum number of results to return (default: 100)
+        summarize: If True, use AI to triage and prioritize errors (default: False).
+                  Provides actionable fix order and identifies root causes.
 
     Returns:
         Dict with error/warning nodes including:
@@ -662,15 +681,23 @@ def find_error_nodes(
         - error_count: Number of error nodes found
         - warning_count: Number of warning nodes found
         - total_scanned: Number of nodes scanned
+        - ai_summary: (if summarize=True) AI-generated triage with prioritized fixes
 
     Examples:
         find_error_nodes()  # Find all errors in scene
         find_error_nodes("/obj/geo1")  # Find errors within a specific network
         find_error_nodes(include_warnings=False)  # Only errors, no warnings
+        find_error_nodes(summarize=True)  # Get AI triage of errors
     """
-    return tools.find_error_nodes(
+    result = tools.find_error_nodes(
         root_path, include_warnings, max_results, HOUDINI_HOST, HOUDINI_PORT
     )
+
+    # Apply AI summarization if requested or if many errors found
+    if summarize or (result.get("error_count", 0) > 5):
+        result = await tools.summarize_errors(result)
+
+    return result
 
 
 @mcp.tool()
@@ -862,11 +889,12 @@ def get_parameter_schema(
 
 
 @mcp.tool()
-def get_geo_summary(
+async def get_geo_summary(
     node_path: str,
     max_sample_points: int = 100,
     include_attributes: bool = True,
     include_groups: bool = True,
+    summarize: bool = False,
 ) -> Dict[str, Any]:
     """
     Get geometry statistics and metadata for verification.
@@ -881,6 +909,8 @@ def get_geo_summary(
                           Set to 0 to skip point sampling.
         include_attributes: Whether to include attribute metadata (default: True)
         include_groups: Whether to include group information (default: True)
+        summarize: If True, use AI to generate a concise summary of the geometry (default: False).
+                  Useful for large/complex geometry to reduce token usage.
 
     Returns:
         Dict with comprehensive geometry summary including:
@@ -890,6 +920,7 @@ def get_geo_summary(
         - attributes: Metadata for point/primitive/vertex/detail attributes
         - groups: Names of point and primitive groups
         - sample_points: Optional array of first N points with their attribute values
+        - ai_summary: (if summarize=True) AI-generated insights about the geometry
 
     Edge Cases:
         - Uncooked geometry: Tool will attempt to cook the node first
@@ -905,12 +936,18 @@ def get_geo_summary(
         get_geo_summary("/obj/geo1/grid1", max_sample_points=0,
                        include_attributes=False, include_groups=False)
 
-        # Full detail for verification
-        get_geo_summary("/obj/geo1/noise1", max_sample_points=200)
+        # Full detail for verification with AI summary
+        get_geo_summary("/obj/geo1/noise1", max_sample_points=200, summarize=True)
     """
-    return tools.get_geo_summary(
+    result = tools.get_geo_summary(
         node_path, max_sample_points, include_attributes, include_groups, HOUDINI_HOST, HOUDINI_PORT
     )
+
+    # Apply AI summarization if requested or if response is very large
+    if summarize or tools.should_summarize(result):
+        result = await tools.summarize_geometry(result)
+
+    return result
 
 
 @mcp.tool()
@@ -1225,6 +1262,31 @@ def manage_cache(action: str = "stats") -> Dict[str, Any]:
             "action": action,
             "message": f"Unknown action: {action}. Valid actions: stats, invalidate, warmup",
         }
+
+
+@mcp.tool()
+def get_summarization_status() -> Dict[str, Any]:
+    """
+    Get AI summarization configuration and status.
+
+    Returns current summarization settings including:
+    - Whether summarization is enabled
+    - Which model is being used
+    - Proxy URL
+    - Token thresholds for automatic summarization
+
+    Use this to verify AI summarization is properly configured
+    before using summarize=True on other tools.
+
+    Returns:
+        Dict with summarization configuration including:
+        - enabled: Whether AI summarization is active
+        - model: Claude model used for summarization
+        - proxy_url: URL of the Claude API proxy
+        - auto_threshold_tokens: Token count that triggers auto-summarization
+        - target_summary_tokens: Target size for generated summaries
+    """
+    return tools.get_summarization_status()
 
 
 def run_server(transport: str = "http", port: int = 3055) -> None:
