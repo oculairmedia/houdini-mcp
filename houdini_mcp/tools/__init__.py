@@ -47,6 +47,12 @@ from .nodes import (
     list_children,
     find_nodes,
 )
+from .pane_screenshot import (
+    capture_pane_screenshot,
+    list_visible_panes,
+    capture_multiple_panes,
+    VALID_PANE_TYPES,
+)
 
 # Import shared utilities from _common (needed by some tests)
 from ._common import (
@@ -124,4 +130,9 @@ __all__ = [
     "get_summarization_status",
     "should_summarize",
     "estimate_tokens",
+    # Pane screenshots
+    "capture_pane_screenshot",
+    "list_visible_panes",
+    "capture_multiple_panes",
+    "VALID_PANE_TYPES",
 ]
