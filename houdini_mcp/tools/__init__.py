@@ -16,6 +16,10 @@ Usage:
 # As modules are extracted in Phase 2, imports will be updated to come from
 # the specific module files (scene.py, nodes.py, etc.)
 
+# Import from extracted modules
+from .help import get_houdini_help
+
+# Import remaining functions from legacy module
 from ..tools_legacy import (
     # Scene management
     get_scene_info,
@@ -56,8 +60,6 @@ from ..tools_legacy import (
     create_network_box,
     # Code execution
     execute_code,
-    # Help/documentation
-    get_houdini_help,
     # Internal utilities (needed by some tests)
     _handle_connection_error,
     _add_response_metadata,
