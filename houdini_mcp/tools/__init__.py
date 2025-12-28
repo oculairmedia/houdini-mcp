@@ -18,6 +18,7 @@ Usage:
 
 # Import from extracted modules
 from .help import get_houdini_help
+from .errors import find_error_nodes
 
 # Import remaining functions from legacy module
 from ..tools_legacy import (
@@ -51,8 +52,6 @@ from ..tools_legacy import (
     create_material,
     assign_material,
     get_material_info,
-    # Errors
-    find_error_nodes,
     # Layout
     layout_children,
     set_node_position,
