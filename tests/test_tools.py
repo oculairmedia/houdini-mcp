@@ -3016,3 +3016,113 @@ class TestParallelExecution:
 
         result = await run_in_executor(slow_sync_function, 5, 3)
         assert result == 8
+
+
+class TestHandleConnectionErrorsDecorator:
+    """Tests for the @handle_connection_errors decorator."""
+
+    def test_decorator_passes_through_success(self):
+        """Test decorator passes through successful results."""
+        from houdini_mcp.tools._common import handle_connection_errors
+
+        @handle_connection_errors("test_operation")
+        def successful_function():
+            return {"status": "success", "data": "test"}
+
+        result = successful_function()
+        assert result["status"] == "success"
+        assert result["data"] == "test"
+
+    def test_decorator_handles_houdini_connection_error(self):
+        """Test decorator handles HoudiniConnectionError."""
+        from houdini_mcp.tools._common import handle_connection_errors, HoudiniConnectionError
+
+        @handle_connection_errors("test_operation")
+        def failing_function():
+            raise HoudiniConnectionError("Connection failed")
+
+        result = failing_function()
+        assert result["status"] == "error"
+        assert "Connection failed" in result["message"]
+
+    def test_decorator_handles_connection_errors(self):
+        """Test decorator handles CONNECTION_ERRORS (e.g., TimeoutError)."""
+        from houdini_mcp.tools._common import handle_connection_errors
+
+        @handle_connection_errors("test_operation")
+        def timeout_function():
+            raise TimeoutError("Operation timed out")
+
+        with patch("houdini_mcp.tools._common.disconnect"):
+            result = timeout_function()
+
+        assert result["status"] == "error"
+        assert result["error_type"] == "connection_error"
+        assert result["recoverable"] is True
+        assert "test_operation" in result["operation"]
+
+    def test_decorator_handles_eof_error(self):
+        """Test decorator handles EOFError (connection closed)."""
+        from houdini_mcp.tools._common import handle_connection_errors
+
+        @handle_connection_errors("test_operation")
+        def eof_function():
+            raise EOFError("Connection closed")
+
+        with patch("houdini_mcp.tools._common.disconnect"):
+            result = eof_function()
+
+        assert result["status"] == "error"
+        assert result["error_type"] == "connection_error"
+        assert result["recoverable"] is True
+
+    def test_decorator_handles_generic_exception(self):
+        """Test decorator handles generic exceptions with traceback."""
+        from houdini_mcp.tools._common import handle_connection_errors
+
+        @handle_connection_errors("test_operation")
+        def generic_error_function():
+            raise ValueError("Something went wrong")
+
+        result = generic_error_function()
+        assert result["status"] == "error"
+        assert "Something went wrong" in result["message"]
+        assert "traceback" in result
+        assert "ValueError" in result["traceback"]
+
+    def test_decorator_preserves_function_metadata(self):
+        """Test decorator preserves function name and docstring."""
+        from houdini_mcp.tools._common import handle_connection_errors
+
+        @handle_connection_errors("test_operation")
+        def documented_function():
+            """This is the docstring."""
+            return {"status": "success"}
+
+        assert documented_function.__name__ == "documented_function"
+        assert documented_function.__doc__ == "This is the docstring."
+
+    def test_decorator_passes_args_and_kwargs(self):
+        """Test decorator passes arguments correctly."""
+        from houdini_mcp.tools._common import handle_connection_errors
+
+        @handle_connection_errors("test_operation")
+        def function_with_args(a, b, c=10):
+            return {"status": "success", "result": a + b + c}
+
+        result = function_with_args(1, 2, c=5)
+        assert result["status"] == "success"
+        assert result["result"] == 8
+
+    def test_decorator_uses_operation_name_in_logs(self):
+        """Test decorator uses operation name in error handling."""
+        from houdini_mcp.tools._common import handle_connection_errors
+
+        @handle_connection_errors("custom_operation_name")
+        def broken_pipe_function():
+            raise BrokenPipeError("Pipe broken")
+
+        with patch("houdini_mcp.tools._common.disconnect"):
+            result = broken_pipe_function()
+
+        assert result["operation"] == "custom_operation_name"

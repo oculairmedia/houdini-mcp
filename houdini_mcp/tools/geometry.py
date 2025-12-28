@@ -6,20 +6,17 @@ including point/primitive counts, attributes, groups, and sampling.
 
 import json
 import logging
-import traceback
 from typing import Any, Dict
 
 from ._common import (
-    ensure_connected,
-    HoudiniConnectionError,
-    CONNECTION_ERRORS,
-    _handle_connection_error,
+    handle_connection_errors,
     _add_response_metadata,
 )
 
 logger = logging.getLogger("houdini_mcp.tools.geometry")
 
 
+@handle_connection_errors("get_geometry_summary")
 def get_geo_summary(
     node_path: str,
     max_sample_points: int = 100,
@@ -221,39 +218,30 @@ else:
 print(json.dumps(result))
 """
 
+    # Use execute_code to run the analysis on Houdini side
+    exec_result = execute_code(
+        code=geo_analysis_code,
+        capture_diff=False,
+        max_stdout_size=500000,  # Allow larger output for geo data
+        timeout=30,
+        host=host,
+        port=port,
+    )
+
+    if exec_result.get("status") == "error":
+        return exec_result
+
+    # Parse the JSON output from stdout
+    stdout = exec_result.get("stdout", "").strip()
+    if not stdout:
+        return {"status": "error", "message": "No output from geometry analysis"}
+
     try:
-        # Use execute_code to run the analysis on Houdini side
-        exec_result = execute_code(
-            code=geo_analysis_code,
-            capture_diff=False,
-            max_stdout_size=500000,  # Allow larger output for geo data
-            timeout=30,
-            host=host,
-            port=port,
-        )
-
-        if exec_result.get("status") == "error":
-            return exec_result
-
-        # Parse the JSON output from stdout
-        stdout = exec_result.get("stdout", "").strip()
-        if not stdout:
-            return {"status": "error", "message": "No output from geometry analysis"}
-
-        try:
-            result = json.loads(stdout)
-            return _add_response_metadata(result)
-        except json.JSONDecodeError as e:
-            return {
-                "status": "error",
-                "message": f"Failed to parse geometry data: {e}",
-                "raw_output": stdout[:500],
-            }
-
-    except HoudiniConnectionError as e:
-        return {"status": "error", "message": str(e)}
-    except CONNECTION_ERRORS as e:
-        return _handle_connection_error(e, "getting_geometry_summary")
-    except Exception as e:
-        logger.error(f"Error getting geometry summary: {e}")
-        return {"status": "error", "message": str(e), "traceback": traceback.format_exc()}
+        result = json.loads(stdout)
+        return _add_response_metadata(result)
+    except json.JSONDecodeError as e:
+        return {
+            "status": "error",
+            "message": f"Failed to parse geometry data: {e}",
+            "raw_output": stdout[:500],
+        }

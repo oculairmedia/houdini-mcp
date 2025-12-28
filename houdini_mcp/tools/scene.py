@@ -9,14 +9,11 @@ This module provides tools for managing Houdini scenes:
 """
 
 import logging
-import traceback
 from typing import Any, Dict, List, Optional
 
 from ._common import (
     ensure_connected,
-    HoudiniConnectionError,
-    CONNECTION_ERRORS,
-    _handle_connection_error,
+    handle_connection_errors,
     _json_safe_hou_value,
 )
 from .cache import invalidate_all_caches
@@ -24,6 +21,7 @@ from .cache import invalidate_all_caches
 logger = logging.getLogger("houdini_mcp.tools.scene")
 
 
+@handle_connection_errors("get_scene_info")
 def get_scene_info(host: str = "localhost", port: int = 18811) -> Dict[str, Any]:
     """
     Get current Houdini scene information.
@@ -31,35 +29,26 @@ def get_scene_info(host: str = "localhost", port: int = 18811) -> Dict[str, Any]
     Returns:
         Dict with scene information including file path, nodes, and Houdini version.
     """
-    try:
-        hou = ensure_connected(host, port)
+    hou = ensure_connected(host, port)
 
-        hip_file = hou.hipFile.path()
-        obj_node = hou.node("/obj")
+    hip_file = hou.hipFile.path()
+    obj_node = hou.node("/obj")
 
-        nodes: List[Dict[str, Any]] = []
-        if obj_node:
-            for child in obj_node.children():
-                nodes.append(
-                    {"path": child.path(), "type": child.type().name(), "name": child.name()}
-                )
+    nodes: List[Dict[str, Any]] = []
+    if obj_node:
+        for child in obj_node.children():
+            nodes.append({"path": child.path(), "type": child.type().name(), "name": child.name()})
 
-        return {
-            "status": "success",
-            "hip_file": hip_file if hip_file else "untitled.hip",
-            "houdini_version": hou.applicationVersionString(),
-            "node_count": len(nodes),
-            "nodes": nodes,
-        }
-    except HoudiniConnectionError as e:
-        return {"status": "error", "message": str(e)}
-    except CONNECTION_ERRORS as e:
-        return _handle_connection_error(e, "get_scene_info")
-    except Exception as e:
-        logger.error(f"Error getting scene info: {e}")
-        return {"status": "error", "message": str(e), "traceback": traceback.format_exc()}
+    return {
+        "status": "success",
+        "hip_file": hip_file if hip_file else "untitled.hip",
+        "houdini_version": hou.applicationVersionString(),
+        "node_count": len(nodes),
+        "nodes": nodes,
+    }
 
 
+@handle_connection_errors("save_scene")
 def save_scene(
     file_path: Optional[str] = None, host: str = "localhost", port: int = 18811
 ) -> Dict[str, Any]:
@@ -72,26 +61,19 @@ def save_scene(
     Returns:
         Dict with result.
     """
-    try:
-        hou = ensure_connected(host, port)
+    hou = ensure_connected(host, port)
 
-        if file_path:
-            hou.hipFile.save(file_path)
-            saved_path = file_path
-        else:
-            hou.hipFile.save()
-            saved_path = hou.hipFile.path()
+    if file_path:
+        hou.hipFile.save(file_path)
+        saved_path = file_path
+    else:
+        hou.hipFile.save()
+        saved_path = hou.hipFile.path()
 
-        return {"status": "success", "message": "Scene saved", "file_path": saved_path}
-    except HoudiniConnectionError as e:
-        return {"status": "error", "message": str(e)}
-    except CONNECTION_ERRORS as e:
-        return _handle_connection_error(e, "saving_scene")
-    except Exception as e:
-        logger.error(f"Error saving scene: {e}")
-        return {"status": "error", "message": str(e), "traceback": traceback.format_exc()}
+    return {"status": "success", "message": "Scene saved", "file_path": saved_path}
 
 
+@handle_connection_errors("load_scene")
 def load_scene(file_path: str, host: str = "localhost", port: int = 18811) -> Dict[str, Any]:
     """
     Load a Houdini scene file.
@@ -102,24 +84,17 @@ def load_scene(file_path: str, host: str = "localhost", port: int = 18811) -> Di
     Returns:
         Dict with result.
     """
-    try:
-        hou = ensure_connected(host, port)
+    hou = ensure_connected(host, port)
 
-        hou.hipFile.load(file_path)
+    hou.hipFile.load(file_path)
 
-        # Invalidate caches since scene context changed
-        invalidate_all_caches()
+    # Invalidate caches since scene context changed
+    invalidate_all_caches()
 
-        return {"status": "success", "message": "Scene loaded", "file_path": file_path}
-    except HoudiniConnectionError as e:
-        return {"status": "error", "message": str(e)}
-    except CONNECTION_ERRORS as e:
-        return _handle_connection_error(e, "loading_scene")
-    except Exception as e:
-        logger.error(f"Error loading scene: {e}")
-        return {"status": "error", "message": str(e), "traceback": traceback.format_exc()}
+    return {"status": "success", "message": "Scene loaded", "file_path": file_path}
 
 
+@handle_connection_errors("new_scene")
 def new_scene(host: str = "localhost", port: int = 18811) -> Dict[str, Any]:
     """
     Create a new empty Houdini scene.
@@ -127,24 +102,17 @@ def new_scene(host: str = "localhost", port: int = 18811) -> Dict[str, Any]:
     Returns:
         Dict with result.
     """
-    try:
-        hou = ensure_connected(host, port)
+    hou = ensure_connected(host, port)
 
-        hou.hipFile.clear()
+    hou.hipFile.clear()
 
-        # Invalidate caches since scene context changed
-        invalidate_all_caches()
+    # Invalidate caches since scene context changed
+    invalidate_all_caches()
 
-        return {"status": "success", "message": "New scene created"}
-    except HoudiniConnectionError as e:
-        return {"status": "error", "message": str(e)}
-    except CONNECTION_ERRORS as e:
-        return _handle_connection_error(e, "creating_new_scene")
-    except Exception as e:
-        logger.error(f"Error creating new scene: {e}")
-        return {"status": "error", "message": str(e), "traceback": traceback.format_exc()}
+    return {"status": "success", "message": "New scene created"}
 
 
+@handle_connection_errors("serialize_scene")
 def serialize_scene(
     root_path: str = "/obj",
     include_params: bool = False,
@@ -165,43 +133,33 @@ def serialize_scene(
     Returns:
         Dict with serialized scene structure.
     """
-    try:
-        hou = ensure_connected(host, port)
+    hou = ensure_connected(host, port)
 
-        def node_to_dict_recursive(node: Any, depth: int = 0) -> Dict[str, Any]:
-            if depth > max_depth:
-                return {"path": node.path(), "truncated": True}
+    def node_to_dict_recursive(node: Any, depth: int = 0) -> Dict[str, Any]:
+        if depth > max_depth:
+            return {"path": node.path(), "truncated": True}
 
-            result: Dict[str, Any] = {
-                "path": node.path(),
-                "type": node.type().name(),
-                "name": node.name(),
-            }
+        result: Dict[str, Any] = {
+            "path": node.path(),
+            "type": node.type().name(),
+            "name": node.name(),
+        }
 
-            if include_params:
-                params: Dict[str, Any] = {}
-                for parm in node.parms():
-                    try:
-                        params[parm.name()] = _json_safe_hou_value(hou, parm.eval())
-                    except Exception:
-                        params[parm.name()] = "<unevaluable>"
-                result["parameters"] = params
+        if include_params:
+            params: Dict[str, Any] = {}
+            for parm in node.parms():
+                try:
+                    params[parm.name()] = _json_safe_hou_value(hou, parm.eval())
+                except Exception:
+                    params[parm.name()] = "<unevaluable>"
+            result["parameters"] = params
 
-            result["children"] = [
-                node_to_dict_recursive(child, depth + 1) for child in node.children()
-            ]
+        result["children"] = [node_to_dict_recursive(child, depth + 1) for child in node.children()]
 
-            return result
+        return result
 
-        root = hou.node(root_path)
-        if root is None:
-            return {"status": "error", "message": f"Root node not found: {root_path}"}
+    root = hou.node(root_path)
+    if root is None:
+        return {"status": "error", "message": f"Root node not found: {root_path}"}
 
-        return {"status": "success", "root": root_path, "structure": node_to_dict_recursive(root)}
-    except HoudiniConnectionError as e:
-        return {"status": "error", "message": str(e)}
-    except CONNECTION_ERRORS as e:
-        return _handle_connection_error(e, "serializing_scene")
-    except Exception as e:
-        logger.error(f"Error serializing scene: {e}")
-        return {"status": "error", "message": str(e), "traceback": traceback.format_exc()}
+    return {"status": "success", "root": root_path, "structure": node_to_dict_recursive(root)}

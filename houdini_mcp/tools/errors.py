@@ -5,20 +5,18 @@ and warnings in the Houdini scene.
 """
 
 import logging
-import traceback
 from typing import Any, Dict, List
 
 from ._common import (
     ensure_connected,
-    HoudiniConnectionError,
-    CONNECTION_ERRORS,
-    _handle_connection_error,
+    handle_connection_errors,
     _add_response_metadata,
 )
 
 logger = logging.getLogger("houdini_mcp.tools.errors")
 
 
+@handle_connection_errors("find_error_nodes")
 def find_error_nodes(
     root_path: str = "/",
     include_warnings: bool = True,
@@ -51,126 +49,113 @@ def find_error_nodes(
         find_error_nodes("/obj/geo1")  # Find errors within a specific network
         find_error_nodes(include_warnings=False)  # Only errors, no warnings
     """
-    try:
-        hou = ensure_connected(host, port)
+    hou = ensure_connected(host, port)
 
-        root = hou.node(root_path)
-        if root is None:
-            return {"status": "error", "message": f"Root node not found: {root_path}"}
+    root = hou.node(root_path)
+    if root is None:
+        return {"status": "error", "message": f"Root node not found: {root_path}"}
 
-        error_nodes: List[Dict[str, Any]] = []
-        warning_nodes: List[Dict[str, Any]] = []
-        total_scanned = 0
+    error_nodes: List[Dict[str, Any]] = []
+    warning_nodes: List[Dict[str, Any]] = []
+    total_scanned = 0
 
-        def scan_recursive(node: Any) -> None:
-            nonlocal total_scanned
+    def scan_recursive(node: Any) -> None:
+        nonlocal total_scanned
 
-            # Check if we've hit the limit
-            total_results = len(error_nodes) + (len(warning_nodes) if include_warnings else 0)
-            if total_results >= max_results:
-                return
+        # Check if we've hit the limit
+        total_results = len(error_nodes) + (len(warning_nodes) if include_warnings else 0)
+        if total_results >= max_results:
+            return
 
-            try:
-                # Get all descendant nodes
-                all_children = node.allSubChildren()
+        try:
+            # Get all descendant nodes
+            all_children = node.allSubChildren()
 
-                for child in all_children:
-                    total_scanned += 1
+            for child in all_children:
+                total_scanned += 1
 
-                    # Check limits again inside loop
-                    total_results = len(error_nodes) + (
-                        len(warning_nodes) if include_warnings else 0
-                    )
-                    if total_results >= max_results:
-                        break
+                # Check limits again inside loop
+                total_results = len(error_nodes) + (len(warning_nodes) if include_warnings else 0)
+                if total_results >= max_results:
+                    break
 
-                    try:
-                        # Get errors
-                        errors = child.errors()
-                        if errors:
-                            error_nodes.append(
+                try:
+                    # Get errors
+                    errors = child.errors()
+                    if errors:
+                        error_nodes.append(
+                            {
+                                "path": child.path(),
+                                "name": child.name(),
+                                "type": child.type().name(),
+                                "errors": list(errors) if errors else [],
+                            }
+                        )
+
+                    # Get warnings if requested
+                    if include_warnings:
+                        warnings = child.warnings()
+                        if warnings:
+                            warning_nodes.append(
                                 {
                                     "path": child.path(),
                                     "name": child.name(),
                                     "type": child.type().name(),
-                                    "errors": list(errors) if errors else [],
+                                    "warnings": list(warnings) if warnings else [],
                                 }
                             )
 
-                        # Get warnings if requested
-                        if include_warnings:
-                            warnings = child.warnings()
-                            if warnings:
-                                warning_nodes.append(
-                                    {
-                                        "path": child.path(),
-                                        "name": child.name(),
-                                        "type": child.type().name(),
-                                        "warnings": list(warnings) if warnings else [],
-                                    }
-                                )
+                except Exception as e:
+                    logger.debug(f"Could not check errors on {child.path()}: {e}")
 
-                    except Exception as e:
-                        logger.debug(f"Could not check errors on {child.path()}: {e}")
+        except Exception as e:
+            logger.warning(f"Could not scan children of {node.path()}: {e}")
 
-            except Exception as e:
-                logger.warning(f"Could not scan children of {node.path()}: {e}")
-
-        # Also check the root node itself if it's not "/"
-        if root_path != "/":
-            total_scanned += 1
-            try:
-                errors = root.errors()
-                if errors:
-                    error_nodes.append(
+    # Also check the root node itself if it's not "/"
+    if root_path != "/":
+        total_scanned += 1
+        try:
+            errors = root.errors()
+            if errors:
+                error_nodes.append(
+                    {
+                        "path": root.path(),
+                        "name": root.name(),
+                        "type": root.type().name(),
+                        "errors": list(errors) if errors else [],
+                    }
+                )
+            if include_warnings:
+                warnings = root.warnings()
+                if warnings:
+                    warning_nodes.append(
                         {
                             "path": root.path(),
                             "name": root.name(),
                             "type": root.type().name(),
-                            "errors": list(errors) if errors else [],
+                            "warnings": list(warnings) if warnings else [],
                         }
                     )
-                if include_warnings:
-                    warnings = root.warnings()
-                    if warnings:
-                        warning_nodes.append(
-                            {
-                                "path": root.path(),
-                                "name": root.name(),
-                                "type": root.type().name(),
-                                "warnings": list(warnings) if warnings else [],
-                            }
-                        )
-            except Exception:
-                pass
+        except Exception:
+            pass
 
-        scan_recursive(root)
+    scan_recursive(root)
 
-        result: Dict[str, Any] = {
-            "status": "success",
-            "root_path": root_path,
-            "error_nodes": error_nodes,
-            "error_count": len(error_nodes),
-            "total_scanned": total_scanned,
-        }
+    result: Dict[str, Any] = {
+        "status": "success",
+        "root_path": root_path,
+        "error_nodes": error_nodes,
+        "error_count": len(error_nodes),
+        "total_scanned": total_scanned,
+    }
 
-        if include_warnings:
-            result["warning_nodes"] = warning_nodes
-            result["warning_count"] = len(warning_nodes)
+    if include_warnings:
+        result["warning_nodes"] = warning_nodes
+        result["warning_count"] = len(warning_nodes)
 
-        # Add warning if results were limited
-        total_results = len(error_nodes) + (len(warning_nodes) if include_warnings else 0)
-        if total_results >= max_results:
-            result["warning"] = (
-                f"Results limited to {max_results}. Increase max_results to see more."
-            )
+    # Add warning if results were limited
+    total_results = len(error_nodes) + (len(warning_nodes) if include_warnings else 0)
+    if total_results >= max_results:
+        result["warning"] = f"Results limited to {max_results}. Increase max_results to see more."
 
-        return _add_response_metadata(result)
-
-    except HoudiniConnectionError as e:
-        return {"status": "error", "message": str(e)}
-    except CONNECTION_ERRORS as e:
-        return _handle_connection_error(e, "finding_error_nodes")
-    except Exception as e:
-        logger.error(f"Error finding error nodes: {e}")
-        return {"status": "error", "message": str(e), "traceback": traceback.format_exc()}
+    return _add_response_metadata(result)

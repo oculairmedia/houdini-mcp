@@ -5,20 +5,18 @@ including parameter schema introspection.
 """
 
 import logging
-import traceback
 from typing import Any, Dict, List, Optional
 
 from ._common import (
     ensure_connected,
-    HoudiniConnectionError,
-    CONNECTION_ERRORS,
-    _handle_connection_error,
+    handle_connection_errors,
     _add_response_metadata,
 )
 
 logger = logging.getLogger("houdini_mcp.tools.parameters")
 
 
+@handle_connection_errors("set_parameter")
 def set_parameter(
     node_path: str, param_name: str, value: Any, host: str = "localhost", port: int = 18811
 ) -> Dict[str, Any]:
@@ -33,48 +31,41 @@ def set_parameter(
     Returns:
         Dict with result.
     """
-    try:
-        hou = ensure_connected(host, port)
+    hou = ensure_connected(host, port)
 
-        node = hou.node(node_path)
-        if node is None:
-            return {"status": "error", "message": f"Node not found: {node_path}"}
+    node = hou.node(node_path)
+    if node is None:
+        return {"status": "error", "message": f"Node not found: {node_path}"}
 
-        parm = node.parm(param_name)
-        if parm is None:
-            # Try parmTuple for vector parameters
-            parm_tuple = node.parmTuple(param_name)
-            if parm_tuple is None:
-                return {
-                    "status": "error",
-                    "message": f"Parameter not found: {param_name} on {node_path}",
-                }
-            # Set tuple value
-            if isinstance(value, (list, tuple)):
-                parm_tuple.set(value)
-            else:
-                return {
-                    "status": "error",
-                    "message": f"Parameter {param_name} is a tuple, provide a list/tuple value",
-                }
+    parm = node.parm(param_name)
+    if parm is None:
+        # Try parmTuple for vector parameters
+        parm_tuple = node.parmTuple(param_name)
+        if parm_tuple is None:
+            return {
+                "status": "error",
+                "message": f"Parameter not found: {param_name} on {node_path}",
+            }
+        # Set tuple value
+        if isinstance(value, (list, tuple)):
+            parm_tuple.set(value)
         else:
-            parm.set(value)
+            return {
+                "status": "error",
+                "message": f"Parameter {param_name} is a tuple, provide a list/tuple value",
+            }
+    else:
+        parm.set(value)
 
-        return {
-            "status": "success",
-            "node_path": node_path,
-            "param_name": param_name,
-            "value": value,
-        }
-    except HoudiniConnectionError as e:
-        return {"status": "error", "message": str(e)}
-    except CONNECTION_ERRORS as e:
-        return _handle_connection_error(e, "setting_parameter")
-    except Exception as e:
-        logger.error(f"Error setting parameter: {e}")
-        return {"status": "error", "message": str(e), "traceback": traceback.format_exc()}
+    return {
+        "status": "success",
+        "node_path": node_path,
+        "param_name": param_name,
+        "value": value,
+    }
 
 
+@handle_connection_errors("get_parameter_schema")
 def get_parameter_schema(
     node_path: str,
     parm_name: Optional[str] = None,
@@ -145,32 +136,41 @@ def get_parameter_schema(
     # Import helper to flatten parameter templates
     from ._common import _flatten_parm_templates, _json_safe_hou_value
 
-    try:
-        hou = ensure_connected(host, port)
+    hou = ensure_connected(host, port)
 
-        node = hou.node(node_path)
-        if node is None:
-            return {"status": "error", "message": f"Node not found: {node_path}"}
+    node = hou.node(node_path)
+    if node is None:
+        return {"status": "error", "message": f"Node not found: {node_path}"}
 
-        parameters: List[Dict[str, Any]] = []
+    parameters: List[Dict[str, Any]] = []
 
-        # Get parameter templates - either specific one or all
-        if parm_name is not None:
-            # Get specific parameter template.
-            #
-            # Unit tests use MockHouNode which stores values in `_params`. For tuple-valued
-            # entries, we need to prefer parmTuple(). For MagicMock-based nodes (no `_params`),
-            # prefer parm() to avoid placeholder parmTuple() mocks.
+    # Get parameter templates - either specific one or all
+    if parm_name is not None:
+        # Get specific parameter template.
+        #
+        # Unit tests use MockHouNode which stores values in `_params`. For tuple-valued
+        # entries, we need to prefer parmTuple(). For MagicMock-based nodes (no `_params`),
+        # prefer parm() to avoid placeholder parmTuple() mocks.
+        prefers_tuple = False
+        try:
+            if hasattr(node, "_params") and isinstance(node._params.get(parm_name), (list, tuple)):
+                prefers_tuple = True
+        except Exception:
             prefers_tuple = False
-            try:
-                if hasattr(node, "_params") and isinstance(
-                    node._params.get(parm_name), (list, tuple)
-                ):
-                    prefers_tuple = True
-            except Exception:
-                prefers_tuple = False
 
-            if prefers_tuple:
+        if prefers_tuple:
+            parm_tuple = node.parmTuple(parm_name)
+            if parm_tuple is None:
+                return {
+                    "status": "error",
+                    "message": f"Parameter not found: {parm_name} on node {node_path}",
+                }
+            parm_template = parm_tuple.parmTemplate()
+        else:
+            parm = node.parm(parm_name)
+            if parm is not None:
+                parm_template = parm.parmTemplate()
+            else:
                 parm_tuple = node.parmTuple(parm_name)
                 if parm_tuple is None:
                     return {
@@ -178,64 +178,44 @@ def get_parameter_schema(
                         "message": f"Parameter not found: {parm_name} on node {node_path}",
                     }
                 parm_template = parm_tuple.parmTemplate()
-            else:
-                parm = node.parm(parm_name)
-                if parm is not None:
-                    parm_template = parm.parmTemplate()
-                else:
-                    parm_tuple = node.parmTuple(parm_name)
-                    if parm_tuple is None:
-                        return {
-                            "status": "error",
-                            "message": f"Parameter not found: {parm_name} on node {node_path}",
-                        }
-                    parm_template = parm_tuple.parmTemplate()
 
-            # When we only requested one parameter, we expect to include it even if
-            # its template is folder-like (rare but possible).
-            parm_templates = [parm_template]
+        # When we only requested one parameter, we expect to include it even if
+        # its template is folder-like (rare but possible).
+        parm_templates = [parm_template]
+    else:
+        # Get all parameter templates from node.
+        # Prefer parmTemplates() if present since our unit tests mock that API.
+        if hasattr(node, "parmTemplates"):
+            parm_templates = list(node.parmTemplates())
+        elif hasattr(node, "parmTemplateGroup"):
+            ptg = node.parmTemplateGroup()
+            parm_templates = _flatten_parm_templates(hou, list(ptg.parmTemplates()))
         else:
-            # Get all parameter templates from node.
-            # Prefer parmTemplates() if present since our unit tests mock that API.
-            if hasattr(node, "parmTemplates"):
-                parm_templates = list(node.parmTemplates())
-            elif hasattr(node, "parmTemplateGroup"):
-                ptg = node.parmTemplateGroup()
-                parm_templates = _flatten_parm_templates(hou, list(ptg.parmTemplates()))
-            else:
-                parm_templates = []
+            parm_templates = []
 
-        # Process each parameter template
-        for idx, parm_template in enumerate(parm_templates):
-            if idx >= max_parms and parm_name is None:
-                logger.info(f"Reached max_parms limit of {max_parms}")
-                break
+    # Process each parameter template
+    for idx, parm_template in enumerate(parm_templates):
+        if idx >= max_parms and parm_name is None:
+            logger.info(f"Reached max_parms limit of {max_parms}")
+            break
 
-            try:
-                param_info = _extract_parameter_info(hou, node, parm_template, _json_safe_hou_value)
-                if param_info is not None:
-                    parameters.append(param_info)
-            except Exception as e:
-                logger.warning(f"Failed to extract info for parameter {parm_template.name()}: {e}")
-                # Continue with next parameter
+        try:
+            param_info = _extract_parameter_info(hou, node, parm_template, _json_safe_hou_value)
+            if param_info is not None:
+                parameters.append(param_info)
+        except Exception as e:
+            logger.warning(f"Failed to extract info for parameter {parm_template.name()}: {e}")
+            # Continue with next parameter
 
-        result = {
-            "status": "success",
-            "node_path": node_path,
-            "parameters": parameters,
-            "count": len(parameters),
-        }
+    result = {
+        "status": "success",
+        "node_path": node_path,
+        "parameters": parameters,
+        "count": len(parameters),
+    }
 
-        # Add response size metadata for large responses
-        return _add_response_metadata(result)
-
-    except HoudiniConnectionError as e:
-        return {"status": "error", "message": str(e)}
-    except CONNECTION_ERRORS as e:
-        return _handle_connection_error(e, "getting_parameter_schema")
-    except Exception as e:
-        logger.error(f"Error getting parameter schema: {e}")
-        return {"status": "error", "message": str(e), "traceback": traceback.format_exc()}
+    # Add response size metadata for large responses
+    return _add_response_metadata(result)
 
 
 def _extract_parameter_info(

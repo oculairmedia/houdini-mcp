@@ -5,19 +5,17 @@ including auto-layout, positioning, coloring, and network box creation.
 """
 
 import logging
-import traceback
 from typing import Any, Dict, List, Optional
 
 from ._common import (
     ensure_connected,
-    HoudiniConnectionError,
-    CONNECTION_ERRORS,
-    _handle_connection_error,
+    handle_connection_errors,
 )
 
 logger = logging.getLogger("houdini_mcp.tools.layout")
 
 
+@handle_connection_errors("layout_children")
 def layout_children(
     node_path: str,
     horizontal_spacing: float = 2.0,
@@ -48,47 +46,39 @@ def layout_children(
         layout_children("/obj/geo1")
         layout_children("/obj/geo1", horizontal_spacing=3.0, vertical_spacing=2.0)
     """
-    try:
-        hou = ensure_connected(host, port)
+    hou = ensure_connected(host, port)
 
-        node = hou.node(node_path)
-        if node is None:
-            return {"status": "error", "message": f"Node not found: {node_path}"}
+    node = hou.node(node_path)
+    if node is None:
+        return {"status": "error", "message": f"Node not found: {node_path}"}
 
-        children = node.children()
-        child_count = len(children)
+    children = node.children()
+    child_count = len(children)
 
-        if child_count == 0:
-            return {
-                "status": "success",
-                "node_path": node_path,
-                "child_count": 0,
-                "message": "No children to layout",
-            }
-
-        # Call layoutChildren with spacing parameters
-        node.layoutChildren(
-            horizontal_spacing=horizontal_spacing,
-            vertical_spacing=vertical_spacing,
-        )
-
+    if child_count == 0:
         return {
             "status": "success",
             "node_path": node_path,
-            "child_count": child_count,
-            "horizontal_spacing": horizontal_spacing,
-            "vertical_spacing": vertical_spacing,
+            "child_count": 0,
+            "message": "No children to layout",
         }
 
-    except HoudiniConnectionError as e:
-        return {"status": "error", "message": str(e)}
-    except CONNECTION_ERRORS as e:
-        return _handle_connection_error(e, "laying_out_children")
-    except Exception as e:
-        logger.error(f"Error laying out children: {e}")
-        return {"status": "error", "message": str(e), "traceback": traceback.format_exc()}
+    # Call layoutChildren with spacing parameters
+    node.layoutChildren(
+        horizontal_spacing=horizontal_spacing,
+        vertical_spacing=vertical_spacing,
+    )
+
+    return {
+        "status": "success",
+        "node_path": node_path,
+        "child_count": child_count,
+        "horizontal_spacing": horizontal_spacing,
+        "vertical_spacing": vertical_spacing,
+    }
 
 
+@handle_connection_errors("set_node_color")
 def set_node_color(
     node_path: str,
     color: List[float],
@@ -121,39 +111,31 @@ def set_node_color(
         set_node_color("/obj/geo1/sphere1", [1, 0, 0])  # Red
         set_node_color("/obj/geo1/important_node", [1, 1, 0])  # Yellow
     """
-    try:
-        hou = ensure_connected(host, port)
+    hou = ensure_connected(host, port)
 
-        node = hou.node(node_path)
-        if node is None:
-            return {"status": "error", "message": f"Node not found: {node_path}"}
+    node = hou.node(node_path)
+    if node is None:
+        return {"status": "error", "message": f"Node not found: {node_path}"}
 
-        # Validate color values
-        if len(color) != 3:
-            return {"status": "error", "message": "Color must be [r, g, b] with 3 values"}
+    # Validate color values
+    if len(color) != 3:
+        return {"status": "error", "message": "Color must be [r, g, b] with 3 values"}
 
-        # Clamp values to 0-1 range
-        clamped_color = [max(0.0, min(1.0, c)) for c in color]
+    # Clamp values to 0-1 range
+    clamped_color = [max(0.0, min(1.0, c)) for c in color]
 
-        # Create hou.Color and set it
-        hou_color = hou.Color(clamped_color)
-        node.setColor(hou_color)
+    # Create hou.Color and set it
+    hou_color = hou.Color(clamped_color)
+    node.setColor(hou_color)
 
-        return {
-            "status": "success",
-            "node_path": node_path,
-            "color": clamped_color,
-        }
-
-    except HoudiniConnectionError as e:
-        return {"status": "error", "message": str(e)}
-    except CONNECTION_ERRORS as e:
-        return _handle_connection_error(e, "setting_node_color")
-    except Exception as e:
-        logger.error(f"Error setting node color: {e}")
-        return {"status": "error", "message": str(e), "traceback": traceback.format_exc()}
+    return {
+        "status": "success",
+        "node_path": node_path,
+        "color": clamped_color,
+    }
 
 
+@handle_connection_errors("set_node_position")
 def set_node_position(
     node_path: str,
     x: float,
@@ -181,32 +163,24 @@ def set_node_position(
         set_node_position("/obj/geo1/sphere1", 0, 0)
         set_node_position("/obj/geo1/sphere1", 5.0, -3.0)
     """
-    try:
-        hou = ensure_connected(host, port)
+    hou = ensure_connected(host, port)
 
-        node = hou.node(node_path)
-        if node is None:
-            return {"status": "error", "message": f"Node not found: {node_path}"}
+    node = hou.node(node_path)
+    if node is None:
+        return {"status": "error", "message": f"Node not found: {node_path}"}
 
-        # Create position vector and set it
-        position = hou.Vector2(x, y)
-        node.setPosition(position)
+    # Create position vector and set it
+    position = hou.Vector2(x, y)
+    node.setPosition(position)
 
-        return {
-            "status": "success",
-            "node_path": node_path,
-            "position": [x, y],
-        }
-
-    except HoudiniConnectionError as e:
-        return {"status": "error", "message": str(e)}
-    except CONNECTION_ERRORS as e:
-        return _handle_connection_error(e, "setting_node_position")
-    except Exception as e:
-        logger.error(f"Error setting node position: {e}")
-        return {"status": "error", "message": str(e), "traceback": traceback.format_exc()}
+    return {
+        "status": "success",
+        "node_path": node_path,
+        "position": [x, y],
+    }
 
 
+@handle_connection_errors("create_network_box")
 def create_network_box(
     parent_path: str,
     node_paths: List[str],
@@ -240,63 +214,54 @@ def create_network_box(
         create_network_box("/obj/geo1", ["/obj/geo1/sphere1", "/obj/geo1/noise1"], "Deform Setup")
         create_network_box("/obj/geo1", ["/obj/geo1/box1"], "Input", color=[0.2, 0.6, 0.2])
     """
-    try:
-        hou = ensure_connected(host, port)
+    hou = ensure_connected(host, port)
 
-        parent = hou.node(parent_path)
-        if parent is None:
-            return {"status": "error", "message": f"Parent node not found: {parent_path}"}
+    parent = hou.node(parent_path)
+    if parent is None:
+        return {"status": "error", "message": f"Parent node not found: {parent_path}"}
 
-        # Validate all nodes exist and are children of parent
-        nodes = []
-        for path in node_paths:
-            node = hou.node(path)
-            if node is None:
-                return {"status": "error", "message": f"Node not found: {path}"}
-            # Check if it's a child of the parent
-            if node.parent().path() != parent_path:
-                return {
-                    "status": "error",
-                    "message": f"Node {path} is not a child of {parent_path}",
-                }
-            nodes.append(node)
+    # Validate all nodes exist and are children of parent
+    nodes = []
+    for path in node_paths:
+        node = hou.node(path)
+        if node is None:
+            return {"status": "error", "message": f"Node not found: {path}"}
+        # Check if it's a child of the parent
+        if node.parent().path() != parent_path:
+            return {
+                "status": "error",
+                "message": f"Node {path} is not a child of {parent_path}",
+            }
+        nodes.append(node)
 
-        if not nodes:
-            return {"status": "error", "message": "No nodes specified for network box"}
+    if not nodes:
+        return {"status": "error", "message": "No nodes specified for network box"}
 
-        # Create network box
-        netbox = parent.createNetworkBox()
+    # Create network box
+    netbox = parent.createNetworkBox()
 
-        # Set label
-        if label:
-            netbox.setComment(label)
+    # Set label
+    if label:
+        netbox.setComment(label)
 
-        # Set color if provided
-        if color and len(color) == 3:
-            clamped_color = [max(0.0, min(1.0, c)) for c in color]
-            hou_color = hou.Color(clamped_color)
-            netbox.setColor(hou_color)
+    # Set color if provided
+    if color and len(color) == 3:
+        clamped_color = [max(0.0, min(1.0, c)) for c in color]
+        hou_color = hou.Color(clamped_color)
+        netbox.setColor(hou_color)
 
-        # Add nodes to the box
-        for node in nodes:
-            netbox.addNode(node)
+    # Add nodes to the box
+    for node in nodes:
+        netbox.addNode(node)
 
-        # Fit box to contents
-        netbox.fitAroundContents()
+    # Fit box to contents
+    netbox.fitAroundContents()
 
-        return {
-            "status": "success",
-            "network_box_name": netbox.name(),
-            "parent_path": parent_path,
-            "nodes_contained": node_paths,
-            "label": label,
-            "color": color,
-        }
-
-    except HoudiniConnectionError as e:
-        return {"status": "error", "message": str(e)}
-    except CONNECTION_ERRORS as e:
-        return _handle_connection_error(e, "creating_network_box")
-    except Exception as e:
-        logger.error(f"Error creating network box: {e}")
-        return {"status": "error", "message": str(e), "traceback": traceback.format_exc()}
+    return {
+        "status": "success",
+        "network_box_name": netbox.name(),
+        "parent_path": parent_path,
+        "nodes_contained": node_paths,
+        "label": label,
+        "color": color,
+    }

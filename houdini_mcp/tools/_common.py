@@ -37,6 +37,7 @@ __all__ = [
     # Error handling
     "CONNECTION_ERRORS",
     "_handle_connection_error",
+    "handle_connection_errors",  # Decorator for consistent error handling
     # Code safety
     "DANGEROUS_PATTERNS",
     "_detect_dangerous_code",
@@ -65,6 +66,60 @@ __all__ = [
 ]
 
 logger = logging.getLogger("houdini_mcp.tools")
+
+
+# =============================================================================
+# Error Handling Decorator
+# =============================================================================
+
+import functools
+import traceback
+from typing import Callable
+
+
+def handle_connection_errors(operation_name: str) -> Callable:
+    """
+    Decorator that wraps tool functions with consistent error handling.
+
+    Handles the three-tier error pattern:
+    1. HoudiniConnectionError - Returns simple error response
+    2. CONNECTION_ERRORS - Calls _handle_connection_error for graceful recovery
+    3. Generic Exception - Logs and returns error with traceback
+
+    Args:
+        operation_name: Name of the operation (used in error messages)
+
+    Returns:
+        Decorated function with error handling
+
+    Example:
+        @handle_connection_errors("get_scene_info")
+        def get_scene_info(host: str = "localhost", port: int = 18811) -> Dict[str, Any]:
+            hou = ensure_connected(host, port)
+            # ... actual logic without try/except boilerplate
+            return {"status": "success", ...}
+    """
+
+    def decorator(func: Callable) -> Callable:
+        @functools.wraps(func)
+        def wrapper(*args, **kwargs) -> Dict[str, Any]:
+            try:
+                return func(*args, **kwargs)
+            except HoudiniConnectionError as e:
+                return {"status": "error", "message": str(e)}
+            except CONNECTION_ERRORS as e:
+                return _handle_connection_error(e, operation_name)
+            except Exception as e:
+                logger.error(f"Error during {operation_name}: {e}")
+                return {
+                    "status": "error",
+                    "message": str(e),
+                    "traceback": traceback.format_exc(),
+                }
+
+        return wrapper
+
+    return decorator
 
 
 # RPyC and connection-related exceptions that indicate broken/timed-out connections
