@@ -529,6 +529,115 @@ def render_quad_view(
 
 
 @mcp.tool()
+def list_render_nodes() -> Dict[str, Any]:
+    """
+    List all render nodes (ROPs) in the /out context.
+
+    Returns information about each render node including type, path,
+    and basic configuration like camera and output path.
+
+    Returns:
+        Dict with:
+        - status: "success" or "error"
+        - count: Number of render nodes found
+        - render_nodes: List of render node info with:
+            - path: Full node path
+            - name: Node name
+            - type: ROP type (opengl, karma, ifd, etc.)
+            - camera: Camera path if set
+            - output: Output image path if set
+            - bypassed: Whether the node is bypassed
+
+    Examples:
+        list_render_nodes()  # List all ROPs in /out
+    """
+    return tools.list_render_nodes(HOUDINI_HOST, HOUDINI_PORT)
+
+
+@mcp.tool()
+def get_render_settings(rop_path: str) -> Dict[str, Any]:
+    """
+    Get current render configuration for a ROP node.
+
+    Returns all relevant render settings based on the ROP type (Karma, Mantra, OpenGL).
+
+    Args:
+        rop_path: Full path to the ROP node (e.g., "/out/karma1")
+
+    Returns:
+        Dict with:
+        - status: "success" or "error"
+        - rop_path: Path to the ROP
+        - rop_type: Type of ROP (karma, ifd, opengl)
+        - settings: Dict of parameter names to current values
+        - schema: Dict describing available settings for this ROP type
+
+    Examples:
+        get_render_settings("/out/karma1")
+        get_render_settings("/out/mantra1")
+    """
+    return tools.get_render_settings(rop_path, HOUDINI_HOST, HOUDINI_PORT)
+
+
+@mcp.tool()
+def set_render_settings(
+    rop_path: str,
+    settings: Dict[str, Any],
+) -> Dict[str, Any]:
+    """
+    Modify render settings on a ROP node.
+
+    Args:
+        rop_path: Full path to the ROP node (e.g., "/out/karma1")
+        settings: Dict of parameter names to values to set
+
+    Returns:
+        Dict with:
+        - status: "success", "partial", or "error"
+        - rop_path: Path to the ROP
+        - updated: List of parameters that were updated
+        - failed: List of parameters that failed to update
+
+    Examples:
+        set_render_settings("/out/karma1", {"samplesperpixel": 64, "engine": "xpu"})
+        set_render_settings("/out/mantra1", {"vm_samplesx": 6, "vm_samplesy": 6})
+    """
+    return tools.set_render_settings(rop_path, settings, HOUDINI_HOST, HOUDINI_PORT)
+
+
+@mcp.tool()
+def create_render_node(
+    rop_type: str,
+    name: Optional[str] = None,
+    settings: Optional[Dict[str, Any]] = None,
+) -> Dict[str, Any]:
+    """
+    Create a new render node (ROP) with optional settings.
+
+    Args:
+        rop_type: Type of ROP to create. Common types:
+            - "opengl": Fast viewport render (recommended for previews)
+            - "karma": Karma renderer (CPU or GPU)
+            - "ifd": Mantra renderer
+        name: Optional name for the node (auto-generated if not provided)
+        settings: Optional dict of parameter values to set on creation
+
+    Returns:
+        Dict with:
+        - status: "success" or "error"
+        - rop_path: Path to the created ROP
+        - rop_type: Type of ROP created
+        - settings_applied: List of settings that were applied
+
+    Examples:
+        create_render_node("karma", "hero_render", {"engine": "xpu", "samplesperpixel": 64})
+        create_render_node("opengl", settings={"antialias": 8})
+        create_render_node("ifd", "final_render")
+    """
+    return tools.create_render_node(rop_type, name, settings, HOUDINI_HOST, HOUDINI_PORT)
+
+
+@mcp.tool()
 def find_error_nodes(
     root_path: str = "/",
     include_warnings: bool = True,

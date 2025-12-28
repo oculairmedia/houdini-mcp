@@ -550,6 +550,108 @@ class TestRenderQuadViewTiming:
             assert isinstance(result["total_render_time_ms"], (int, float))
 
 
+class TestListRenderNodes:
+    """Tests for list_render_nodes function."""
+
+    def test_connection_error(self, reset_connection_state):
+        """Test handling of connection errors."""
+        from houdini_mcp.tools import list_render_nodes
+
+        with patch("houdini_mcp.connection.rpyc") as mock_rpyc:
+            mock_rpyc.classic.connect.side_effect = ConnectionError("Connection refused")
+            result = list_render_nodes(host="localhost", port=18811)
+
+        assert result["status"] == "error"
+        assert "Failed to connect" in result["message"]
+
+    def test_out_context_not_found(self, mock_connection):
+        """Test handling when /out context is not found."""
+        from houdini_mcp.tools import list_render_nodes
+
+        # Remove /out from the mock
+        mock_connection._nodes.pop("/out", None)
+
+        result = list_render_nodes(host="localhost", port=18811)
+        assert result["status"] == "error"
+        assert "/out" in result["message"] or "Cannot find" in result["message"]
+
+
+class TestGetRenderSettings:
+    """Tests for get_render_settings function."""
+
+    def test_connection_error(self, reset_connection_state):
+        """Test handling of connection errors."""
+        from houdini_mcp.tools import get_render_settings
+
+        with patch("houdini_mcp.connection.rpyc") as mock_rpyc:
+            mock_rpyc.classic.connect.side_effect = ConnectionError("Connection refused")
+            result = get_render_settings("/out/karma1", host="localhost", port=18811)
+
+        assert result["status"] == "error"
+        assert "Failed to connect" in result["message"]
+
+    def test_rop_not_found(self, mock_connection):
+        """Test handling when ROP is not found."""
+        from houdini_mcp.tools import get_render_settings
+
+        result = get_render_settings("/out/nonexistent", host="localhost", port=18811)
+        assert result["status"] == "error"
+        assert "not found" in result["message"]
+
+
+class TestSetRenderSettings:
+    """Tests for set_render_settings function."""
+
+    def test_connection_error(self, reset_connection_state):
+        """Test handling of connection errors."""
+        from houdini_mcp.tools import set_render_settings
+
+        with patch("houdini_mcp.connection.rpyc") as mock_rpyc:
+            mock_rpyc.classic.connect.side_effect = ConnectionError("Connection refused")
+            result = set_render_settings(
+                "/out/karma1", {"samplesperpixel": 64}, host="localhost", port=18811
+            )
+
+        assert result["status"] == "error"
+        assert "Failed to connect" in result["message"]
+
+    def test_rop_not_found(self, mock_connection):
+        """Test handling when ROP is not found."""
+        from houdini_mcp.tools import set_render_settings
+
+        result = set_render_settings(
+            "/out/nonexistent", {"samplesperpixel": 64}, host="localhost", port=18811
+        )
+        assert result["status"] == "error"
+        assert "not found" in result["message"]
+
+
+class TestCreateRenderNode:
+    """Tests for create_render_node function."""
+
+    def test_connection_error(self, reset_connection_state):
+        """Test handling of connection errors."""
+        from houdini_mcp.tools import create_render_node
+
+        with patch("houdini_mcp.connection.rpyc") as mock_rpyc:
+            mock_rpyc.classic.connect.side_effect = ConnectionError("Connection refused")
+            result = create_render_node("karma", host="localhost", port=18811)
+
+        assert result["status"] == "error"
+        assert "Failed to connect" in result["message"]
+
+    def test_out_context_not_found(self, mock_connection):
+        """Test handling when /out context is not found."""
+        from houdini_mcp.tools import create_render_node
+
+        # Remove /out from the mock
+        mock_connection._nodes.pop("/out", None)
+
+        result = create_render_node("karma", host="localhost", port=18811)
+        assert result["status"] == "error"
+        assert "/out" in result["message"] or "Cannot find" in result["message"]
+
+
 class TestKarmaEngineParameter:
     """Tests for karma_engine parameter in render functions."""
 

@@ -17,7 +17,14 @@ from .layout import layout_children, set_node_color, set_node_position, create_n
 from .materials import create_material, assign_material, get_material_info
 from .geometry import get_geo_summary
 from .parameters import set_parameter, get_parameter_schema
-from .rendering import render_viewport, render_quad_view
+from .rendering import (
+    render_viewport,
+    render_quad_view,
+    list_render_nodes,
+    get_render_settings,
+    set_render_settings,
+    create_render_node,
+)
 from .wiring import connect_nodes, disconnect_node_input, reorder_inputs, set_node_flags
 from .code import execute_code, get_last_scene_diff
 from .scene import get_scene_info, save_scene, load_scene, new_scene, serialize_scene
@@ -77,6 +84,10 @@ __all__ = [
     # Rendering
     "render_viewport",
     "render_quad_view",
+    "list_render_nodes",
+    "get_render_settings",
+    "set_render_settings",
+    "create_render_node",
     # Materials
     "create_material",
     "assign_material",

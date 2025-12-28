@@ -660,3 +660,344 @@ def render_quad_view(
     except Exception as e:
         logger.error(f"Error in render_quad_view: {e}")
         return {"status": "error", "message": str(e), "traceback": traceback.format_exc()}
+
+
+# =============================================================================
+# Render Configuration Tools
+# =============================================================================
+
+# Common render settings by ROP type
+RENDER_SETTINGS_SCHEMA = {
+    "opengl": {
+        "camera": {"type": "string", "description": "Camera path"},
+        "picture": {"type": "string", "description": "Output image path"},
+        "tres": {"type": "bool", "description": "Override resolution"},
+        "res1": {"type": "int", "description": "Resolution width"},
+        "res2": {"type": "int", "description": "Resolution height"},
+        "aamode": {"type": "int", "description": "Antialiasing mode (0=off, 2=4x, 4=8x)"},
+        "hdr": {"type": "string", "description": "HDR mode (off, fp16, fp32)"},
+        "transparency": {"type": "int", "description": "Transparency quality (0-3)"},
+        "shadows": {"type": "int", "description": "Shadow mode (0-3)"},
+        "shadowmapsize": {"type": "int", "description": "Shadow map resolution"},
+        "ao": {"type": "float", "description": "Ambient occlusion level"},
+        "dof": {"type": "bool", "description": "Depth of field"},
+        "motionblur": {"type": "int", "description": "Motion blur samples"},
+    },
+    "karma": {
+        "camera": {"type": "string", "description": "Camera path"},
+        "picture": {"type": "string", "description": "Output image path"},
+        "engine": {"type": "string", "description": "Render engine (cpu/xpu)"},
+        "resolutionx": {"type": "int", "description": "Resolution width"},
+        "resolutiony": {"type": "int", "description": "Resolution height"},
+        "samplesperpixel": {"type": "int", "description": "Samples per pixel"},
+        "varianceaa_maxsamples": {"type": "int", "description": "Max adaptive samples"},
+        "varianceaa_thresh": {"type": "float", "description": "Variance threshold"},
+        "enabledof": {"type": "bool", "description": "Depth of field"},
+        "enablemblur": {"type": "bool", "description": "Motion blur"},
+        "diffuselimit": {"type": "int", "description": "Diffuse ray limit"},
+        "reflectlimit": {"type": "int", "description": "Reflect ray limit"},
+        "refractlimit": {"type": "int", "description": "Refract ray limit"},
+    },
+    "ifd": {  # Mantra
+        "camera": {"type": "string", "description": "Camera path"},
+        "vm_picture": {"type": "string", "description": "Output image path"},
+        "vm_renderengine": {"type": "string", "description": "Render engine"},
+        "override_camerares": {"type": "bool", "description": "Override resolution"},
+        "res_overridex": {"type": "int", "description": "Resolution width"},
+        "res_overridey": {"type": "int", "description": "Resolution height"},
+        "vm_samplesx": {"type": "int", "description": "Pixel samples X"},
+        "vm_samplesy": {"type": "int", "description": "Pixel samples Y"},
+        "vm_minraysamples": {"type": "int", "description": "Min ray samples"},
+        "vm_maxraysamples": {"type": "int", "description": "Max ray samples"},
+        "vm_variance": {"type": "float", "description": "Noise level"},
+        "allowmotionblur": {"type": "bool", "description": "Motion blur"},
+        "vm_dof": {"type": "bool", "description": "Depth of field"},
+        "vm_reflectlimit": {"type": "int", "description": "Reflection limit"},
+        "vm_refractlimit": {"type": "int", "description": "Refraction limit"},
+        "vm_diffuselimit": {"type": "int", "description": "Diffuse limit"},
+    },
+}
+
+
+def list_render_nodes(
+    host: str = "localhost",
+    port: int = 18811,
+) -> Dict[str, Any]:
+    """
+    List all render nodes (ROPs) in the /out context.
+
+    Returns information about each render node including type, path,
+    and basic configuration like camera and output path.
+
+    Returns:
+        Dict with:
+        - status: "success" or "error"
+        - count: Number of render nodes found
+        - render_nodes: List of render node info with:
+            - path: Full node path
+            - name: Node name
+            - type: ROP type (opengl, karma, ifd, etc.)
+            - camera: Camera path if set
+            - output: Output image path if set
+            - enabled: Whether the node is bypassed
+
+    Examples:
+        list_render_nodes()  # List all ROPs in /out
+    """
+    try:
+        hou = ensure_connected(host, port)
+
+        out_context = hou.node("/out")
+        if out_context is None:
+            return {"status": "error", "message": "Cannot find /out context"}
+
+        render_nodes = []
+        for node in out_context.children():
+            node_type = node.type().name()
+            node_info = {
+                "path": node.path(),
+                "name": node.name(),
+                "type": node_type,
+                "bypassed": node.isBypassed() if hasattr(node, "isBypassed") else False,
+            }
+
+            # Get camera path
+            camera_parm = node.parm("camera")
+            if camera_parm:
+                node_info["camera"] = camera_parm.eval()
+
+            # Get output path (different parameter names for different ROPs)
+            output_parm = node.parm("picture") or node.parm("vm_picture")
+            if output_parm:
+                node_info["output"] = output_parm.eval()
+
+            render_nodes.append(node_info)
+
+        return {
+            "status": "success",
+            "count": len(render_nodes),
+            "render_nodes": render_nodes,
+        }
+
+    except HoudiniConnectionError as e:
+        return {"status": "error", "message": str(e)}
+    except CONNECTION_ERRORS as e:
+        return _handle_connection_error(e, "list_render_nodes")
+    except Exception as e:
+        logger.error(f"Error in list_render_nodes: {e}")
+        return {"status": "error", "message": str(e), "traceback": traceback.format_exc()}
+
+
+def get_render_settings(
+    rop_path: str,
+    host: str = "localhost",
+    port: int = 18811,
+) -> Dict[str, Any]:
+    """
+    Get current render configuration for a ROP node.
+
+    Returns all relevant render settings based on the ROP type (Karma, Mantra, OpenGL).
+
+    Args:
+        rop_path: Full path to the ROP node (e.g., "/out/karma1")
+
+    Returns:
+        Dict with:
+        - status: "success" or "error"
+        - rop_path: Path to the ROP
+        - rop_type: Type of ROP (karma, ifd, opengl)
+        - settings: Dict of parameter names to current values
+        - schema: Dict describing available settings for this ROP type
+
+    Examples:
+        get_render_settings("/out/karma1")
+        get_render_settings("/out/mantra1")
+    """
+    try:
+        hou = ensure_connected(host, port)
+
+        node = hou.node(rop_path)
+        if node is None:
+            return {"status": "error", "message": f"ROP not found: {rop_path}"}
+
+        node_type = node.type().name()
+
+        # Get the schema for this ROP type
+        schema = RENDER_SETTINGS_SCHEMA.get(node_type, {})
+
+        # Read current values for known settings
+        settings = {}
+        for parm_name in schema:
+            parm = node.parm(parm_name)
+            if parm:
+                try:
+                    settings[parm_name] = parm.eval()
+                except Exception:
+                    settings[parm_name] = None
+
+        # Also get some common settings not in schema
+        common_parms = ["trange", "f1", "f2", "f3"]  # Frame range
+        for parm_name in common_parms:
+            parm = node.parm(parm_name)
+            if parm:
+                try:
+                    settings[parm_name] = parm.eval()
+                except Exception:
+                    pass
+
+        return {
+            "status": "success",
+            "rop_path": rop_path,
+            "rop_type": node_type,
+            "settings": settings,
+            "schema": schema,
+        }
+
+    except HoudiniConnectionError as e:
+        return {"status": "error", "message": str(e)}
+    except CONNECTION_ERRORS as e:
+        return _handle_connection_error(e, "get_render_settings")
+    except Exception as e:
+        logger.error(f"Error in get_render_settings: {e}")
+        return {"status": "error", "message": str(e), "traceback": traceback.format_exc()}
+
+
+def set_render_settings(
+    rop_path: str,
+    settings: Dict[str, Any],
+    host: str = "localhost",
+    port: int = 18811,
+) -> Dict[str, Any]:
+    """
+    Modify render settings on a ROP node.
+
+    Args:
+        rop_path: Full path to the ROP node (e.g., "/out/karma1")
+        settings: Dict of parameter names to values to set
+
+    Returns:
+        Dict with:
+        - status: "success" or "error"
+        - rop_path: Path to the ROP
+        - updated: List of parameters that were updated
+        - failed: List of parameters that failed to update
+
+    Examples:
+        set_render_settings("/out/karma1", {"samplesperpixel": 64, "engine": "xpu"})
+        set_render_settings("/out/mantra1", {"vm_samplesx": 6, "vm_samplesy": 6})
+    """
+    try:
+        hou = ensure_connected(host, port)
+
+        node = hou.node(rop_path)
+        if node is None:
+            return {"status": "error", "message": f"ROP not found: {rop_path}"}
+
+        updated = []
+        failed = []
+
+        for parm_name, value in settings.items():
+            parm = node.parm(parm_name)
+            if parm is None:
+                failed.append({"name": parm_name, "reason": "Parameter not found"})
+                continue
+
+            try:
+                parm.set(value)
+                updated.append({"name": parm_name, "value": value})
+            except Exception as e:
+                failed.append({"name": parm_name, "reason": str(e)})
+
+        return {
+            "status": "success" if not failed else "partial",
+            "rop_path": rop_path,
+            "updated": updated,
+            "failed": failed,
+        }
+
+    except HoudiniConnectionError as e:
+        return {"status": "error", "message": str(e)}
+    except CONNECTION_ERRORS as e:
+        return _handle_connection_error(e, "set_render_settings")
+    except Exception as e:
+        logger.error(f"Error in set_render_settings: {e}")
+        return {"status": "error", "message": str(e), "traceback": traceback.format_exc()}
+
+
+def create_render_node(
+    rop_type: str,
+    name: Optional[str] = None,
+    settings: Optional[Dict[str, Any]] = None,
+    host: str = "localhost",
+    port: int = 18811,
+) -> Dict[str, Any]:
+    """
+    Create a new render node (ROP) with optional settings.
+
+    Args:
+        rop_type: Type of ROP to create. Common types:
+            - "opengl": Fast viewport render (recommended for previews)
+            - "karma": Karma renderer (CPU or GPU)
+            - "ifd": Mantra renderer
+        name: Optional name for the node (auto-generated if not provided)
+        settings: Optional dict of parameter values to set on creation
+
+    Returns:
+        Dict with:
+        - status: "success" or "error"
+        - rop_path: Path to the created ROP
+        - rop_type: Type of ROP created
+        - settings_applied: List of settings that were applied
+
+    Examples:
+        create_render_node("karma", "hero_render", {"engine": "xpu", "samplesperpixel": 64})
+        create_render_node("opengl", settings={"antialias": 8})
+        create_render_node("ifd", "final_render")
+    """
+    try:
+        hou = ensure_connected(host, port)
+
+        out_context = hou.node("/out")
+        if out_context is None:
+            return {"status": "error", "message": "Cannot find /out context"}
+
+        # Create the node
+        if name:
+            node = out_context.createNode(rop_type, name)
+        else:
+            node = out_context.createNode(rop_type)
+
+        if node is None:
+            return {
+                "status": "error",
+                "message": f"Failed to create ROP of type '{rop_type}'",
+            }
+
+        settings_applied = []
+
+        # Apply settings if provided
+        if settings:
+            for parm_name, value in settings.items():
+                parm = node.parm(parm_name)
+                if parm:
+                    try:
+                        parm.set(value)
+                        settings_applied.append({"name": parm_name, "value": value})
+                    except Exception as e:
+                        logger.warning(f"Failed to set {parm_name}: {e}")
+
+        return {
+            "status": "success",
+            "rop_path": node.path(),
+            "rop_name": node.name(),
+            "rop_type": rop_type,
+            "settings_applied": settings_applied,
+        }
+
+    except HoudiniConnectionError as e:
+        return {"status": "error", "message": str(e)}
+    except CONNECTION_ERRORS as e:
+        return _handle_connection_error(e, "create_render_node")
+    except Exception as e:
+        logger.error(f"Error in create_render_node: {e}")
+        return {"status": "error", "message": str(e), "traceback": traceback.format_exc()}
