@@ -1,0 +1,18 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(find:*)",
+      "Bash(echo:*)",
+      "Bash(ls:*)",
+      "Bash(head:*)",
+      "Bash(grep:*)",
+      "Bash(cd /opt/stacks/houdini-mcp && python3 -c \"\nfrom houdini_mcp.tools import (\n    get_houdini_help,      # help.py\n    find_error_nodes,      # errors.py\n    layout_children,       # layout.py\n    create_material,       # materials.py\n    get_geo_summary,       # geometry.py\n    render_viewport,       # rendering.py\n    connect_nodes,         # wiring.py\n    get_scene_info,        # scene.py\n)\nprint('✅ All Phase 2 module imports verified!')\n\")",
+      "Bash(cd /opt/stacks/houdini-mcp && bd done houdini-mcp-7n9 --message \"Verified: help.py module extracted and imports working\")",
+      "Bash(cd /opt/stacks/houdini-mcp && bd done houdini-mcp-48h --message \"Verified: layout.py module extracted and imports working\")",
+      "Bash(cd /opt/stacks/houdini-mcp && bd done houdini-mcp-9hi --message \"Verified: materials.py module extracted and imports working\")",
+      "Bash(cd /opt/stacks/houdini-mcp && bd done houdini-mcp-ryz --message \"Verified: geometry.py module extracted and imports working\")",
+      "Bash(cd /opt/stacks/houdini-mcp && bd done houdini-mcp-cos --message \"Verified: rendering.py module extracted and imports working\")",
+      "Bash(cd /opt/stacks/houdini-mcp && bd done houdini-mcp-e6s --message \"Verified: wiring.py module extracted and imports working\")"
+    ]
+  }
+}
