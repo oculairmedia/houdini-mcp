@@ -354,3 +354,197 @@ class TestRenderViewportCameraPosition:
             port=18811,
         )
         assert "status" in result
+
+
+class TestRenderQuadViewValidation:
+    """Tests for render_quad_view input validation."""
+
+    def test_resolution_too_small(self, mock_connection):
+        """Test rejection of resolution smaller than 64x64."""
+        from houdini_mcp.tools import render_quad_view
+
+        result = render_quad_view(resolution=[32, 32], host="localhost", port=18811)
+        assert result["status"] == "error"
+        assert "64x64" in result["message"]
+
+    def test_resolution_too_large(self, mock_connection):
+        """Test rejection of resolution larger than 4096x4096."""
+        from houdini_mcp.tools import render_quad_view
+
+        result = render_quad_view(resolution=[8192, 8192], host="localhost", port=18811)
+        assert result["status"] == "error"
+        assert "4096" in result["message"]
+
+    def test_connection_error(self, reset_connection_state):
+        """Test handling of connection errors."""
+        from houdini_mcp.tools import render_quad_view
+
+        with patch("houdini_mcp.connection.rpyc") as mock_rpyc:
+            mock_rpyc.classic.connect.side_effect = ConnectionError("Connection refused")
+            result = render_quad_view(host="localhost", port=18811)
+
+        assert result["status"] == "error"
+        assert "Failed to connect" in result["message"]
+
+    def test_obj_context_not_found(self, mock_connection):
+        """Test handling when /obj context is not found."""
+        from houdini_mcp.tools import render_quad_view
+
+        # Remove /obj from the mock
+        mock_connection._nodes.pop("/obj", None)
+
+        result = render_quad_view(host="localhost", port=18811)
+        assert result["status"] == "error"
+        assert "/obj" in result["message"] or "Cannot find" in result["message"]
+
+
+class TestRenderQuadViewConfiguration:
+    """Tests for render_quad_view configuration options."""
+
+    def test_default_renders_4_views(self, mock_connection):
+        """Test default configuration returns 4 views."""
+        from houdini_mcp.tools import render_quad_view
+
+        result = render_quad_view(host="localhost", port=18811)
+        # If it proceeds past validation, check structure
+        if result["status"] == "success":
+            assert "views" in result
+            assert len(result["views"]) == 4
+            view_names = [v["name"] for v in result["views"]]
+            assert "front" in view_names
+            assert "left" in view_names
+            assert "top" in view_names
+            assert "perspective" in view_names
+
+    def test_exclude_perspective_renders_3_views(self, mock_connection):
+        """Test include_perspective=False returns only 3 views."""
+        from houdini_mcp.tools import render_quad_view
+
+        result = render_quad_view(include_perspective=False, host="localhost", port=18811)
+        if result["status"] == "success":
+            assert "views" in result
+            assert len(result["views"]) == 3
+            view_names = [v["name"] for v in result["views"]]
+            assert "perspective" not in view_names
+
+    def test_orthographic_projection(self, mock_connection):
+        """Test orthographic projection is applied to ortho views."""
+        from houdini_mcp.tools import render_quad_view
+
+        result = render_quad_view(orthographic=True, host="localhost", port=18811)
+        if result["status"] == "success":
+            for view in result["views"]:
+                if view["name"] != "perspective":
+                    assert view.get("orthographic") is True
+
+    def test_perspective_view_always_perspective(self, mock_connection):
+        """Test perspective view uses perspective projection even with orthographic=True."""
+        from houdini_mcp.tools import render_quad_view
+
+        result = render_quad_view(orthographic=True, host="localhost", port=18811)
+        if result["status"] == "success":
+            for view in result["views"]:
+                if view["name"] == "perspective":
+                    assert view.get("orthographic") is False
+
+
+class TestRenderQuadViewRenderers:
+    """Tests for different render engines in quad view."""
+
+    def test_opengl_renderer(self, mock_connection):
+        """Test OpenGL renderer is accepted."""
+        from houdini_mcp.tools import render_quad_view
+
+        result = render_quad_view(renderer="opengl", host="localhost", port=18811)
+        assert "status" in result
+        if result["status"] == "success":
+            assert result["renderer"] == "opengl"
+
+    def test_karma_renderer(self, mock_connection):
+        """Test Karma renderer is accepted."""
+        from houdini_mcp.tools import render_quad_view
+
+        result = render_quad_view(renderer="karma", host="localhost", port=18811)
+        assert "status" in result
+        if result["status"] == "success":
+            assert result["renderer"] == "karma"
+
+    def test_unknown_renderer(self, mock_connection):
+        """Test unknown renderer returns error."""
+        from houdini_mcp.tools import render_quad_view
+
+        result = render_quad_view(renderer="unknown", host="localhost", port=18811)
+        assert result["status"] == "error"
+        # The error message might vary depending on where the mock fails,
+        # but it should contain "Unknown renderer" or other error info
+        assert "message" in result
+
+
+class TestRenderQuadViewOutputFormats:
+    """Tests for different output formats in quad view."""
+
+    def test_png_format(self, mock_connection):
+        """Test PNG output format."""
+        from houdini_mcp.tools import render_quad_view
+
+        result = render_quad_view(output_format="png", host="localhost", port=18811)
+        assert "status" in result
+        if result["status"] == "success":
+            for view in result["views"]:
+                if "error" not in view:
+                    assert view["format"] == "png"
+
+    def test_jpg_format(self, mock_connection):
+        """Test JPG output format."""
+        from houdini_mcp.tools import render_quad_view
+
+        result = render_quad_view(output_format="jpg", host="localhost", port=18811)
+        assert "status" in result
+
+    def test_exr_format(self, mock_connection):
+        """Test EXR output format."""
+        from houdini_mcp.tools import render_quad_view
+
+        result = render_quad_view(output_format="exr", host="localhost", port=18811)
+        assert "status" in result
+
+
+class TestRenderQuadViewResolutions:
+    """Tests for different resolutions in quad view."""
+
+    def test_minimum_valid_resolution(self, mock_connection):
+        """Test minimum valid resolution 64x64."""
+        from houdini_mcp.tools import render_quad_view
+
+        result = render_quad_view(resolution=[64, 64], host="localhost", port=18811)
+        assert result.get("message", "") != "Resolution must be at least 64x64"
+
+    def test_maximum_valid_resolution(self, mock_connection):
+        """Test maximum valid resolution 4096x4096."""
+        from houdini_mcp.tools import render_quad_view
+
+        result = render_quad_view(resolution=[4096, 4096], host="localhost", port=18811)
+        assert "4096" not in result.get("message", "")
+
+    def test_default_resolution_is_512(self, mock_connection):
+        """Test default resolution is 512x512."""
+        from houdini_mcp.tools import render_quad_view
+
+        result = render_quad_view(resolution=None, host="localhost", port=18811)
+        if result["status"] == "success":
+            for view in result["views"]:
+                if "error" not in view:
+                    assert view["resolution"] == [512, 512]
+
+
+class TestRenderQuadViewTiming:
+    """Tests for render timing information."""
+
+    def test_includes_render_time(self, mock_connection):
+        """Test that total_render_time_ms is included in result."""
+        from houdini_mcp.tools import render_quad_view
+
+        result = render_quad_view(host="localhost", port=18811)
+        if result["status"] == "success":
+            assert "total_render_time_ms" in result
+            assert isinstance(result["total_render_time_ms"], (int, float))

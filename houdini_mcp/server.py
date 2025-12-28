@@ -467,6 +467,60 @@ def render_viewport(
 
 
 @mcp.tool()
+def render_quad_view(
+    resolution: Optional[List[int]] = None,
+    renderer: str = "opengl",
+    output_format: str = "png",
+    orthographic: bool = True,
+    include_perspective: bool = True,
+) -> Dict[str, Any]:
+    """
+    Render 4 canonical views (Front, Left, Top, Perspective) in one call.
+
+    Creates a camera rig and renders standardized views for spatial understanding.
+    Returns all 4 images as base64-encoded strings. This is more efficient than
+    calling render_viewport 4 times as it reuses the camera rig and calculates
+    the bounding box only once.
+
+    Args:
+        resolution: [width, height] in pixels (default: [512, 512])
+        renderer: Render engine - "opengl" (fast) or "karma" (quality)
+        output_format: Image format - "png", "jpg", or "exr"
+        orthographic: If True, use orthographic projection for Front/Left/Top views (default: True)
+        include_perspective: If True, include perspective view; if False, only orthographic views (default: True)
+
+    Returns:
+        Dict with:
+        - status: "success" or "error"
+        - views: List of view results, each containing:
+            - name: View name (front, left, top, perspective)
+            - rotation: [rx, ry, rz] camera rotation used
+            - image_base64: Base64-encoded image data
+            - format: Image format used
+            - resolution: [width, height]
+            - orthographic: Whether orthographic projection was used
+        - bounding_box: Scene bounding box info
+        - renderer: Render engine used
+        - total_render_time_ms: Total time for all renders
+
+    Examples:
+        render_quad_view()  # All 4 views with orthographic projection
+        render_quad_view(orthographic=False)  # All views with perspective
+        render_quad_view(resolution=[1024, 1024], renderer="karma")  # Higher quality
+        render_quad_view(include_perspective=False)  # Only 3 orthographic views
+    """
+    return tools.render_quad_view(
+        resolution,
+        renderer,
+        output_format,
+        orthographic,
+        include_perspective,
+        HOUDINI_HOST,
+        HOUDINI_PORT,
+    )
+
+
+@mcp.tool()
 def find_error_nodes(
     root_path: str = "/",
     include_warnings: bool = True,
