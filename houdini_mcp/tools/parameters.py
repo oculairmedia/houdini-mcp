@@ -143,7 +143,7 @@ def get_parameter_schema(
         }
     """
     # Import helper to flatten parameter templates
-    from ..tools_legacy import _flatten_parm_templates, _json_safe_hou_value
+    from ._common import _flatten_parm_templates, _json_safe_hou_value
 
     try:
         hou = ensure_connected(host, port)

@@ -50,6 +50,7 @@ __all__ = [
     "_node_to_dict",
     "_serialize_scene_state",
     "_get_scene_diff",
+    "_flatten_parm_templates",
     # Exceptions
     "ExecutionTimeoutError",
     # Logging
@@ -440,3 +441,69 @@ def _get_scene_diff(before: List[Dict[str, Any]], after: List[Dict[str, Any]]) -
         "added_nodes": [n for n in after if n["path"] in added],
         "has_changes": bool(added or removed or modified),
     }
+
+
+def _flatten_parm_templates(hou: Any, parm_templates: List[Any], max_depth: int = 20) -> List[Any]:
+    """
+    Flatten nested parameter templates into a single list.
+
+    Args:
+        hou: The hou module
+        parm_templates: List of parameter templates to flatten
+        max_depth: Maximum recursion depth
+
+    Returns:
+        Flattened list of parameter templates
+    """
+    flattened: List[Any] = []
+
+    def walk(templates: List[Any], depth: int) -> None:
+        if depth > max_depth:
+            return
+
+        for template in templates:
+            try:
+                template_type = template.type()
+            except Exception:
+                template_type = None
+
+            is_folder_like = False
+            try:
+                is_folder_like = template_type in (
+                    hou.parmTemplateType.Folder,
+                    hou.parmTemplateType.FolderSet,
+                )
+            except Exception:
+                is_folder_like = False
+
+            is_multiparm = False
+            try:
+                is_multiparm = template_type in (
+                    hou.parmTemplateType.MultiParmBlock,
+                    hou.parmTemplateType.MultiParm,
+                )
+            except Exception:
+                is_multiparm = False
+
+            flattened.append(template)
+
+            if (is_folder_like or is_multiparm) and hasattr(template, "parmTemplates"):
+                try:
+                    child_templates = list(template.parmTemplates())
+                except Exception:
+                    child_templates = []
+                walk(child_templates, depth + 1)
+
+    walk(parm_templates, 0)
+
+    # De-dup while preserving order (folders can appear in multiple lists)
+    seen_ids: Set[int] = set()
+    unique: List[Any] = []
+    for template in flattened:
+        template_id = id(template)
+        if template_id in seen_ids:
+            continue
+        seen_ids.add(template_id)
+        unique.append(template)
+
+    return unique

@@ -2891,7 +2891,7 @@ class TestConnectionErrorHandling:
         assert result["exception"] == "OSError"
         assert result["recoverable"] is True
 
-    @patch("houdini_mcp.tools_legacy.ensure_connected")
+    @patch("houdini_mcp.tools.scene.ensure_connected")
     def test_get_scene_info_handles_timeout(self, mock_ensure):
         """Test that get_scene_info handles TimeoutError gracefully."""
         from houdini_mcp.tools import get_scene_info
@@ -2905,7 +2905,7 @@ class TestConnectionErrorHandling:
         assert "timed out" in result["message"]
         assert result["recoverable"] is True
 
-    @patch("houdini_mcp.tools_legacy.ensure_connected")
+    @patch("houdini_mcp.tools.nodes.ensure_connected")
     def test_create_node_handles_eof_error(self, mock_ensure):
         """Test that create_node handles EOFError gracefully."""
         from houdini_mcp.tools import create_node
