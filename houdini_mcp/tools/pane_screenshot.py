@@ -464,6 +464,120 @@ def list_visible_panes(
     }
 
 
+@handle_connection_errors("render_node_network")
+def render_node_network(
+    node_path: str = "/obj",
+    fit_contents: bool = True,
+    host: str = "localhost",
+    port: int = 18811,
+) -> Dict[str, Any]:
+    """
+    Capture a screenshot of a node's network showing its children.
+
+    This is a convenience wrapper that navigates the NetworkEditor to the specified
+    node, optionally frames all children, and captures a screenshot. Useful for
+    visualizing the network structure of any node context.
+
+    Args:
+        node_path: Path to the node whose network to capture (default: "/obj").
+            The NetworkEditor will navigate into this node to show its children.
+            Examples: "/obj", "/obj/geo1", "/stage", "/mat"
+        fit_contents: If True, frame all children in view before capture (default: True).
+            Set to False to capture the current zoom/pan state.
+        host: Houdini RPC server hostname (default: "localhost")
+        port: Houdini RPC server port (default: 18811)
+
+    Returns:
+        Dict containing:
+        - status: "success" or "error"
+        - node_path: The node path that was navigated to
+        - child_count: Number of children in the network
+        - pane_type: "NetworkEditor"
+        - pane_name: Name of the network editor pane used
+        - geometry: Dict with x, y, width, height of the captured region
+        - image_format: Image format ("png")
+        - image_size_bytes: Size of the image data in bytes
+        - image_base64: Base64-encoded PNG image data
+
+        On error:
+        - status: "error"
+        - message: Error description
+
+    Example:
+        # Capture /obj network with all nodes framed
+        result = render_node_network("/obj")
+
+        # Capture a specific geo node's network
+        result = render_node_network("/obj/geo1")
+
+        # Capture SOPs inside a geometry object
+        result = render_node_network("/obj/geo1")
+
+        # Capture the /stage context (LOPs/Solaris)
+        result = render_node_network("/stage")
+    """
+    hou = ensure_connected(host, port)
+
+    # Validate node exists
+    node = hou.node(node_path)
+    if node is None:
+        return {
+            "status": "error",
+            "message": f"Node not found: {node_path}",
+        }
+
+    # Get child count for context
+    try:
+        children = node.children()
+        child_count = len(children)
+    except Exception:
+        child_count = 0
+
+    # Get Qt modules from RPyC connection
+    try:
+        QtWidgets, QtCore, _ = _get_qt_modules(hou)
+    except Exception as e:
+        return {
+            "status": "error",
+            "message": f"Failed to access PySide2 modules: {e}. "
+            "Ensure Houdini has PySide2 available.",
+        }
+
+    # Find NetworkEditor pane
+    pane_type = hou.paneTabType.NetworkEditor
+    pane = hou.ui.paneTabOfType(pane_type)
+    if pane is None:
+        return {
+            "status": "error",
+            "message": "No NetworkEditor pane found in the current Houdini layout.",
+        }
+
+    # Navigate to the node (set as current network)
+    try:
+        pane.cd(node_path)
+    except Exception as e:
+        return {
+            "status": "error",
+            "message": f"Failed to navigate to {node_path}: {e}",
+        }
+
+    # Capture the pane
+    result = _capture_pane_to_bytes(hou, "NetworkEditor", QtWidgets, QtCore, fit_contents)
+
+    if result["status"] != "success":
+        return result
+
+    # Extract raw bytes and build response
+    raw_bytes: bytes = result.pop("raw_bytes")
+    result["node_path"] = node_path
+    result["child_count"] = child_count
+    result["image_format"] = "png"
+    result["image_size_bytes"] = len(raw_bytes)
+    result["image_base64"] = base64.b64encode(raw_bytes).decode("utf-8")
+
+    return result
+
+
 @handle_connection_errors("capture_multiple_panes")
 def capture_multiple_panes(
     pane_types: List[str],

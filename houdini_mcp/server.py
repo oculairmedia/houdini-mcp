@@ -1367,6 +1367,40 @@ def capture_multiple_panes(
     return tools.capture_multiple_panes(pane_types, save_dir, HOUDINI_HOST, HOUDINI_PORT)
 
 
+@mcp.tool()
+def render_node_network(
+    node_path: str = "/obj",
+    fit_contents: bool = True,
+) -> Dict[str, Any]:
+    """
+    Capture a screenshot of a node's network showing its children.
+
+    Navigates the NetworkEditor to the specified node and captures a screenshot.
+    Useful for visualizing the network structure of any node context.
+
+    Args:
+        node_path: Path to the node whose network to capture (default: "/obj").
+            The NetworkEditor will navigate into this node to show its children.
+            Examples: "/obj", "/obj/geo1", "/stage", "/mat"
+        fit_contents: If True, frame all children in view before capture (default: True).
+            Set to False to capture the current zoom/pan state.
+
+    Returns:
+        Dict with:
+        - status: "success" or "error"
+        - node_path: The node path that was navigated to
+        - child_count: Number of children in the network
+        - geometry: x, y, width, height of the captured region
+        - image_base64: Base64-encoded PNG image data
+
+    Example:
+        render_node_network("/obj")  # Capture /obj network
+        render_node_network("/obj/geo1")  # Capture SOPs inside geo1
+        render_node_network("/stage")  # Capture LOPs/Solaris network
+    """
+    return tools.render_node_network(node_path, fit_contents, HOUDINI_HOST, HOUDINI_PORT)
+
+
 def run_server(transport: str = "http", port: int = 3055) -> None:
     """Run the MCP server."""
     logger.info(f"Starting Houdini MCP Server on {transport}://0.0.0.0:{port}")

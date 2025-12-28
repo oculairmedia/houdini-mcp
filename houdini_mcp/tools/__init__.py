@@ -51,6 +51,7 @@ from .pane_screenshot import (
     capture_pane_screenshot,
     list_visible_panes,
     capture_multiple_panes,
+    render_node_network,
     VALID_PANE_TYPES,
 )
 
@@ -134,5 +135,6 @@ __all__ = [
     "capture_pane_screenshot",
     "list_visible_panes",
     "capture_multiple_panes",
+    "render_node_network",
     "VALID_PANE_TYPES",
 ]
