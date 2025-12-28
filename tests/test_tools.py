@@ -949,6 +949,17 @@ class TestSceneOperations:
         assert result["status"] == "error"
         assert "File not found" in result["message"]
 
+    def test_new_scene_error_handling(self, mock_connection):
+        """Test new_scene handles errors."""
+        from houdini_mcp.tools import new_scene
+
+        mock_connection.hipFile.clear.side_effect = Exception("Cannot clear scene")
+
+        result = new_scene(host="localhost", port=18811)
+
+        assert result["status"] == "error"
+        assert "Cannot clear scene" in result["message"]
+
 
 class TestSerializeScene:
     """Tests for scene serialization."""
@@ -2467,6 +2478,74 @@ class TestMaterialTools:
         assert result["material_name"] == "principledshader1"
         assert result["material_type"] == "principledshader"
 
+    def test_create_material_success(self, mock_connection):
+        """Test successful material creation."""
+        from houdini_mcp.tools import create_material
+
+        # Add /mat context to the mock
+        mat_context = MockHouNode(path="/mat", name="mat", node_type="matnet")
+        mock_connection.add_node(mat_context)
+        mock_connection._nodes["/mat"] = mat_context
+
+        result = create_material(
+            material_type="principledshader",
+            name="test_material",
+            host="localhost",
+            port=18811,
+        )
+
+        assert result["status"] == "success"
+        assert "material_path" in result
+        assert "test_material" in result["material_path"]
+        assert result["material_type"] == "principledshader"
+
+    def test_create_material_with_parameters(self, mock_connection):
+        """Test material creation with custom parameters."""
+        from houdini_mcp.tools import create_material
+
+        mat_context = MockHouNode(path="/mat", name="mat", node_type="matnet")
+        mock_connection.add_node(mat_context)
+        mock_connection._nodes["/mat"] = mat_context
+
+        result = create_material(
+            material_type="principledshader",
+            name="red_metal",
+            parameters={"basecolor": [1, 0, 0], "metallic": 1.0},
+            host="localhost",
+            port=18811,
+        )
+
+        assert result["status"] == "success"
+        assert "red_metal" in result["material_path"]
+
+    def test_assign_material_success(self, mock_connection):
+        """Test successful material assignment to geometry."""
+        from houdini_mcp.tools import assign_material
+
+        # Create geometry node with a child SOP (required for material assignment)
+        geo = MockHouNode(path="/obj/geo1", name="geo1", node_type="geo")
+        sphere = MockHouNode(path="/obj/geo1/sphere1", name="sphere1", node_type="sphere")
+        sphere._parent = geo
+        sphere._display_flag = True
+        geo._children = [sphere]
+        mock_connection.add_node(geo)
+        mock_connection.add_node(sphere)
+
+        # Create material node
+        mat = MockHouNode(path="/mat/test_mat", name="test_mat", node_type="principledshader")
+        mock_connection.add_node(mat)
+
+        result = assign_material(
+            geometry_path="/obj/geo1",
+            material_path="/mat/test_mat",
+            host="localhost",
+            port=18811,
+        )
+
+        assert result["status"] == "success"
+        assert result["geometry_path"] == "/obj/geo1"
+        assert result["material_path"] == "/mat/test_mat"
+
 
 class TestLayoutTools:
     """Tests for node layout and organization tools."""
@@ -2577,6 +2656,95 @@ class TestLayoutTools:
 
         assert result["status"] == "error"
         assert "no nodes" in result["message"].lower()
+
+    def test_layout_children_success(self, mock_connection):
+        """Test successful layout with children."""
+        from houdini_mcp.tools import layout_children
+
+        # Create parent with children
+        geo = MockHouNode(path="/obj/geo1", name="geo1", node_type="geo")
+        sphere = MockHouNode(path="/obj/geo1/sphere1", name="sphere1", node_type="sphere")
+        box = MockHouNode(path="/obj/geo1/box1", name="box1", node_type="box")
+        geo._children = [sphere, box]
+        mock_connection.add_node(geo)
+        mock_connection.add_node(sphere)
+        mock_connection.add_node(box)
+
+        result = layout_children(
+            node_path="/obj/geo1",
+            host="localhost",
+            port=18811,
+        )
+
+        assert result["status"] == "success"
+        assert result["node_path"] == "/obj/geo1"
+        assert result["child_count"] == 2
+
+    def test_set_node_color_success(self, mock_connection):
+        """Test successfully setting node color."""
+        from houdini_mcp.tools import set_node_color
+
+        geo = MockHouNode(path="/obj/geo1", name="geo1", node_type="geo")
+        mock_connection.add_node(geo)
+
+        result = set_node_color(
+            node_path="/obj/geo1",
+            color=[1.0, 0.0, 0.0],  # Red
+            host="localhost",
+            port=18811,
+        )
+
+        assert result["status"] == "success"
+        assert result["node_path"] == "/obj/geo1"
+        assert result["color"] == [1.0, 0.0, 0.0]
+
+    def test_set_node_position_success(self, mock_connection):
+        """Test successfully setting node position."""
+        from houdini_mcp.tools import set_node_position
+
+        geo = MockHouNode(path="/obj/geo1", name="geo1", node_type="geo")
+        mock_connection.add_node(geo)
+
+        result = set_node_position(
+            node_path="/obj/geo1",
+            x=5.0,
+            y=-3.0,
+            host="localhost",
+            port=18811,
+        )
+
+        assert result["status"] == "success"
+        assert result["node_path"] == "/obj/geo1"
+        assert result["position"] == [5.0, -3.0]
+
+    def test_create_network_box_success(self, mock_connection):
+        """Test successful network box creation."""
+        from houdini_mcp.tools import create_network_box
+
+        # Create parent with children to box
+        geo = MockHouNode(path="/obj/geo1", name="geo1", node_type="geo")
+        sphere = MockHouNode(path="/obj/geo1/sphere1", name="sphere1", node_type="sphere")
+        box = MockHouNode(path="/obj/geo1/box1", name="box1", node_type="box")
+        sphere._parent = geo
+        box._parent = geo
+        geo._children = [sphere, box]
+        mock_connection.add_node(geo)
+        mock_connection.add_node(sphere)
+        mock_connection.add_node(box)
+
+        result = create_network_box(
+            parent_path="/obj/geo1",
+            node_paths=["/obj/geo1/sphere1", "/obj/geo1/box1"],
+            label="My Nodes",
+            host="localhost",
+            port=18811,
+        )
+
+        assert result["status"] == "success"
+        assert "network_box_name" in result
+        assert result["label"] == "My Nodes"
+        # Result returns list of paths, not count
+        assert len(result["nodes_contained"]) == 2
 
 
 class TestResponseSizeMetadata:

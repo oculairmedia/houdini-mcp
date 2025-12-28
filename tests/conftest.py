@@ -38,6 +38,15 @@ class MockHouNode:
         self._last_cook_time: Optional[float] = None
         # Geometry
         self._geometry: Optional["MockGeometry"] = None
+        # Parent node (set during createNode)
+        self._parent: Optional["MockHouNode"] = None
+        # Network position
+        self._position: tuple = (0.0, 0.0)
+        # Node color
+        self._color: Optional["MockColor"] = None
+        # Network boxes
+        self._network_boxes: List["MockNetworkBox"] = []
+        self._network_box_counter = 0
 
     def path(self) -> str:
         return self._path
@@ -154,7 +163,29 @@ class MockHouNode:
     def createNode(self, node_type: str, name: Optional[str] = None) -> "MockHouNode":
         new_name = name if name else f"{node_type}1"
         new_path = f"{self._path}/{new_name}"
-        new_node = MockHouNode(path=new_path, name=new_name, node_type=node_type)
+
+        # Create node with type-specific default parameters
+        params: Dict[str, Any] = {"tx": 0.0, "ty": 0.0, "tz": 0.0}
+
+        # Add type-specific parameters
+        if node_type == "material":
+            params.update(
+                {
+                    "shop_materialpath1": "",
+                    "group1": "",
+                }
+            )
+        elif node_type == "principledshader":
+            params.update(
+                {
+                    "basecolor": [1.0, 1.0, 1.0],
+                    "rough": 0.3,
+                    "metallic": 0.0,
+                }
+            )
+
+        new_node = MockHouNode(path=new_path, name=new_name, node_type=node_type, params=params)
+        new_node._parent = self  # Set parent reference
         self._children.append(new_node)
         return new_node
 
@@ -249,6 +280,55 @@ class MockHouNode:
         collect(self)
         return all_descendants
 
+    def parent(self) -> Optional["MockHouNode"]:
+        """Return the parent node."""
+        return self._parent
+
+    def displayNode(self) -> Optional["MockHouNode"]:
+        """Return the display node (node with display flag set, or last child)."""
+        # Find child with display flag set
+        for child in self._children:
+            if child._display_flag:
+                return child
+        # Fallback to last child if any
+        if self._children:
+            return self._children[-1]
+        return None
+
+    def layoutChildren(
+        self, horizontal_spacing: float = 2.0, vertical_spacing: float = 1.0, *args, **kwargs
+    ) -> None:
+        """Layout child nodes. No-op for mock."""
+        pass
+
+    def setPosition(self, position: "MockVector2") -> None:
+        """Set the node's position in the network editor."""
+        self._position = (position[0], position[1])
+
+    def position(self) -> tuple:
+        """Get the node's position in the network editor."""
+        return self._position
+
+    def setColor(self, color: "MockColor") -> None:
+        """Set the node's display color."""
+        self._color = color
+
+    def color(self) -> Optional["MockColor"]:
+        """Get the node's display color."""
+        return self._color
+
+    def createNetworkBox(self, name: Optional[str] = None) -> "MockNetworkBox":
+        """Create a network box in this node's network."""
+        self._network_box_counter += 1
+        box_name = name if name else f"netbox{self._network_box_counter}"
+        netbox = MockNetworkBox(box_name)
+        self._network_boxes.append(netbox)
+        return netbox
+
+    def setFirstInput(self, node: Optional["MockHouNode"]) -> None:
+        """Set the first input connection (convenience method)."""
+        self.setInput(0, node)
+
 
 class MockRpycConnection:
     """Mock rpyc connection object."""
@@ -292,6 +372,10 @@ class MockHouModule:
         self.cookState.Dirty.name.return_value = "Dirty"
         self.cookState.Uncooked = MagicMock()
         self.cookState.Uncooked.name.return_value = "Uncooked"
+
+        # Houdini types
+        self.Color = MockColor
+        self.Vector2 = MockVector2
 
     def applicationVersionString(self) -> str:
         return self._version
@@ -456,6 +540,67 @@ def mock_rpyc_with_reset(
     with patch("houdini_mcp.connection.rpyc") as mock_rpyc_module:
         mock_rpyc_module.classic.connect.return_value = mock_conn
         yield mock_hou
+
+
+class MockColor:
+    """Mock hou.Color object."""
+
+    def __init__(self, rgb: tuple = (0.0, 0.0, 0.0)):
+        if isinstance(rgb, (list, tuple)) and len(rgb) >= 3:
+            self._rgb = (float(rgb[0]), float(rgb[1]), float(rgb[2]))
+        else:
+            self._rgb = (0.0, 0.0, 0.0)
+
+    def rgb(self) -> tuple:
+        return self._rgb
+
+    def __repr__(self) -> str:
+        return f"<MockColor {self._rgb}>"
+
+
+class MockVector2:
+    """Mock hou.Vector2 object."""
+
+    def __init__(self, x: float = 0.0, y: float = 0.0):
+        self._x = float(x)
+        self._y = float(y)
+
+    def __getitem__(self, index: int) -> float:
+        if index == 0:
+            return self._x
+        elif index == 1:
+            return self._y
+        raise IndexError(f"Index {index} out of range for Vector2")
+
+    def __repr__(self) -> str:
+        return f"<MockVector2 ({self._x}, {self._y})>"
+
+
+class MockNetworkBox:
+    """Mock hou.NetworkBox object."""
+
+    def __init__(self, name: str = "netbox1"):
+        self._name = name
+        self._label = ""
+        self._color: Optional[MockColor] = None
+        self._nodes: List["MockHouNode"] = []
+
+    def name(self) -> str:
+        return self._name
+
+    def setComment(self, label: str) -> None:
+        self._label = label
+
+    def setColor(self, color: MockColor) -> None:
+        self._color = color
+
+    def addNode(self, node: "MockHouNode") -> None:
+        if node not in self._nodes:
+            self._nodes.append(node)
+
+    def fitAroundContents(self) -> None:
+        """Resize to fit contained nodes."""
+        pass  # No-op for mock
 
 
 class MockGeoPoint:

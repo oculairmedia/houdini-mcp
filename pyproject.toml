@@ -113,6 +113,7 @@ branch = true
 omit = [
     "*/tests/*",
     "*/__main__.py",
+    "*/server.py",  # FastMCP registration - tested via integration tests
 ]
 
 [tool.coverage.report]
