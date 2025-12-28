@@ -182,23 +182,53 @@ RESPONSE_SIZE_WARNING_THRESHOLD = 100 * 1024  # 100KB - warn above this
 RESPONSE_SIZE_LARGE_THRESHOLD = 500 * 1024  # 500KB - considered large
 
 
-def _estimate_response_size(data: Any) -> int:
+def _estimate_response_size(data: Any, _depth: int = 0) -> int:
     """
-    Estimate the JSON-serialized size of a response.
+    Estimate the JSON-serialized size of a response without full serialization.
+
+    Uses a fast recursive estimation that avoids the overhead of actually
+    serializing the entire structure to JSON (which would be done again
+    by the MCP framework anyway).
 
     Args:
         data: The data structure to estimate size for
+        _depth: Internal recursion depth counter
 
     Returns:
         Estimated size in bytes
     """
-    import json
+    # Prevent infinite recursion
+    if _depth > 50:
+        return 20
 
-    try:
-        return len(json.dumps(data))
-    except (TypeError, ValueError):
-        # Fallback: rough estimate based on str representation
+    if data is None:
+        return 4  # "null"
+    if isinstance(data, bool):
+        return 5  # "true" or "false"
+    if isinstance(data, int):
         return len(str(data))
+    if isinstance(data, float):
+        return len(str(data)) + 2  # Account for possible scientific notation
+    if isinstance(data, str):
+        return len(data) + 2  # quotes
+
+    if isinstance(data, dict):
+        # {"key": value, ...} - estimate key/value pairs + overhead
+        size = 2  # {}
+        for k, v in data.items():
+            size += len(str(k)) + 4  # "key": + comma
+            size += _estimate_response_size(v, _depth + 1)
+        return size
+
+    if isinstance(data, (list, tuple)):
+        # [item, item, ...] - estimate items + overhead
+        size = 2  # []
+        for item in data:
+            size += _estimate_response_size(item, _depth + 1) + 1  # comma
+        return size
+
+    # Fallback for other types
+    return len(str(data)) + 2
 
 
 def _add_response_metadata(result: Dict[str, Any], include_size: bool = True) -> Dict[str, Any]:
@@ -402,6 +432,9 @@ def _serialize_scene_state(hou: Any, root_path: str = "/obj") -> List[Dict[str, 
     Returns:
         List of node dictionaries
     """
+    # Use the standard implementation - it's reliable and the RPC overhead
+    # is acceptable for scene diff operations (typically done once before
+    # and once after code execution)
     obj = hou.node(root_path)
     if obj is None:
         return []

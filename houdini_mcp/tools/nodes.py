@@ -143,20 +143,20 @@ def get_node_info(
             input_connections: List[Dict[str, Any]] = []
             node_inputs = node.inputs()
 
+            # Cache inputConnectors call OUTSIDE the loop to avoid
+            # redundant RPC calls (was previously called per input)
+            try:
+                connectors = node.inputConnectors()
+            except Exception:
+                connectors = None
+
             for idx, input_node in enumerate(node_inputs):
                 if input_node is not None:
-                    # Try to get the output index from the source node
-                    try:
-                        # inputConnectors gives us (input_index, output_index) tuples
-                        connectors = node.inputConnectors()
-                        if idx < len(connectors):
-                            connector = connectors[idx]
-                            source_output_idx = connector[1] if len(connector) > 1 else 0
-                        else:
-                            source_output_idx = 0
-                    except Exception:
-                        # Fallback if inputConnectors not available
-                        source_output_idx = 0
+                    # Use cached connectors
+                    source_output_idx = 0
+                    if connectors is not None and idx < len(connectors):
+                        connector = connectors[idx]
+                        source_output_idx = connector[1] if len(connector) > 1 else 0
 
                     input_connections.append(
                         {
@@ -510,20 +510,20 @@ def list_children(
                         input_connections: List[Dict[str, Any]] = []
                         child_inputs = child.inputs()
 
+                        # Cache inputConnectors call OUTSIDE the loop to avoid
+                        # redundant RPC calls (was previously called per input)
+                        try:
+                            connectors = child.inputConnectors()
+                        except Exception:
+                            connectors = None
+
                         for idx, input_node in enumerate(child_inputs):
                             if input_node is not None:
-                                # Try to get detailed connection info
-                                try:
-                                    # inputConnectors gives us detailed info about each input
-                                    connectors = child.inputConnectors()
-                                    if idx < len(connectors):
-                                        connector = connectors[idx]
-                                        output_idx = connector[1] if len(connector) > 1 else 0
-                                    else:
-                                        output_idx = 0
-                                except Exception:
-                                    # Fallback if inputConnectors not available
-                                    output_idx = 0
+                                # Use cached connectors
+                                output_idx = 0
+                                if connectors is not None and idx < len(connectors):
+                                    connector = connectors[idx]
+                                    output_idx = connector[1] if len(connector) > 1 else 0
 
                                 input_connections.append(
                                     {
@@ -614,60 +614,123 @@ def find_nodes(
         if root is None:
             return {"status": "error", "message": f"Root node not found: {root_path}"}
 
-        import fnmatch
-
-        matches: List[Dict[str, str]] = []
-        total_matched = 0
-
         # Validate offset
         if offset < 0:
             offset = 0
 
-        def search_recursive(node: Any) -> None:
-            nonlocal total_matched
+        # Execute search on Houdini side to minimize RPC overhead
+        # Uses allSubChildren() which is much faster than recursive children() calls
+        search_code = """
+import fnmatch
+
+root = hou.node("{root_path}")
+pattern = "{pattern}"
+node_type_filter = {node_type_repr}
+max_results = {max_results}
+offset = {offset}
+
+matches = []
+total_matched = 0
+has_wildcards = "*" in pattern or "?" in pattern
+
+if root is not None:
+    # allSubChildren() returns all descendants in a single call
+    for child in root.allSubChildren():
+        child_name = child.name()
+        child_name_lower = child_name.lower()
+        pattern_lower = pattern.lower()
+        
+        # Check name pattern match
+        if has_wildcards:
+            name_match = fnmatch.fnmatch(child_name_lower, pattern_lower)
+        else:
+            # Exact match or substring match
+            name_match = fnmatch.fnmatch(child_name_lower, pattern_lower) or pattern_lower in child_name_lower
+        
+        # Check type filter
+        type_match = True
+        child_type = child.type().name()
+        if node_type_filter is not None:
+            type_match = child_type.lower() == node_type_filter.lower()
+        
+        if name_match and type_match:
+            total_matched += 1
+            
+            # Skip items before offset
+            if total_matched <= offset:
+                continue
+            
+            matches.append({{
+                "path": child.path(),
+                "name": child_name,
+                "type": child_type,
+            }})
+            
+            # Stop if we have enough results
             if len(matches) >= max_results:
-                return
+                break
 
-            try:
-                for child in node.children():
-                    if len(matches) >= max_results:
-                        break
+_result = {{"matches": matches, "total_matched": total_matched}}
+""".format(
+            root_path=root_path,
+            pattern=pattern.replace('"', '\\"'),
+            node_type_repr=repr(node_type),
+            max_results=max_results,
+            offset=offset,
+        )
 
-                    # Check name pattern match
-                    name_match = fnmatch.fnmatch(child.name().lower(), pattern.lower())
-                    # Also support substring matching if no wildcards in pattern
-                    if "*" not in pattern and "?" not in pattern:
-                        name_match = name_match or pattern.lower() in child.name().lower()
+        try:
+            exec_globals: Dict[str, Any] = {
+                "hou": hou,
+                "_result": {"matches": [], "total_matched": 0},
+            }
+            exec(search_code, exec_globals)
+            search_result = exec_globals.get("_result", {"matches": [], "total_matched": 0})
+            matches = search_result["matches"]
+            total_matched = search_result["total_matched"]
+        except Exception as e:
+            logger.warning(f"Fast search failed, falling back to slow path: {e}")
+            # Fallback to original slow implementation
+            import fnmatch as fnmatch_module
 
-                    # Check type filter
-                    type_match = True
-                    if node_type is not None:
-                        type_match = child.type().name().lower() == node_type.lower()
+            matches = []
+            total_matched = 0
 
-                    if name_match and type_match:
-                        total_matched += 1
+            def search_recursive(node: Any) -> None:
+                nonlocal total_matched
+                if len(matches) >= max_results:
+                    return
 
-                        # Skip items before offset
-                        if total_matched <= offset:
-                            # Still recurse into children
-                            search_recursive(child)
-                            continue
+                try:
+                    for child in node.children():
+                        if len(matches) >= max_results:
+                            break
 
-                        matches.append(
-                            {
-                                "path": child.path(),
-                                "name": child.name(),
-                                "type": child.type().name(),
-                            }
-                        )
+                        name_match = fnmatch_module.fnmatch(child.name().lower(), pattern.lower())
+                        if "*" not in pattern and "?" not in pattern:
+                            name_match = name_match or pattern.lower() in child.name().lower()
 
-                    # Recurse into children
-                    search_recursive(child)
+                        type_match = True
+                        if node_type is not None:
+                            type_match = child.type().name().lower() == node_type.lower()
 
-            except Exception as e:
-                logger.debug(f"Could not search in {node.path()}: {e}")
+                        if name_match and type_match:
+                            total_matched += 1
+                            if total_matched <= offset:
+                                search_recursive(child)
+                                continue
+                            matches.append(
+                                {
+                                    "path": child.path(),
+                                    "name": child.name(),
+                                    "type": child.type().name(),
+                                }
+                            )
+                        search_recursive(child)
+                except Exception as ex:
+                    logger.debug(f"Could not search in {node.path()}: {ex}")
 
-        search_recursive(root)
+            search_recursive(root)
 
         result: Dict[str, Any] = {
             "status": "success",
