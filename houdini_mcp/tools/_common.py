@@ -63,6 +63,8 @@ __all__ = [
     "ExecutionTimeoutError",
     # Logging
     "logger",
+    # Validation helpers
+    "validate_resolution",
 ]
 
 logger = logging.getLogger("houdini_mcp.tools")
@@ -190,6 +192,42 @@ def _handle_connection_error(e: Exception, operation: str) -> Dict[str, Any]:
         "operation": operation,
         "recoverable": True,
     }
+
+
+# =============================================================================
+# Validation Helpers
+# =============================================================================
+
+
+def validate_resolution(
+    resolution: List[int],
+    min_size: int = 64,
+    max_size: int = 4096,
+) -> Optional[Dict[str, Any]]:
+    """
+    Validate render resolution dimensions.
+
+    Returns an error dict if validation fails, None if valid.
+
+    Args:
+        resolution: [width, height] in pixels
+        min_size: Minimum dimension size (default: 64)
+        max_size: Maximum dimension size (default: 4096)
+
+    Returns:
+        None if valid, error dict if invalid
+
+    Example:
+        if error := validate_resolution(resolution):
+            return error
+        # Continue with valid resolution...
+    """
+    width, height = resolution[0], resolution[1]
+    if width < min_size or height < min_size:
+        return {"status": "error", "message": f"Resolution must be at least {min_size}x{min_size}"}
+    if width > max_size or height > max_size:
+        return {"status": "error", "message": f"Resolution cannot exceed {max_size}x{max_size}"}
+    return None
 
 
 # Dangerous code patterns for safety scanning

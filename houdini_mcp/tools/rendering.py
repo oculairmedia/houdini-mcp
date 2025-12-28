@@ -16,6 +16,8 @@ from ._common import (
     CONNECTION_ERRORS,
     _handle_connection_error,
     get_connection,
+    validate_resolution,
+    handle_connection_errors,
 )
 
 logger = logging.getLogger("houdini_mcp.tools.rendering")
@@ -88,11 +90,9 @@ def render_viewport(
             camera_rotation = [-30.0, 45.0, 0.0]  # Isometric view
 
         # Validate resolution
+        if error := validate_resolution(resolution):
+            return error
         width, height = resolution[0], resolution[1]
-        if width < 64 or height < 64:
-            return {"status": "error", "message": "Resolution must be at least 64x64"}
-        if width > 4096 or height > 4096:
-            return {"status": "error", "message": "Resolution cannot exceed 4096x4096"}
 
         # Get /obj context
         obj_context = hou.node("/obj")
@@ -392,11 +392,9 @@ def render_quad_view(
             resolution = [512, 512]
 
         # Validate resolution
+        if error := validate_resolution(resolution):
+            return error
         width, height = resolution[0], resolution[1]
-        if width < 64 or height < 64:
-            return {"status": "error", "message": "Resolution must be at least 64x64"}
-        if width > 4096 or height > 4096:
-            return {"status": "error", "message": "Resolution cannot exceed 4096x4096"}
 
         # Get remote modules for file operations on the Houdini machine
         remote_os, remote_tempfile = _get_remote_modules()
@@ -719,6 +717,7 @@ RENDER_SETTINGS_SCHEMA = {
 }
 
 
+@handle_connection_errors("list_render_nodes")
 def list_render_nodes(
     host: str = "localhost",
     port: int = 18811,
@@ -744,50 +743,42 @@ def list_render_nodes(
     Examples:
         list_render_nodes()  # List all ROPs in /out
     """
-    try:
-        hou = ensure_connected(host, port)
+    hou = ensure_connected(host, port)
 
-        out_context = hou.node("/out")
-        if out_context is None:
-            return {"status": "error", "message": "Cannot find /out context"}
+    out_context = hou.node("/out")
+    if out_context is None:
+        return {"status": "error", "message": "Cannot find /out context"}
 
-        render_nodes = []
-        for node in out_context.children():
-            node_type = node.type().name()
-            node_info = {
-                "path": node.path(),
-                "name": node.name(),
-                "type": node_type,
-                "bypassed": node.isBypassed() if hasattr(node, "isBypassed") else False,
-            }
-
-            # Get camera path
-            camera_parm = node.parm("camera")
-            if camera_parm:
-                node_info["camera"] = camera_parm.eval()
-
-            # Get output path (different parameter names for different ROPs)
-            output_parm = node.parm("picture") or node.parm("vm_picture")
-            if output_parm:
-                node_info["output"] = output_parm.eval()
-
-            render_nodes.append(node_info)
-
-        return {
-            "status": "success",
-            "count": len(render_nodes),
-            "render_nodes": render_nodes,
+    render_nodes = []
+    for node in out_context.children():
+        node_type = node.type().name()
+        node_info = {
+            "path": node.path(),
+            "name": node.name(),
+            "type": node_type,
+            "bypassed": node.isBypassed() if hasattr(node, "isBypassed") else False,
         }
 
-    except HoudiniConnectionError as e:
-        return {"status": "error", "message": str(e)}
-    except CONNECTION_ERRORS as e:
-        return _handle_connection_error(e, "list_render_nodes")
-    except Exception as e:
-        logger.error(f"Error in list_render_nodes: {e}")
-        return {"status": "error", "message": str(e), "traceback": traceback.format_exc()}
+        # Get camera path
+        camera_parm = node.parm("camera")
+        if camera_parm:
+            node_info["camera"] = camera_parm.eval()
+
+        # Get output path (different parameter names for different ROPs)
+        output_parm = node.parm("picture") or node.parm("vm_picture")
+        if output_parm:
+            node_info["output"] = output_parm.eval()
+
+        render_nodes.append(node_info)
+
+    return {
+        "status": "success",
+        "count": len(render_nodes),
+        "render_nodes": render_nodes,
+    }
 
 
+@handle_connection_errors("get_render_settings")
 def get_render_settings(
     rop_path: str,
     host: str = "localhost",
@@ -813,55 +804,47 @@ def get_render_settings(
         get_render_settings("/out/karma1")
         get_render_settings("/out/mantra1")
     """
-    try:
-        hou = ensure_connected(host, port)
+    hou = ensure_connected(host, port)
 
-        node = hou.node(rop_path)
-        if node is None:
-            return {"status": "error", "message": f"ROP not found: {rop_path}"}
+    node = hou.node(rop_path)
+    if node is None:
+        return {"status": "error", "message": f"ROP not found: {rop_path}"}
 
-        node_type = node.type().name()
+    node_type = node.type().name()
 
-        # Get the schema for this ROP type
-        schema = RENDER_SETTINGS_SCHEMA.get(node_type, {})
+    # Get the schema for this ROP type
+    schema = RENDER_SETTINGS_SCHEMA.get(node_type, {})
 
-        # Read current values for known settings
-        settings = {}
-        for parm_name in schema:
-            parm = node.parm(parm_name)
-            if parm:
-                try:
-                    settings[parm_name] = parm.eval()
-                except Exception:
-                    settings[parm_name] = None
+    # Read current values for known settings
+    settings_dict = {}
+    for parm_name in schema:
+        parm = node.parm(parm_name)
+        if parm:
+            try:
+                settings_dict[parm_name] = parm.eval()
+            except Exception:
+                settings_dict[parm_name] = None
 
-        # Also get some common settings not in schema
-        common_parms = ["trange", "f1", "f2", "f3"]  # Frame range
-        for parm_name in common_parms:
-            parm = node.parm(parm_name)
-            if parm:
-                try:
-                    settings[parm_name] = parm.eval()
-                except Exception:
-                    pass
+    # Also get some common settings not in schema
+    common_parms = ["trange", "f1", "f2", "f3"]  # Frame range
+    for parm_name in common_parms:
+        parm = node.parm(parm_name)
+        if parm:
+            try:
+                settings_dict[parm_name] = parm.eval()
+            except Exception:
+                pass
 
-        return {
-            "status": "success",
-            "rop_path": rop_path,
-            "rop_type": node_type,
-            "settings": settings,
-            "schema": schema,
-        }
-
-    except HoudiniConnectionError as e:
-        return {"status": "error", "message": str(e)}
-    except CONNECTION_ERRORS as e:
-        return _handle_connection_error(e, "get_render_settings")
-    except Exception as e:
-        logger.error(f"Error in get_render_settings: {e}")
-        return {"status": "error", "message": str(e), "traceback": traceback.format_exc()}
+    return {
+        "status": "success",
+        "rop_path": rop_path,
+        "rop_type": node_type,
+        "settings": settings_dict,
+        "schema": schema,
+    }
 
 
+@handle_connection_errors("set_render_settings")
 def set_render_settings(
     rop_path: str,
     settings: Dict[str, Any],
@@ -886,44 +869,36 @@ def set_render_settings(
         set_render_settings("/out/karma1", {"samplesperpixel": 64, "engine": "xpu"})
         set_render_settings("/out/mantra1", {"vm_samplesx": 6, "vm_samplesy": 6})
     """
-    try:
-        hou = ensure_connected(host, port)
+    hou = ensure_connected(host, port)
 
-        node = hou.node(rop_path)
-        if node is None:
-            return {"status": "error", "message": f"ROP not found: {rop_path}"}
+    node = hou.node(rop_path)
+    if node is None:
+        return {"status": "error", "message": f"ROP not found: {rop_path}"}
 
-        updated = []
-        failed = []
+    updated = []
+    failed = []
 
-        for parm_name, value in settings.items():
-            parm = node.parm(parm_name)
-            if parm is None:
-                failed.append({"name": parm_name, "reason": "Parameter not found"})
-                continue
+    for parm_name, value in settings.items():
+        parm = node.parm(parm_name)
+        if parm is None:
+            failed.append({"name": parm_name, "reason": "Parameter not found"})
+            continue
 
-            try:
-                parm.set(value)
-                updated.append({"name": parm_name, "value": value})
-            except Exception as e:
-                failed.append({"name": parm_name, "reason": str(e)})
+        try:
+            parm.set(value)
+            updated.append({"name": parm_name, "value": value})
+        except Exception as e:
+            failed.append({"name": parm_name, "reason": str(e)})
 
-        return {
-            "status": "success" if not failed else "partial",
-            "rop_path": rop_path,
-            "updated": updated,
-            "failed": failed,
-        }
-
-    except HoudiniConnectionError as e:
-        return {"status": "error", "message": str(e)}
-    except CONNECTION_ERRORS as e:
-        return _handle_connection_error(e, "set_render_settings")
-    except Exception as e:
-        logger.error(f"Error in set_render_settings: {e}")
-        return {"status": "error", "message": str(e), "traceback": traceback.format_exc()}
+    return {
+        "status": "success" if not failed else "partial",
+        "rop_path": rop_path,
+        "updated": updated,
+        "failed": failed,
+    }
 
 
+@handle_connection_errors("create_render_node")
 def create_render_node(
     rop_type: str,
     name: Optional[str] = None,
@@ -954,50 +929,41 @@ def create_render_node(
         create_render_node("opengl", settings={"antialias": 8})
         create_render_node("ifd", "final_render")
     """
-    try:
-        hou = ensure_connected(host, port)
+    hou = ensure_connected(host, port)
 
-        out_context = hou.node("/out")
-        if out_context is None:
-            return {"status": "error", "message": "Cannot find /out context"}
+    out_context = hou.node("/out")
+    if out_context is None:
+        return {"status": "error", "message": "Cannot find /out context"}
 
-        # Create the node
-        if name:
-            node = out_context.createNode(rop_type, name)
-        else:
-            node = out_context.createNode(rop_type)
+    # Create the node
+    if name:
+        node = out_context.createNode(rop_type, name)
+    else:
+        node = out_context.createNode(rop_type)
 
-        if node is None:
-            return {
-                "status": "error",
-                "message": f"Failed to create ROP of type '{rop_type}'",
-            }
-
-        settings_applied = []
-
-        # Apply settings if provided
-        if settings:
-            for parm_name, value in settings.items():
-                parm = node.parm(parm_name)
-                if parm:
-                    try:
-                        parm.set(value)
-                        settings_applied.append({"name": parm_name, "value": value})
-                    except Exception as e:
-                        logger.warning(f"Failed to set {parm_name}: {e}")
-
+    if node is None:
         return {
-            "status": "success",
-            "rop_path": node.path(),
-            "rop_name": node.name(),
-            "rop_type": rop_type,
-            "settings_applied": settings_applied,
+            "status": "error",
+            "message": f"Failed to create ROP of type '{rop_type}'",
         }
 
-    except HoudiniConnectionError as e:
-        return {"status": "error", "message": str(e)}
-    except CONNECTION_ERRORS as e:
-        return _handle_connection_error(e, "create_render_node")
-    except Exception as e:
-        logger.error(f"Error in create_render_node: {e}")
-        return {"status": "error", "message": str(e), "traceback": traceback.format_exc()}
+    settings_applied = []
+
+    # Apply settings if provided
+    if settings:
+        for parm_name, value in settings.items():
+            parm = node.parm(parm_name)
+            if parm:
+                try:
+                    parm.set(value)
+                    settings_applied.append({"name": parm_name, "value": value})
+                except Exception as e:
+                    logger.warning(f"Failed to set {parm_name}: {e}")
+
+    return {
+        "status": "success",
+        "rop_path": node.path(),
+        "rop_name": node.name(),
+        "rop_type": rop_type,
+        "settings_applied": settings_applied,
+    }

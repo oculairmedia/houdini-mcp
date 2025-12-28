@@ -1261,6 +1261,61 @@ class TestInternalHelpers:
         assert diff["has_changes"] is True
 
 
+class TestValidateResolution:
+    """Tests for validate_resolution helper."""
+
+    def test_validate_resolution_valid(self):
+        """Test valid resolutions pass validation."""
+        from houdini_mcp.tools._common import validate_resolution
+
+        assert validate_resolution([512, 512]) is None
+        assert validate_resolution([64, 64]) is None
+        assert validate_resolution([4096, 4096]) is None
+        assert validate_resolution([1920, 1080]) is None
+
+    def test_validate_resolution_too_small(self):
+        """Test resolution below minimum fails."""
+        from houdini_mcp.tools._common import validate_resolution
+
+        result = validate_resolution([32, 512])
+        assert result is not None
+        assert result["status"] == "error"
+        assert "at least 64x64" in result["message"]
+
+        result = validate_resolution([512, 32])
+        assert result is not None
+        assert result["status"] == "error"
+
+    def test_validate_resolution_too_large(self):
+        """Test resolution above maximum fails."""
+        from houdini_mcp.tools._common import validate_resolution
+
+        result = validate_resolution([8192, 512])
+        assert result is not None
+        assert result["status"] == "error"
+        assert "cannot exceed 4096x4096" in result["message"]
+
+        result = validate_resolution([512, 8192])
+        assert result is not None
+        assert result["status"] == "error"
+
+    def test_validate_resolution_custom_limits(self):
+        """Test custom min/max limits."""
+        from houdini_mcp.tools._common import validate_resolution
+
+        # Custom minimum
+        assert validate_resolution([128, 128], min_size=128) is None
+        result = validate_resolution([64, 64], min_size=128)
+        assert result is not None
+        assert "at least 128x128" in result["message"]
+
+        # Custom maximum
+        assert validate_resolution([1024, 1024], max_size=1024) is None
+        result = validate_resolution([2048, 2048], max_size=1024)
+        assert result is not None
+        assert "cannot exceed 1024x1024" in result["message"]
+
+
 class TestListChildren:
     """Tests for list_children function (HDMCP-5)."""
 

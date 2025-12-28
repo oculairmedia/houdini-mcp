@@ -20,6 +20,7 @@ from ._common import (
     _handle_connection_error,
     _add_response_metadata,
     _json_safe_hou_value,
+    handle_connection_errors,
     logger as common_logger,
 )
 from .cache import node_type_cache
@@ -27,6 +28,7 @@ from .cache import node_type_cache
 logger = logging.getLogger("houdini_mcp.tools.nodes")
 
 
+@handle_connection_errors("create_node")
 def create_node(
     node_type: str,
     parent_path: str = "/obj",
@@ -45,33 +47,26 @@ def create_node(
     Returns:
         Dict with created node information.
     """
-    try:
-        hou = ensure_connected(host, port)
+    hou = ensure_connected(host, port)
 
-        parent = hou.node(parent_path)
-        if parent is None:
-            return {"status": "error", "message": f"Parent node not found: {parent_path}"}
+    parent = hou.node(parent_path)
+    if parent is None:
+        return {"status": "error", "message": f"Parent node not found: {parent_path}"}
 
-        if name:
-            node = parent.createNode(node_type, name)
-        else:
-            node = parent.createNode(node_type)
+    if name:
+        node = parent.createNode(node_type, name)
+    else:
+        node = parent.createNode(node_type)
 
-        return {
-            "status": "success",
-            "node_path": node.path(),
-            "node_type": node.type().name(),
-            "node_name": node.name(),
-        }
-    except HoudiniConnectionError as e:
-        return {"status": "error", "message": str(e)}
-    except CONNECTION_ERRORS as e:
-        return _handle_connection_error(e, "creating_node")
-    except Exception as e:
-        logger.error(f"Error creating node: {e}")
-        return {"status": "error", "message": str(e), "traceback": traceback.format_exc()}
+    return {
+        "status": "success",
+        "node_path": node.path(),
+        "node_type": node.type().name(),
+        "node_name": node.name(),
+    }
 
 
+@handle_connection_errors("get_node_info")
 def get_node_info(
     node_path: str,
     include_params: bool = True,
@@ -100,189 +95,180 @@ def get_node_info(
         Dict with node information. When include_errors=True, also includes cook_info
         with cook_state, errors, warnings, and last_cook_time.
     """
-    try:
-        hou = ensure_connected(host, port)
+    hou = ensure_connected(host, port)
 
-        node = hou.node(node_path)
-        if node is None:
-            return {"status": "error", "message": f"Node not found: {node_path}"}
+    node = hou.node(node_path)
+    if node is None:
+        return {"status": "error", "message": f"Node not found: {node_path}"}
 
-        # Compact mode: minimal response with just essential info
-        if compact:
-            info: Dict[str, Any] = {
-                "status": "success",
-                "path": node.path(),
-                "type": node.type().name(),
-            }
-            # Only include non-empty children/inputs/outputs counts
-            children_count = len(node.children())
-            inputs_count = len([i for i in node.inputs() if i])
-            outputs_count = len(node.outputs())
-            if children_count:
-                info["children_count"] = children_count
-            if inputs_count:
-                info["inputs_count"] = inputs_count
-            if outputs_count:
-                info["outputs_count"] = outputs_count
-            return info
-
-        info = {
+    # Compact mode: minimal response with just essential info
+    if compact:
+        info: Dict[str, Any] = {
             "status": "success",
             "path": node.path(),
-            "name": node.name(),
             "type": node.type().name(),
-            "type_description": node.type().description(),
-            "children": [child.name() for child in node.children()],
-            "inputs": [inp.path() if inp else None for inp in node.inputs()],
-            "outputs": [out.path() for out in node.outputs()],
-            "is_displayed": node.isDisplayFlagSet() if hasattr(node, "isDisplayFlagSet") else None,
-            "is_rendered": node.isRenderFlagSet() if hasattr(node, "isRenderFlagSet") else None,
         }
+        # Only include non-empty children/inputs/outputs counts
+        children_count = len(node.children())
+        inputs_count = len([i for i in node.inputs() if i])
+        outputs_count = len(node.outputs())
+        if children_count:
+            info["children_count"] = children_count
+        if inputs_count:
+            info["inputs_count"] = inputs_count
+        if outputs_count:
+            info["outputs_count"] = outputs_count
+        return info
 
-        # Add detailed input connection information if requested
-        if include_input_details:
-            input_connections: List[Dict[str, Any]] = []
-            node_inputs = node.inputs()
+    info = {
+        "status": "success",
+        "path": node.path(),
+        "name": node.name(),
+        "type": node.type().name(),
+        "type_description": node.type().description(),
+        "children": [child.name() for child in node.children()],
+        "inputs": [inp.path() if inp else None for inp in node.inputs()],
+        "outputs": [out.path() for out in node.outputs()],
+        "is_displayed": node.isDisplayFlagSet() if hasattr(node, "isDisplayFlagSet") else None,
+        "is_rendered": node.isRenderFlagSet() if hasattr(node, "isRenderFlagSet") else None,
+    }
 
-            # Cache inputConnectors call OUTSIDE the loop to avoid
-            # redundant RPC calls (was previously called per input)
+    # Add detailed input connection information if requested
+    if include_input_details:
+        input_connections: List[Dict[str, Any]] = []
+        node_inputs = node.inputs()
+
+        # Cache inputConnectors call OUTSIDE the loop to avoid
+        # redundant RPC calls (was previously called per input)
+        try:
+            connectors = node.inputConnectors()
+        except Exception:
+            connectors = None
+
+        for idx, input_node in enumerate(node_inputs):
+            if input_node is not None:
+                # Use cached connectors
+                source_output_idx = 0
+                if connectors is not None and idx < len(connectors):
+                    connector = connectors[idx]
+                    source_output_idx = connector[1] if len(connector) > 1 else 0
+
+                input_connections.append(
+                    {
+                        "input_index": idx,
+                        "source_node": input_node.path(),
+                        "source_output_index": source_output_idx,
+                    }
+                )
+
+        info["input_connections"] = input_connections
+
+    if include_params:
+        params: Dict[str, Any] = {}
+        for i, parm in enumerate(node.parms()):
+            if i >= max_params:
+                params["_truncated"] = True
+                break
             try:
-                connectors = node.inputConnectors()
+                params[parm.name()] = _json_safe_hou_value(hou, parm.eval())
             except Exception:
-                connectors = None
+                params[parm.name()] = "<unable to evaluate>"
+        info["parameters"] = params
 
-            for idx, input_node in enumerate(node_inputs):
-                if input_node is not None:
-                    # Use cached connectors
-                    source_output_idx = 0
-                    if connectors is not None and idx < len(connectors):
-                        connector = connectors[idx]
-                        source_output_idx = connector[1] if len(connector) > 1 else 0
+    # Add cook info if requested
+    if include_errors:
+        try:
+            # Force cook if requested
+            if force_cook:
+                node.cook(force=True)
 
-                    input_connections.append(
+            # Determine cook state using available methods
+            # Houdini 20.5+ doesn't have cookState(), use needsToCook() instead
+            try:
+                if hasattr(node, "cookState"):
+                    cook_state_obj = node.cookState()
+                    cook_state_name = (
+                        cook_state_obj.name()
+                        if hasattr(cook_state_obj, "name")
+                        else str(cook_state_obj)
+                    )
+                    cook_state_map = {
+                        "Cooked": "cooked",
+                        "CookFailed": "error",
+                        "Dirty": "dirty",
+                        "Uncooked": "uncooked",
+                    }
+                    cook_state = cook_state_map.get(cook_state_name, cook_state_name.lower())
+                elif hasattr(node, "needsToCook"):
+                    # Fallback for Houdini versions without cookState()
+                    needs_cook = node.needsToCook()
+                    cook_state = "dirty" if needs_cook else "cooked"
+                else:
+                    cook_state = "unknown"
+            except Exception:
+                cook_state = "unknown"
+
+            # Get errors and warnings
+            errors_list: List[Dict[str, str]] = []
+            warnings_list: List[Dict[str, str]] = []
+
+            # Get errors
+            try:
+                node_errors = node.errors()
+                for error_msg in node_errors:
+                    errors_list.append(
+                        {"severity": "error", "message": error_msg, "node_path": node.path()}
+                    )
+            except Exception:
+                pass
+
+            # Get warnings
+            try:
+                node_warnings = node.warnings()
+                for warning_msg in node_warnings:
+                    warnings_list.append(
                         {
-                            "input_index": idx,
-                            "source_node": input_node.path(),
-                            "source_output_index": source_output_idx,
+                            "severity": "warning",
+                            "message": warning_msg,
+                            "node_path": node.path(),
                         }
                     )
+            except Exception:
+                pass
 
-            info["input_connections"] = input_connections
+            # Build cook info dict
+            cook_info: Dict[str, Any] = {
+                "cook_state": cook_state,
+                "errors": errors_list,
+                "warnings": warnings_list,
+            }
 
-        if include_params:
-            params: Dict[str, Any] = {}
-            for i, parm in enumerate(node.parms()):
-                if i >= max_params:
-                    params["_truncated"] = True
-                    break
-                try:
-                    params[parm.name()] = _json_safe_hou_value(hou, parm.eval())
-                except Exception:
-                    params[parm.name()] = "<unable to evaluate>"
-            info["parameters"] = params
-
-        # Add cook info if requested
-        if include_errors:
+            # Try to get last cook time (may not be available on all node types)
             try:
-                # Force cook if requested
+                # Houdini doesn't have a direct lastCookTime, but we can check if cooked
+                # For now, we'll skip this or use current time if just cooked
                 if force_cook:
-                    node.cook(force=True)
+                    import time
 
-                # Determine cook state using available methods
-                # Houdini 20.5+ doesn't have cookState(), use needsToCook() instead
-                try:
-                    if hasattr(node, "cookState"):
-                        cook_state_obj = node.cookState()
-                        cook_state_name = (
-                            cook_state_obj.name()
-                            if hasattr(cook_state_obj, "name")
-                            else str(cook_state_obj)
-                        )
-                        cook_state_map = {
-                            "Cooked": "cooked",
-                            "CookFailed": "error",
-                            "Dirty": "dirty",
-                            "Uncooked": "uncooked",
-                        }
-                        cook_state = cook_state_map.get(cook_state_name, cook_state_name.lower())
-                    elif hasattr(node, "needsToCook"):
-                        # Fallback for Houdini versions without cookState()
-                        needs_cook = node.needsToCook()
-                        cook_state = "dirty" if needs_cook else "cooked"
-                    else:
-                        cook_state = "unknown"
-                except Exception:
-                    cook_state = "unknown"
+                    cook_info["last_cook_time"] = time.time()
+            except Exception:
+                pass
 
-                # Get errors and warnings
-                errors_list: List[Dict[str, str]] = []
-                warnings_list: List[Dict[str, str]] = []
+            info["cook_info"] = cook_info
 
-                # Get errors
-                try:
-                    node_errors = node.errors()
-                    for error_msg in node_errors:
-                        errors_list.append(
-                            {"severity": "error", "message": error_msg, "node_path": node.path()}
-                        )
-                except Exception:
-                    pass
+        except Exception as e:
+            # If we can't get cook info, add error but don't fail the whole request
+            logger.warning(f"Error getting cook info: {e}")
+            info["cook_info"] = {
+                "cook_state": "unknown",
+                "errors": [{"severity": "error", "message": f"Failed to get cook info: {str(e)}"}],
+                "warnings": [],
+            }
 
-                # Get warnings
-                try:
-                    node_warnings = node.warnings()
-                    for warning_msg in node_warnings:
-                        warnings_list.append(
-                            {
-                                "severity": "warning",
-                                "message": warning_msg,
-                                "node_path": node.path(),
-                            }
-                        )
-                except Exception:
-                    pass
-
-                # Build cook info dict
-                cook_info: Dict[str, Any] = {
-                    "cook_state": cook_state,
-                    "errors": errors_list,
-                    "warnings": warnings_list,
-                }
-
-                # Try to get last cook time (may not be available on all node types)
-                try:
-                    # Houdini doesn't have a direct lastCookTime, but we can check if cooked
-                    # For now, we'll skip this or use current time if just cooked
-                    if force_cook:
-                        import time
-
-                        cook_info["last_cook_time"] = time.time()
-                except Exception:
-                    pass
-
-                info["cook_info"] = cook_info
-
-            except Exception as e:
-                # If we can't get cook info, add error but don't fail the whole request
-                logger.warning(f"Error getting cook info: {e}")
-                info["cook_info"] = {
-                    "cook_state": "unknown",
-                    "errors": [
-                        {"severity": "error", "message": f"Failed to get cook info: {str(e)}"}
-                    ],
-                    "warnings": [],
-                }
-
-        return info
-    except HoudiniConnectionError as e:
-        return {"status": "error", "message": str(e)}
-    except CONNECTION_ERRORS as e:
-        return _handle_connection_error(e, "getting_node_info")
-    except Exception as e:
-        logger.error(f"Error getting node info: {e}")
-        return {"status": "error", "message": str(e), "traceback": traceback.format_exc()}
+    return info
 
 
+@handle_connection_errors("delete_node")
 def delete_node(node_path: str, host: str = "localhost", port: int = 18811) -> Dict[str, Any]:
     """
     Delete a node from the scene.
@@ -293,30 +279,23 @@ def delete_node(node_path: str, host: str = "localhost", port: int = 18811) -> D
     Returns:
         Dict with result.
     """
-    try:
-        hou = ensure_connected(host, port)
+    hou = ensure_connected(host, port)
 
-        node = hou.node(node_path)
-        if node is None:
-            return {"status": "error", "message": f"Node not found: {node_path}"}
+    node = hou.node(node_path)
+    if node is None:
+        return {"status": "error", "message": f"Node not found: {node_path}"}
 
-        node_name = node.name()
-        node.destroy()
+    node_name = node.name()
+    node.destroy()
 
-        return {
-            "status": "success",
-            "message": f"Deleted node: {node_name}",
-            "deleted_path": node_path,
-        }
-    except HoudiniConnectionError as e:
-        return {"status": "error", "message": str(e)}
-    except CONNECTION_ERRORS as e:
-        return _handle_connection_error(e, "deleting_node")
-    except Exception as e:
-        logger.error(f"Error deleting node: {e}")
-        return {"status": "error", "message": str(e), "traceback": traceback.format_exc()}
+    return {
+        "status": "success",
+        "message": f"Deleted node: {node_name}",
+        "deleted_path": node_path,
+    }
 
 
+@handle_connection_errors("list_node_types")
 def list_node_types(
     category: Optional[str] = None,
     max_results: int = 100,
@@ -349,80 +328,72 @@ def list_node_types(
         - First call: ~200-500ms (populates cache using batch fetch)
         - Subsequent calls: <1ms (filters from cache)
     """
-    try:
-        hou = ensure_connected(host, port)
+    hou = ensure_connected(host, port)
 
-        # Cap max_results to prevent excessive data transfer
-        if max_results > 500:
-            max_results = 500
-        elif max_results < 1:
-            max_results = 100
+    # Cap max_results to prevent excessive data transfer
+    if max_results > 500:
+        max_results = 500
+    elif max_results < 1:
+        max_results = 100
 
-        # Validate offset
-        if offset < 0:
-            offset = 0
+    # Validate offset
+    if offset < 0:
+        offset = 0
 
-        # Populate cache if needed (first call fetches all types)
-        # This is done automatically by get_all_types()
-        node_type_cache.get_all_types(hou, host, port)
+    # Populate cache if needed (first call fetches all types)
+    # This is done automatically by get_all_types()
+    node_type_cache.get_all_types(hou, host, port)
 
-        # Filter from cache (instant)
-        node_types, total_matched, has_more = node_type_cache.filter_types(
-            category=category,
-            name_filter=name_filter,
-            max_results=max_results,
-            offset=offset,
+    # Filter from cache (instant)
+    node_types, total_matched, has_more = node_type_cache.filter_types(
+        category=category,
+        name_filter=name_filter,
+        max_results=max_results,
+        offset=offset,
+    )
+
+    # Build result
+    result: Dict[str, Any] = {
+        "status": "success",
+        "count": len(node_types),
+        "node_types": node_types,
+    }
+
+    # Include category in result if filtered
+    if category:
+        result["category"] = category
+    else:
+        # Get available categories from cache
+        result["categories_available"] = node_type_cache.get_categories(hou)
+
+    # Add pagination info
+    if offset > 0:
+        result["offset"] = offset
+
+    if has_more:
+        result["has_more"] = True
+        result["next_offset"] = offset + len(node_types)
+
+    # Add warning if results were limited
+    if len(node_types) >= max_results and has_more:
+        result["warning"] = (
+            f"Results limited to {max_results}. "
+            f"Use offset={offset + max_results} for next page, or use name_filter to narrow results."
         )
+        result["total_matched"] = total_matched
 
-        # Build result
-        result: Dict[str, Any] = {
-            "status": "success",
-            "count": len(node_types),
-            "node_types": node_types,
-        }
+    # Add cache stats for visibility
+    cache_stats = node_type_cache.stats
+    result["_cache_info"] = {
+        "hit": cache_stats.hits > 0 and node_type_cache.is_valid(),
+        "total_cached": cache_stats.entry_count,
+    }
 
-        # Include category in result if filtered
-        if category:
-            result["category"] = category
-        else:
-            # Get available categories from cache
-            result["categories_available"] = node_type_cache.get_categories(hou)
-
-        # Add pagination info
-        if offset > 0:
-            result["offset"] = offset
-
-        if has_more:
-            result["has_more"] = True
-            result["next_offset"] = offset + len(node_types)
-
-        # Add warning if results were limited
-        if len(node_types) >= max_results and has_more:
-            result["warning"] = (
-                f"Results limited to {max_results}. "
-                f"Use offset={offset + max_results} for next page, or use name_filter to narrow results."
-            )
-            result["total_matched"] = total_matched
-
-        # Add cache stats for visibility
-        cache_stats = node_type_cache.stats
-        result["_cache_info"] = {
-            "hit": cache_stats.hits > 0 and node_type_cache.is_valid(),
-            "total_cached": cache_stats.entry_count,
-        }
-
-        # Add response size metadata for large responses
-        return _add_response_metadata(result)
-
-    except HoudiniConnectionError as e:
-        return {"status": "error", "message": str(e)}
-    except CONNECTION_ERRORS as e:
-        return _handle_connection_error(e, "listing_node_types")
-    except Exception as e:
-        logger.error(f"Error listing node types: {e}")
-        return {"status": "error", "message": str(e), "traceback": traceback.format_exc()}
+    # Add response size metadata for large responses
+    return _add_response_metadata(result)
 
 
+@handle_connection_errors("list_children")
 def list_children(
     node_path: str,
     recursive: bool = False,
@@ -449,114 +420,106 @@ def list_children(
         Dict with child nodes including their connection information.
         When compact=True, inputs/outputs are omitted for reduced payload size.
     """
-    try:
-        hou = ensure_connected(host, port)
+    hou = ensure_connected(host, port)
 
-        parent = hou.node(node_path)
-        if parent is None:
-            return {"status": "error", "message": f"Node not found: {node_path}"}
+    parent = hou.node(node_path)
+    if parent is None:
+        return {"status": "error", "message": f"Node not found: {node_path}"}
 
-        children_list: List[Dict[str, Any]] = []
-        nodes_collected = 0
+    children_list: List[Dict[str, Any]] = []
+    nodes_collected = 0
 
-        def collect_children(node: Any, depth: int = 0) -> None:
-            nonlocal nodes_collected
+    def collect_children(node: Any, depth: int = 0) -> None:
+        nonlocal nodes_collected
 
-            if depth > max_depth:
-                logger.warning(f"Max depth {max_depth} reached at {node.path()}")
-                return
-
-            if nodes_collected >= max_nodes:
-                logger.warning(f"Max nodes {max_nodes} limit reached")
-                return
-
-            try:
-                for child in node.children():
-                    if nodes_collected >= max_nodes:
-                        break
-
-                    # Compact mode: only path, name, type
-                    if compact:
-                        child_info: Dict[str, Any] = {
-                            "path": child.path(),
-                            "name": child.name(),
-                            "type": child.type().name(),
-                        }
-                    else:
-                        # Full mode: include input/output connection details
-                        # Build input connection details
-                        input_connections: List[Dict[str, Any]] = []
-                        child_inputs = child.inputs()
-
-                        # Cache inputConnectors call OUTSIDE the loop to avoid
-                        # redundant RPC calls (was previously called per input)
-                        try:
-                            connectors = child.inputConnectors()
-                        except Exception:
-                            connectors = None
-
-                        for idx, input_node in enumerate(child_inputs):
-                            if input_node is not None:
-                                # Use cached connectors
-                                output_idx = 0
-                                if connectors is not None and idx < len(connectors):
-                                    connector = connectors[idx]
-                                    output_idx = connector[1] if len(connector) > 1 else 0
-
-                                input_connections.append(
-                                    {
-                                        "index": idx,
-                                        "source_node": input_node.path(),
-                                        "output_index": output_idx,
-                                    }
-                                )
-
-                        # Build output list
-                        output_paths = [out.path() for out in child.outputs()]
-
-                        child_info = {
-                            "path": child.path(),
-                            "name": child.name(),
-                            "type": child.type().name(),
-                            "inputs": input_connections,
-                            "outputs": output_paths,
-                        }
-
-                    children_list.append(child_info)
-                    nodes_collected += 1
-
-                    # Recurse if requested
-                    if recursive:
-                        collect_children(child, depth + 1)
-
-            except Exception as e:
-                # Handle locked HDAs or other access issues
-                logger.warning(f"Could not access children of {node.path()}: {e}")
-
-        collect_children(parent)
-
-        result: Dict[str, Any] = {
-            "status": "success",
-            "node_path": node_path,
-            "children": children_list,
-            "count": len(children_list),
-        }
+        if depth > max_depth:
+            logger.warning(f"Max depth {max_depth} reached at {node.path()}")
+            return
 
         if nodes_collected >= max_nodes:
-            result["warning"] = f"Result limited to {max_nodes} nodes"
+            logger.warning(f"Max nodes {max_nodes} limit reached")
+            return
 
-        # Add response size metadata for large responses
-        return _add_response_metadata(result)
+        try:
+            for child in node.children():
+                if nodes_collected >= max_nodes:
+                    break
 
-    except HoudiniConnectionError as e:
-        return {"status": "error", "message": str(e)}
-    except CONNECTION_ERRORS as e:
-        return _handle_connection_error(e, "listing_children")
-    except Exception as e:
-        logger.error(f"Error listing children: {e}")
-        return {"status": "error", "message": str(e), "traceback": traceback.format_exc()}
+                # Compact mode: only path, name, type
+                if compact:
+                    child_info: Dict[str, Any] = {
+                        "path": child.path(),
+                        "name": child.name(),
+                        "type": child.type().name(),
+                    }
+                else:
+                    # Full mode: include input/output connection details
+                    # Build input connection details
+                    input_connections: List[Dict[str, Any]] = []
+                    child_inputs = child.inputs()
+
+                    # Cache inputConnectors call OUTSIDE the loop to avoid
+                    # redundant RPC calls (was previously called per input)
+                    try:
+                        connectors = child.inputConnectors()
+                    except Exception:
+                        connectors = None
+
+                    for idx, input_node in enumerate(child_inputs):
+                        if input_node is not None:
+                            # Use cached connectors
+                            output_idx = 0
+                            if connectors is not None and idx < len(connectors):
+                                connector = connectors[idx]
+                                output_idx = connector[1] if len(connector) > 1 else 0
+
+                            input_connections.append(
+                                {
+                                    "index": idx,
+                                    "source_node": input_node.path(),
+                                    "output_index": output_idx,
+                                }
+                            )
+
+                    # Build output list
+                    output_paths = [out.path() for out in child.outputs()]
+
+                    child_info = {
+                        "path": child.path(),
+                        "name": child.name(),
+                        "type": child.type().name(),
+                        "inputs": input_connections,
+                        "outputs": output_paths,
+                    }
+
+                children_list.append(child_info)
+                nodes_collected += 1
+
+                # Recurse if requested
+                if recursive:
+                    collect_children(child, depth + 1)
+
+        except Exception as e:
+            # Handle locked HDAs or other access issues
+            logger.warning(f"Could not access children of {node.path()}: {e}")
+
+    collect_children(parent)
+
+    result: Dict[str, Any] = {
+        "status": "success",
+        "node_path": node_path,
+        "children": children_list,
+        "count": len(children_list),
+    }
+
+    if nodes_collected >= max_nodes:
+        result["warning"] = f"Result limited to {max_nodes} nodes"
+
+    # Add response size metadata for large responses
+    return _add_response_metadata(result)
 
 
+@handle_connection_errors("find_nodes")
 def find_nodes(
     root_path: str = "/obj",
     pattern: str = "*",
@@ -585,20 +548,19 @@ def find_nodes(
         find_nodes("/obj/geo1", "*", node_type="sphere")
         find_nodes("/obj", "*", offset=100)  # Get next page
     """
-    try:
-        hou = ensure_connected(host, port)
+    hou = ensure_connected(host, port)
 
-        root = hou.node(root_path)
-        if root is None:
-            return {"status": "error", "message": f"Root node not found: {root_path}"}
+    root = hou.node(root_path)
+    if root is None:
+        return {"status": "error", "message": f"Root node not found: {root_path}"}
 
-        # Validate offset
-        if offset < 0:
-            offset = 0
+    # Validate offset
+    if offset < 0:
+        offset = 0
 
-        # Execute search on Houdini side to minimize RPC overhead
-        # Uses allSubChildren() which is much faster than recursive children() calls
-        search_code = """
+    # Execute search on Houdini side to minimize RPC overhead
+    # Uses allSubChildren() which is much faster than recursive children() calls
+    search_code = """
 import fnmatch
 
 root = hou.node("{root_path}")
@@ -650,99 +612,91 @@ if root is not None:
 
 _result = {{"matches": matches, "total_matched": total_matched}}
 """.format(
-            root_path=root_path,
-            pattern=pattern.replace('"', '\\"'),
-            node_type_repr=repr(node_type),
-            max_results=max_results,
-            offset=offset,
+        root_path=root_path,
+        pattern=pattern.replace('"', '\\"'),
+        node_type_repr=repr(node_type),
+        max_results=max_results,
+        offset=offset,
+    )
+
+    try:
+        exec_globals: Dict[str, Any] = {
+            "hou": hou,
+            "_result": {"matches": [], "total_matched": 0},
+        }
+        exec(search_code, exec_globals)
+        search_result = exec_globals.get("_result", {"matches": [], "total_matched": 0})
+        matches = search_result["matches"]
+        total_matched = search_result["total_matched"]
+    except Exception as e:
+        logger.warning(f"Fast search failed, falling back to slow path: {e}")
+        # Fallback to original slow implementation
+        import fnmatch as fnmatch_module
+
+        matches = []
+        total_matched = 0
+
+        def search_recursive(node: Any) -> None:
+            nonlocal total_matched
+            if len(matches) >= max_results:
+                return
+
+            try:
+                for child in node.children():
+                    if len(matches) >= max_results:
+                        break
+
+                    name_match = fnmatch_module.fnmatch(child.name().lower(), pattern.lower())
+                    if "*" not in pattern and "?" not in pattern:
+                        name_match = name_match or pattern.lower() in child.name().lower()
+
+                    type_match = True
+                    if node_type is not None:
+                        type_match = child.type().name().lower() == node_type.lower()
+
+                    if name_match and type_match:
+                        total_matched += 1
+                        if total_matched <= offset:
+                            search_recursive(child)
+                            continue
+                        matches.append(
+                            {
+                                "path": child.path(),
+                                "name": child.name(),
+                                "type": child.type().name(),
+                            }
+                        )
+                    search_recursive(child)
+            except Exception as ex:
+                logger.debug(f"Could not search in {node.path()}: {ex}")
+
+        search_recursive(root)
+
+    result: Dict[str, Any] = {
+        "status": "success",
+        "root_path": root_path,
+        "pattern": pattern,
+        "matches": matches,
+        "count": len(matches),
+    }
+
+    if node_type:
+        result["node_type_filter"] = node_type
+
+    # Add pagination info
+    if offset > 0:
+        result["offset"] = offset
+
+    # Calculate if there are more results
+    has_more = total_matched > offset + len(matches)
+    if has_more:
+        result["has_more"] = True
+        result["next_offset"] = offset + len(matches)
+
+    if len(matches) >= max_results:
+        result["warning"] = (
+            f"Results limited to {max_results} nodes. Use offset={offset + max_results} for next page."
         )
 
-        try:
-            exec_globals: Dict[str, Any] = {
-                "hou": hou,
-                "_result": {"matches": [], "total_matched": 0},
-            }
-            exec(search_code, exec_globals)
-            search_result = exec_globals.get("_result", {"matches": [], "total_matched": 0})
-            matches = search_result["matches"]
-            total_matched = search_result["total_matched"]
-        except Exception as e:
-            logger.warning(f"Fast search failed, falling back to slow path: {e}")
-            # Fallback to original slow implementation
-            import fnmatch as fnmatch_module
-
-            matches = []
-            total_matched = 0
-
-            def search_recursive(node: Any) -> None:
-                nonlocal total_matched
-                if len(matches) >= max_results:
-                    return
-
-                try:
-                    for child in node.children():
-                        if len(matches) >= max_results:
-                            break
-
-                        name_match = fnmatch_module.fnmatch(child.name().lower(), pattern.lower())
-                        if "*" not in pattern and "?" not in pattern:
-                            name_match = name_match or pattern.lower() in child.name().lower()
-
-                        type_match = True
-                        if node_type is not None:
-                            type_match = child.type().name().lower() == node_type.lower()
-
-                        if name_match and type_match:
-                            total_matched += 1
-                            if total_matched <= offset:
-                                search_recursive(child)
-                                continue
-                            matches.append(
-                                {
-                                    "path": child.path(),
-                                    "name": child.name(),
-                                    "type": child.type().name(),
-                                }
-                            )
-                        search_recursive(child)
-                except Exception as ex:
-                    logger.debug(f"Could not search in {node.path()}: {ex}")
-
-            search_recursive(root)
-
-        result: Dict[str, Any] = {
-            "status": "success",
-            "root_path": root_path,
-            "pattern": pattern,
-            "matches": matches,
-            "count": len(matches),
-        }
-
-        if node_type:
-            result["node_type_filter"] = node_type
-
-        # Add pagination info
-        if offset > 0:
-            result["offset"] = offset
-
-        # Calculate if there are more results
-        has_more = total_matched > offset + len(matches)
-        if has_more:
-            result["has_more"] = True
-            result["next_offset"] = offset + len(matches)
-
-        if len(matches) >= max_results:
-            result["warning"] = (
-                f"Results limited to {max_results} nodes. Use offset={offset + max_results} for next page."
-            )
-
-        # Add response size metadata for large responses
-        return _add_response_metadata(result)
-
-    except HoudiniConnectionError as e:
-        return {"status": "error", "message": str(e)}
-    except CONNECTION_ERRORS as e:
-        return _handle_connection_error(e, "finding_nodes")
-    except Exception as e:
-        logger.error(f"Error finding nodes: {e}")
-        return {"status": "error", "message": str(e), "traceback": traceback.format_exc()}
+    # Add response size metadata for large responses
+    return _add_response_metadata(result)
