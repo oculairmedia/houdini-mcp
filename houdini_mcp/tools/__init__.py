@@ -24,6 +24,7 @@ from .materials import create_material, assign_material, get_material_info
 from .geometry import get_geo_summary
 from .parameters import set_parameter, get_parameter_schema
 from .rendering import render_viewport
+from .wiring import connect_nodes, disconnect_node_input, reorder_inputs, set_node_flags
 
 # Import remaining functions from legacy module
 from ..tools_legacy import (
@@ -41,11 +42,6 @@ from ..tools_legacy import (
     list_children,
     find_nodes,
     list_node_types,
-    # Wiring/connections
-    connect_nodes,
-    disconnect_node_input,
-    reorder_inputs,
-    set_node_flags,
     # Code execution
     execute_code,
     # Internal utilities (needed by some tests)
