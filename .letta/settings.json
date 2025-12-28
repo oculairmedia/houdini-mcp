@@ -12,7 +12,12 @@
       "Bash(cd /opt/stacks/houdini-mcp && bd done houdini-mcp-9hi --message \"Verified: materials.py module extracted and imports working\")",
       "Bash(cd /opt/stacks/houdini-mcp && bd done houdini-mcp-ryz --message \"Verified: geometry.py module extracted and imports working\")",
       "Bash(cd /opt/stacks/houdini-mcp && bd done houdini-mcp-cos --message \"Verified: rendering.py module extracted and imports working\")",
-      "Bash(cd /opt/stacks/houdini-mcp && bd done houdini-mcp-e6s --message \"Verified: wiring.py module extracted and imports working\")"
+      "Bash(cd /opt/stacks/houdini-mcp && bd done houdini-mcp-e6s --message \"Verified: wiring.py module extracted and imports working\")",
+      "Bash(cd /opt/stacks/houdini-mcp && bd close houdini-mcp-b75 -r \"Implemented: list_render_nodes, get_render_settings, set_render_settings, create_render_node\")",
+      "Bash(cd /opt/stacks/houdini-mcp && bd close houdini-mcp-5gt -r \"Implemented: Houdini plugin with stdio MCP mode (in-process server)\")",
+      "Bash(cd /opt/stacks/houdini-mcp && bd close houdini-mcp-d2j -r \"Implemented: Remote mode with hrpyc activation\")",
+      "Bash(cd /opt/stacks/houdini-mcp && bd list --status open)",
+      "Bash(cd /opt/stacks/houdini-mcp && bd close houdini-mcp-a5n houdini-mcp-3z2 -r \"Already completed: modules exist and are functional\")"
     ]
   }
 }
