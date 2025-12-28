@@ -19,6 +19,7 @@ Usage:
 # Import from extracted modules
 from .help import get_houdini_help
 from .errors import find_error_nodes
+from .layout import layout_children, set_node_color, set_node_position, create_network_box
 
 # Import remaining functions from legacy module
 from ..tools_legacy import (
@@ -52,11 +53,6 @@ from ..tools_legacy import (
     create_material,
     assign_material,
     get_material_info,
-    # Layout
-    layout_children,
-    set_node_position,
-    set_node_color,
-    create_network_box,
     # Code execution
     execute_code,
     # Internal utilities (needed by some tests)
