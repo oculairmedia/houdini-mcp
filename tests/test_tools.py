@@ -454,7 +454,7 @@ pass
             else:
                 return after_state  # After execution
 
-        with patch("houdini_mcp.tools._serialize_scene_state", side_effect=mock_serialize):
+        with patch("houdini_mcp.tools_legacy._serialize_scene_state", side_effect=mock_serialize):
             result = execute_code(
                 "pass", host="localhost", port=18811, capture_diff=True, max_diff_nodes=5
             )
@@ -1048,11 +1048,11 @@ class TestSceneDiff:
     def test_get_last_scene_diff_with_changes(self):
         """Test getting scene diff with actual changes."""
         from houdini_mcp.tools import get_last_scene_diff
-        import houdini_mcp.tools as tools_module
+        import houdini_mcp.tools_legacy as tools_legacy
 
-        # Simulate before/after state
-        tools_module._before_scene = []
-        tools_module._after_scene = [
+        # Simulate before/after state (these globals live in tools_legacy)
+        tools_legacy._before_scene = []
+        tools_legacy._after_scene = [
             {"path": "/obj/new_node", "type": "geo", "name": "new_node", "children": []}
         ]
 
@@ -2891,7 +2891,7 @@ class TestConnectionErrorHandling:
         assert result["exception"] == "OSError"
         assert result["recoverable"] is True
 
-    @patch("houdini_mcp.tools.ensure_connected")
+    @patch("houdini_mcp.tools_legacy.ensure_connected")
     def test_get_scene_info_handles_timeout(self, mock_ensure):
         """Test that get_scene_info handles TimeoutError gracefully."""
         from houdini_mcp.tools import get_scene_info
@@ -2905,7 +2905,7 @@ class TestConnectionErrorHandling:
         assert "timed out" in result["message"]
         assert result["recoverable"] is True
 
-    @patch("houdini_mcp.tools.ensure_connected")
+    @patch("houdini_mcp.tools_legacy.ensure_connected")
     def test_create_node_handles_eof_error(self, mock_ensure):
         """Test that create_node handles EOFError gracefully."""
         from houdini_mcp.tools import create_node

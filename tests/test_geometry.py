@@ -15,7 +15,8 @@ class TestGetGeoSummary:
     @pytest.fixture
     def mock_execute_code(self):
         """Fixture to mock execute_code for geo_summary tests."""
-        with patch("houdini_mcp.tools.execute_code") as mock:
+        # Patch where execute_code is called (in tools_legacy), not where it's imported
+        with patch("houdini_mcp.tools_legacy.execute_code") as mock:
             yield mock
 
     def _make_geo_response(self, **kwargs):

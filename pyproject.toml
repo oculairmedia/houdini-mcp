@@ -114,6 +114,7 @@ omit = [
     "*/tests/*",
     "*/__main__.py",
     "*/server.py",  # FastMCP registration - tested via integration tests
+    "*/tools/_common.py",  # Shared utilities - will be used in Phase 2
 ]
 
 [tool.coverage.report]
