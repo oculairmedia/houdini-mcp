@@ -21,6 +21,12 @@ services:
       timeout: 10s
       retries: 3
       start_period: 10s
+    labels:
+      - homepage.group=Development Tools
+      - homepage.name=Houdini MCP
+      - homepage.icon=si-docker
+      - homepage.href=http://192.168.50.90:3055
+      - homepage.description=Houdini MCP server
 
 networks:
   mcp-network:

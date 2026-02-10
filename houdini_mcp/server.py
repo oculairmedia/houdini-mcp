@@ -31,18 +31,7 @@ mcp = FastMCP("Houdini MCP")
 @mcp.custom_route("/health", methods=["GET"])
 async def health_check(request: Request) -> JSONResponse:
     """Health check endpoint for container orchestration."""
-    # Check if we can reach Houdini
-    houdini_reachable = ping(HOUDINI_HOST, HOUDINI_PORT)
-
-    return JSONResponse(
-        {
-            "status": "healthy",
-            "service": "houdini-mcp",
-            "houdini_host": HOUDINI_HOST,
-            "houdini_port": HOUDINI_PORT,
-            "houdini_reachable": houdini_reachable,
-        }
-    )
+    return JSONResponse({"status": "healthy", "service": "houdini-mcp"})
 
 
 @mcp.tool()

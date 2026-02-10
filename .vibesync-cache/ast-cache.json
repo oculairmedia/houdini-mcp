@@ -1,0 +1,2049 @@
+{
+  "projectId": "HDMCP",
+  "version": 1,
+  "updatedAt": 1769587557464,
+  "files": {
+    "examples/augment_existing_scene.py": {
+      "path": "examples/augment_existing_scene.py",
+      "contentHash": "b39f939891bc03ebc76b21414cc2af18",
+      "mtime": 1766118299281.2036,
+      "functions": [
+        {
+          "name": "ool(tool_",
+          "signature": "def ool(tool_name: str, **kwargs) -> Di -> tr, Any]:\n    ",
+          "parameters": "name: str, **kwargs) -> Di",
+          "return_type": "tr, Any]:\n    ",
+          "docstring": "l an MCP tool and return the result.\"\"\"\n    r",
+          "decorators": [],
+          "start_line": 25,
+          "end_line": 38,
+          "is_async": false
+        },
+        {
+          "name": "ode_by_type(child",
+          "signature": "def ode_by_type(children: List[Dict[str, Any]], node_type: str) -> Di -> tr, Any]:\n    ",
+          "parameters": "ren: List[Dict[str, Any]], node_type: str) -> Di",
+          "return_type": "tr, Any]:\n    ",
+          "docstring": "d first node matching the given type.\"\"\"\n    f",
+          "decorators": [],
+          "start_line": 41,
+          "end_line": 46,
+          "is_async": false
+        },
+        {
+          "name": ":\n  ",
+          "signature": "def :\n    ",
+          "parameters": "  ",
+          "return_type": null,
+          "docstring": "ment existing scene by inserting a mountain node.\"\"\"",
+          "decorators": [],
+          "start_line": 49,
+          "end_line": 289,
+          "is_async": false
+        }
+      ],
+      "parsedAt": 1769587469200
+    },
+    "examples/build_from_scratch.py": {
+      "path": "examples/build_from_scratch.py",
+      "contentHash": "74dcabc00fe75600752f5a1ea89e6f92",
+      "mtime": 1766118259776.205,
+      "functions": [
+        {
+          "name": "ool(tool_",
+          "signature": "def ool(tool_name: str, **kwargs) -> Di -> tr, Any]:\n    ",
+          "parameters": "name: str, **kwargs) -> Di",
+          "return_type": "tr, Any]:\n    ",
+          "docstring": "l an MCP tool and return the result.\"\"\"\n    r",
+          "decorators": [],
+          "start_line": 26,
+          "end_line": 39,
+          "is_async": false
+        },
+        {
+          "name": ":\n  ",
+          "signature": "def :\n    ",
+          "parameters": "  ",
+          "return_type": null,
+          "docstring": "ld a complete SOP network from scratch.\"\"\"",
+          "decorators": [],
+          "start_line": 42,
+          "end_line": 225,
+          "is_async": false
+        }
+      ],
+      "parsedAt": 1769587469200
+    },
+    "examples/error_handling.py": {
+      "path": "examples/error_handling.py",
+      "contentHash": "b43cd71c0cbc850b0ad866ed91ad2c92",
+      "mtime": 1766118390355.5056,
+      "functions": [
+        {
+          "name": "k_for_errors(nod",
+          "signature": "def k_for_errors(node_path: str) ->  -> onal[Dict[str, Any]]:\n  ",
+          "parameters": "e_path: str) -> ",
+          "return_type": "onal[Dict[str, Any]]:\n  ",
+          "docstring": "heck if a node has cook errors. Returns cook_info or None.\"\"\"",
+          "decorators": [],
+          "start_line": 40,
+          "end_line": 58,
+          "is_async": false
+        },
+        {
+          "name": "cook_info(cook_",
+          "signature": "def cook_info(cook_info: Dict[str, Any]) -> No ->     ",
+          "parameters": "info: Dict[str, Any]) -> No",
+          "return_type": "    ",
+          "docstring": "tty print cook information.\"\"\"\n    s",
+          "decorators": [],
+          "start_line": 61,
+          "end_line": 85,
+          "is_async": false
+        },
+        {
+          "name": "onst",
+          "signature": "def onstra",
+          "parameters": "ra",
+          "return_type": null,
+          "docstring": "or detection, diagnosis, and fixing.\"\"\"\n    \n    print(\"=",
+          "decorators": [],
+          "start_line": 88,
+          "end_line": 329,
+          "is_async": false
+        }
+      ],
+      "parsedAt": 1769587469200
+    },
+    "examples/parameter_workflow.py": {
+      "path": "examples/parameter_workflow.py",
+      "contentHash": "abb9cb86dfcbe6f21422524f17033607",
+      "mtime": 1766118341246.2644,
+      "functions": [
+        {
+          "name": "t_parameter_schema(par",
+          "signature": "def t_parameter_schema(param: Dict[str, Any]) ->  -> :\n  ",
+          "parameters": "am: Dict[str, Any]) -> ",
+          "return_type": ":\n  ",
+          "docstring": "retty print a parameter schema.\"\"\"",
+          "decorators": [],
+          "start_line": 42,
+          "end_line": 64,
+          "is_async": false
+        },
+        {
+          "name": "():\n",
+          "signature": "def ():\n  ",
+          "parameters": "  ",
+          "return_type": null,
+          "docstring": "emonstrate parameter discovery and intelligent setting.\"\"\"",
+          "decorators": [],
+          "start_line": 67,
+          "end_line": 282,
+          "is_async": false
+        }
+      ],
+      "parsedAt": 1769587469201
+    },
+    "houdini_mcp/connection.py": {
+      "path": "houdini_mcp/connection.py",
+      "contentHash": "302464e9d720fc81b77afbcbc5720c6a",
+      "mtime": 1766919471829.4329,
+      "functions": [
+        {
+          "name": "retry_with_backoff",
+          "signature": "def retry_with_backoff(\n    max_retries: int = DEFAULT_MAX_RETRIES,\n    base_delay: float = DEFAULT_RETRY_DELAY,\n    max_delay: float = DEFAULT_MAX_DELAY,\n    exponential_base: float = 2.0,\n    jitter: bool = True,\n    retryable_exceptions: Tuple[Type[Exception], ...] = RETRYABLE_EXCEPTIONS,\n) -> Callable[[F], F]",
+          "parameters": "(\n    max_retries: int = DEFAULT_MAX_RETRIES,\n    base_delay: float = DEFAULT_RETRY_DELAY,\n    max_delay: float = DEFAULT_MAX_DELAY,\n    exponential_base: float = 2.0,\n    jitter: bool = True,\n    retryable_exceptions: Tuple[Type[Exception], ...] = RETRYABLE_EXCEPTIONS,\n)",
+          "return_type": "Callable[[F], F]",
+          "docstring": "Decorator that retries a function with exponential backoff and optional jitter.\n\n    This prevents thundering herd problems when multiple clients try to reconnect\n    simultaneously, and provides graceful degradation under load.\n\n    Args:\n        max_retries: Maximum number of retry attempts (default: 3)\n        base_delay: Initial delay in seconds (default: 1.0)\n        max_delay: Maximum delay cap in seconds (default: 30.0)\n        exponential_base: Base for exponential backoff (default: 2.0)\n        jitter: If True, add random jitter to prevent thundering herd (default: True)\n        retryable_exceptions: Tuple of exception types that trigger retry\n\n    Returns:\n        Decorated function that retries on specified exceptions\n\n    Example:\n        @retry_with_backoff(max_retries=5, jitter=True)\n        def connect_to_houdini():\n            ...",
+          "decorators": [],
+          "start_line": 64,
+          "end_line": 132,
+          "is_async": false
+        },
+        {
+          "name": "connect",
+          "signature": "def connect(\n    host: str = \"localhost\",\n    port: int = 18811,\n    max_retries: int = DEFAULT_MAX_RETRIES,\n    retry_delay: float = DEFAULT_RETRY_DELAY,\n    sync_timeout: float = DEFAULT_SYNC_TIMEOUT,\n    jitter: bool = True,\n) -> Tuple[Any, Any]",
+          "parameters": "(\n    host: str = \"localhost\",\n    port: int = 18811,\n    max_retries: int = DEFAULT_MAX_RETRIES,\n    retry_delay: float = DEFAULT_RETRY_DELAY,\n    sync_timeout: float = DEFAULT_SYNC_TIMEOUT,\n    jitter: bool = True,\n)",
+          "return_type": "Tuple[Any, Any]",
+          "docstring": "Connect to Houdini RPC server using rpyc with retry logic.\n\n    Uses exponential backoff with optional jitter to prevent thundering herd\n    problems when multiple clients reconnect simultaneously.\n\n    Args:\n        host: Houdini server hostname (default: localhost)\n        port: Houdini RPC port (default: 18811)\n        max_retries: Maximum number of connection attempts (default: 3)\n        retry_delay: Initial delay between retries in seconds (default: 1.0)\n        sync_timeout: Timeout for synchronous RPC calls in seconds (default: 30)\n        jitter: If True, add random jitter to delays (default: True)\n\n    Returns:\n        Tuple of (connection, hou module)\n\n    Raises:\n        HoudiniConnectionError: If connection fails after all retries",
+          "decorators": [],
+          "start_line": 172,
+          "end_line": 234,
+          "is_async": false
+        },
+        {
+          "name": "get_hou",
+          "signature": "def get_hou(host: str = \"localhost\", port: int = 18811) -> Any",
+          "parameters": "(host: str = \"localhost\", port: int = 18811)",
+          "return_type": "Any",
+          "docstring": "Get the remote hou module, connecting if necessary.\n\n    Args:\n        host: Houdini server hostname\n        port: Houdini RPC port\n\n    Returns:\n        The remote hou module\n\n    Raises:\n        HoudiniConnectionError: If connection fails",
+          "decorators": [],
+          "start_line": 237,
+          "end_line": 256,
+          "is_async": false
+        },
+        {
+          "name": "get_connection",
+          "signature": "def get_connection() -> Optional[Any]",
+          "parameters": "()",
+          "return_type": "Optional[Any]",
+          "docstring": "Get the current connection object.",
+          "decorators": [],
+          "start_line": 259,
+          "end_line": 261,
+          "is_async": false
+        },
+        {
+          "name": "disconnect",
+          "signature": "def disconnect() -> None",
+          "parameters": "()",
+          "return_type": "None",
+          "docstring": "Disconnect from Houdini gracefully.",
+          "decorators": [],
+          "start_line": 264,
+          "end_line": 276,
+          "is_async": false
+        },
+        {
+          "name": "is_connected",
+          "signature": "def is_connected(validate: bool = False) -> bool",
+          "parameters": "(validate: bool = False)",
+          "return_type": "bool",
+          "docstring": "Check if connected to Houdini.\n\n    By default, only checks if connection objects exist and socket is open.\n    This is fast (no RPC call). Set validate=True to perform an RPC call\n    to verify Houdini is actually responsive (slower but more thorough).\n\n    Args:\n        validate: If True, perform RPC call to verify connection is alive.\n                  If False (default), only check socket state for speed.\n\n    Returns:\n        True if connected, False otherwise.",
+          "decorators": [],
+          "start_line": 279,
+          "end_line": 321,
+          "is_async": false
+        },
+        {
+          "name": "ensure_connected",
+          "signature": "def ensure_connected(host: str = \"localhost\", port: int = 18811) -> Any",
+          "parameters": "(host: str = \"localhost\", port: int = 18811)",
+          "return_type": "Any",
+          "docstring": "Ensure we're connected to Houdini, reconnecting if necessary.\n\n    This is the preferred method for tools to get the hou module,\n    as it handles connection recovery automatically.\n\n    Returns:\n        The remote hou module\n\n    Raises:\n        HoudiniConnectionError: If unable to establish connection",
+          "decorators": [],
+          "start_line": 324,
+          "end_line": 340,
+          "is_async": false
+        },
+        {
+          "name": "get_connection_info",
+          "signature": "def get_connection_info(host: str = \"localhost\", port: int = 18811) -> Dict[str, Any]",
+          "parameters": "(host: str = \"localhost\", port: int = 18811)",
+          "return_type": "Dict[str, Any]",
+          "docstring": "Get detailed information about the current connection state.\n\n    Returns:\n        Dict with connection status, host, port, and Houdini info if connected.",
+          "decorators": [],
+          "start_line": 343,
+          "end_line": 374,
+          "is_async": false
+        },
+        {
+          "name": "ping",
+          "signature": "def ping(host: str = \"localhost\", port: int = 18811, timeout: float = 5.0) -> bool",
+          "parameters": "(host: str = \"localhost\", port: int = 18811, timeout: float = 5.0)",
+          "return_type": "bool",
+          "docstring": "Quick connectivity test without maintaining connection.\n\n    Args:\n        host: Houdini server hostname\n        port: Houdini RPC port\n        timeout: Timeout in seconds for the ping (default: 5.0)\n\n    Returns:\n        True if Houdini RPC server is reachable, False otherwise.",
+          "decorators": [],
+          "start_line": 377,
+          "end_line": 399,
+          "is_async": false
+        },
+        {
+          "name": "safe_execute",
+          "signature": "def safe_execute(\n    func: Callable[..., Any],\n    *args: Any,\n    timeout: float = DEFAULT_OPERATION_TIMEOUT,\n    operation_name: str = \"unknown\",\n    **kwargs: Any,\n) -> SafeExecutionResult",
+          "parameters": "(\n    func: Callable[..., Any],\n    *args: Any,\n    timeout: float = DEFAULT_OPERATION_TIMEOUT,\n    operation_name: str = \"unknown\",\n    **kwargs: Any,\n)",
+          "return_type": "SafeExecutionResult",
+          "docstring": "Execute a function with timeout protection and connection error handling.\n\n    This wraps any Houdini RPC operation to ensure:\n    1. It cannot hang indefinitely (controlled timeout)\n    2. Connection errors are caught and reported cleanly\n    3. The connection is cleaned up on failure\n\n    Args:\n        func: The function to execute\n        *args: Arguments to pass to the function\n        timeout: Maximum execution time in seconds\n        operation_name: Name of the operation for error messages\n        **kwargs: Keyword arguments to pass to the function\n\n    Returns:\n        SafeExecutionResult with success/failure info",
+          "decorators": [],
+          "start_line": 463,
+          "end_line": 538,
+          "is_async": false
+        },
+        {
+          "name": "execute_with_timeout",
+          "signature": "def execute_with_timeout(\n    func: Callable[..., Any],\n    *args: Any,\n    timeout: float = DEFAULT_OPERATION_TIMEOUT,\n    **kwargs: Any,\n) -> Any",
+          "parameters": "(\n    func: Callable[..., Any],\n    *args: Any,\n    timeout: float = DEFAULT_OPERATION_TIMEOUT,\n    **kwargs: Any,\n)",
+          "return_type": "Any",
+          "docstring": "Execute a function with a timeout, raising HoudiniOperationTimeout if exceeded.\n\n    Unlike safe_execute, this raises exceptions rather than returning a result object.\n    Use this for internal operations where you want to handle the exception yourself.\n\n    Args:\n        func: Function to execute\n        *args: Arguments to pass\n        timeout: Maximum execution time in seconds\n        **kwargs: Keyword arguments to pass\n\n    Returns:\n        The function result\n\n    Raises:\n        HoudiniOperationTimeout: If the operation times out\n        Various exceptions: If the operation fails for other reasons",
+          "decorators": [],
+          "start_line": 554,
+          "end_line": 586,
+          "is_async": false
+        },
+        {
+          "name": "quick_health_check",
+          "signature": "def quick_health_check(host: str = \"localhost\", port: int = 18811, timeout: float = 5.0) -> bool",
+          "parameters": "(host: str = \"localhost\", port: int = 18811, timeout: float = 5.0)",
+          "return_type": "bool",
+          "docstring": "Quick health check with strict timeout - use before heavy operations.\n\n    Uses is_connected(validate=True) to perform an actual RPC call\n    and verify Houdini is responsive.\n\n    Args:\n        host: Houdini server hostname\n        port: Houdini RPC port\n        timeout: Maximum time to wait\n\n    Returns:\n        True if Houdini is responsive, False otherwise",
+          "decorators": [],
+          "start_line": 589,
+          "end_line": 619,
+          "is_async": false
+        }
+      ],
+      "parsedAt": 1769587469201
+    },
+    "houdini_mcp/server.py": {
+      "path": "houdini_mcp/server.py",
+      "contentHash": "d9f1d623d9627dc457461734ba3f7957",
+      "mtime": 1767487997429.5078,
+      "functions": [
+        {
+          "name": "health_check",
+          "signature": "def health_check(request: Request) -> JSONResponse",
+          "parameters": "(request: Request)",
+          "return_type": "JSONResponse",
+          "docstring": "Health check endpoint for container orchestration.",
+          "decorators": [
+            "@mcp.custom_route(\"/health\", methods=[\"GET\"])"
+          ],
+          "start_line": 32,
+          "end_line": 34,
+          "is_async": true
+        },
+        {
+          "name": "get_scene_info",
+          "signature": "def get_scene_info() -> Dict[str, Any]",
+          "parameters": "()",
+          "return_type": "Dict[str, Any]",
+          "docstring": "Get current Houdini scene information.\n\n    Returns information about the currently open scene including:\n    - Hip file path\n    - Houdini version\n    - List of nodes in /obj",
+          "decorators": [
+            "@mcp.tool()"
+          ],
+          "start_line": 38,
+          "end_line": 47,
+          "is_async": false
+        },
+        {
+          "name": "create_node",
+          "signature": "def create_node(\n    node_type: str, parent_path: str = \"/obj\", name: Optional[str] = None\n) -> Dict[str, Any]",
+          "parameters": "(\n    node_type: str, parent_path: str = \"/obj\", name: Optional[str] = None\n)",
+          "return_type": "Dict[str, Any]",
+          "docstring": "Create a new node in the Houdini scene.\n\n    Args:\n        node_type: The type of node to create (e.g., \"geo\", \"null\", \"cam\")\n        parent_path: The parent node path (default: \"/obj\")\n        name: Optional name for the new node\n\n    Examples:\n        - create_node(\"geo\") -> Creates a geometry container at /obj\n        - create_node(\"sphere\", \"/obj/geo1\") -> Creates a sphere SOP inside geo1\n        - create_node(\"cam\", name=\"render_cam\") -> Creates a camera named render_cam",
+          "decorators": [
+            "@mcp.tool()"
+          ],
+          "start_line": 51,
+          "end_line": 67,
+          "is_async": false
+        },
+        {
+          "name": "execute_code",
+          "signature": "def execute_code(\n    code: str,\n    capture_diff: bool = False,\n    max_stdout_size: int = 100000,\n    max_stderr_size: int = 100000,\n    max_diff_nodes: int = 1000,\n    timeout: int = 30,\n    allow_dangerous: bool = False,\n) -> Dict[str, Any]",
+          "parameters": "(\n    code: str,\n    capture_diff: bool = False,\n    max_stdout_size: int = 100000,\n    max_stderr_size: int = 100000,\n    max_diff_nodes: int = 1000,\n    timeout: int = 30,\n    allow_dangerous: bool = False,\n)",
+          "return_type": "Dict[str, Any]",
+          "docstring": "Execute Python code in Houdini with scene change tracking and safety rails.\n\n    The 'hou' module is available in the execution context.\n    Use this for complex operations that aren't covered by other tools.\n\n    SAFETY FEATURES:\n    - Dangerous operation detection: Scans for patterns like hou.exit(), os.remove(), subprocess, etc.\n    - Output size caps: Prevents massive output from overwhelming the response\n    - Execution timeout: Prevents runaway code from blocking indefinitely\n    - Scene diff limits: Caps the number of nodes returned in scene changes\n\n    Args:\n        code: Python code to execute\n        capture_diff: If True, captures before/after scene state and returns changes (default: False)\n        max_stdout_size: Maximum stdout size in bytes (default: 100000 = 100KB)\n        max_stderr_size: Maximum stderr size in bytes (default: 100000 = 100KB)\n        max_diff_nodes: Maximum nodes in scene diff added_nodes list (default: 1000)\n        timeout: Execution timeout in seconds (default: 30)\n        allow_dangerous: If True, allows code with dangerous patterns to execute (default: False)\n\n    Dangerous patterns detected:\n        - hou.exit() - closes Houdini\n        - os.remove(), os.unlink() - file deletion\n        - shutil.rmtree() - directory deletion\n        - subprocess, os.system() - shell execution\n        - open() with write modes - file writing\n        - hou.hipFile.clear() - scene wipe\n\n    Example:\n        execute_code('''\n            obj = hou.node(\"/obj\")\n            geo = obj.createNode(\"geo\", \"my_geometry\")\n            sphere = geo.createNode(\"sphere\")\n            sphere.parm(\"radx\").set(2.0)\n            sphere.setDisplayFlag(True)\n            sphere.setRenderFlag(True)\n        ''')\n\n    Returns:\n        Dict with status, stdout, stderr, and scene_changes (if capture_diff=True).\n        May include truncation flags (stdout_truncated, stderr_truncated, diff_truncated)\n        if output exceeded size limits.\n        If dangerous patterns detected and not allowed, returns error with detected patterns.",
+          "decorators": [
+            "@mcp.tool()"
+          ],
+          "start_line": 71,
+          "end_line": 135,
+          "is_async": false
+        },
+        {
+          "name": "set_parameter",
+          "signature": "def set_parameter(\n    node_path: str,\n    param_name: str,\n    value: Union[float, int, str, bool, List[float], List[int], List[str]],\n) -> Dict[str, Any]",
+          "parameters": "(\n    node_path: str,\n    param_name: str,\n    value: Union[float, int, str, bool, List[float], List[int], List[str]],\n)",
+          "return_type": "Dict[str, Any]",
+          "docstring": "Set a parameter value on a node.\n\n    Args:\n        node_path: Full path to the node (e.g., \"/obj/geo1/sphere1\")\n        param_name: Name of the parameter (e.g., \"radx\", \"tx\", \"scale\")\n        value: Value to set - can be:\n               - float/int for numeric parameters\n               - str for string/menu parameters\n               - bool for toggle parameters\n               - List[float]/List[int] for vector parameters (e.g., translate, rotate, scale)\n\n    Examples:\n        - set_parameter(\"/obj/geo1/sphere1\", \"radx\", 2.5)\n        - set_parameter(\"/obj/cam1\", \"tx\", 10.0)\n        - set_parameter(\"/obj/geo1\", \"t\", [1.0, 2.0, 3.0])  # Vector param",
+          "decorators": [
+            "@mcp.tool()"
+          ],
+          "start_line": 139,
+          "end_line": 161,
+          "is_async": false
+        },
+        {
+          "name": "get_node_info",
+          "signature": "def get_node_info(\n    node_path: str,\n    include_params: bool = True,\n    include_input_details: bool = True,\n    include_errors: bool = False,\n    force_cook: bool = False,\n    compact: bool = False,\n) -> Dict[str, Any]",
+          "parameters": "(\n    node_path: str,\n    include_params: bool = True,\n    include_input_details: bool = True,\n    include_errors: bool = False,\n    force_cook: bool = False,\n    compact: bool = False,\n)",
+          "return_type": "Dict[str, Any]",
+          "docstring": "Get detailed information about a node.\n\n    Args:\n        node_path: Full path to the node\n        include_params: Whether to include parameter values (default: True)\n        include_input_details: When True, expand input connections to show source node,\n                              output index, and connection index details (default: True)\n        include_errors: When True, include cook state and error/warning information (default: False)\n        force_cook: When True, force cook the node before checking errors (default: False)\n        compact: When True, return minimal info (path, type, counts only) for reduced payload (default: False)\n\n    Returns:\n        Node information including type, children, connections, flags, and parameters.\n        When include_input_details=True, also includes detailed input_connections array\n        showing source nodes and output indices for each connection.\n        When include_errors=True, also includes cook_info with cook_state, errors, and warnings.\n        When compact=True, returns only path, type, and child/input/output counts.\n\n    Example:\n        # Get node info with cook state and errors\n        get_node_info(\"/obj/geo1/sphere1\", include_errors=True)\n\n        # Force cook and check for errors\n        get_node_info(\"/obj/geo1/sphere1\", include_errors=True, force_cook=True)\n\n        # Get minimal info for reduced payload\n        get_node_info(\"/obj/geo1/sphere1\", compact=True)",
+          "decorators": [
+            "@mcp.tool()"
+          ],
+          "start_line": 165,
+          "end_line": 212,
+          "is_async": false
+        },
+        {
+          "name": "delete_node",
+          "signature": "def delete_node(node_path: str) -> Dict[str, Any]",
+          "parameters": "(node_path: str)",
+          "return_type": "Dict[str, Any]",
+          "docstring": "Delete a node from the scene.\n\n    Args:\n        node_path: Full path to the node to delete\n\n    Warning: This operation cannot be undone via this API.",
+          "decorators": [
+            "@mcp.tool()"
+          ],
+          "start_line": 216,
+          "end_line": 225,
+          "is_async": false
+        },
+        {
+          "name": "save_scene",
+          "signature": "def save_scene(file_path: Optional[str] = None) -> Dict[str, Any]",
+          "parameters": "(file_path: Optional[str] = None)",
+          "return_type": "Dict[str, Any]",
+          "docstring": "Save the current Houdini scene.\n\n    Args:\n        file_path: Optional path to save to. If not provided, saves to current file.\n\n    Example:\n        - save_scene() -> Saves to current file\n        - save_scene(\"/path/to/scene.hip\") -> Saves to specified path",
+          "decorators": [
+            "@mcp.tool()"
+          ],
+          "start_line": 229,
+          "end_line": 240,
+          "is_async": false
+        },
+        {
+          "name": "load_scene",
+          "signature": "def load_scene(file_path: str) -> Dict[str, Any]",
+          "parameters": "(file_path: str)",
+          "return_type": "Dict[str, Any]",
+          "docstring": "Load a Houdini scene file.\n\n    Args:\n        file_path: Path to the .hip file to load",
+          "decorators": [
+            "@mcp.tool()"
+          ],
+          "start_line": 244,
+          "end_line": 251,
+          "is_async": false
+        },
+        {
+          "name": "new_scene",
+          "signature": "def new_scene() -> Dict[str, Any]",
+          "parameters": "()",
+          "return_type": "Dict[str, Any]",
+          "docstring": "Create a new empty Houdini scene.\n\n    Warning: This will clear the current scene. Make sure to save first if needed.",
+          "decorators": [
+            "@mcp.tool()"
+          ],
+          "start_line": 255,
+          "end_line": 261,
+          "is_async": false
+        },
+        {
+          "name": "serialize_scene",
+          "signature": "def serialize_scene(\n    root_path: str = \"/obj\",\n    include_params: bool = False,\n    summarize: bool = False,\n) -> Dict[str, Any]",
+          "parameters": "(\n    root_path: str = \"/obj\",\n    include_params: bool = False,\n    summarize: bool = False,\n)",
+          "return_type": "Dict[str, Any]",
+          "docstring": "Serialize the scene structure to a dictionary.\n\n    Useful for comparing scene states before and after operations,\n    or for understanding the scene hierarchy.\n\n    Args:\n        root_path: Root node path to serialize from (default: \"/obj\")\n        include_params: Include parameter values (can be verbose, default: False)\n        summarize: If True, use AI to analyze scene structure (default: False).\n                  Identifies complexity hotspots and optimization opportunities.\n\n    Returns:\n        Dict with scene structure, optionally with ai_summary field containing\n        insights about organization, complexity, and optimization opportunities.",
+          "decorators": [
+            "@mcp.tool()"
+          ],
+          "start_line": 265,
+          "end_line": 292,
+          "is_async": true
+        },
+        {
+          "name": "get_last_scene_diff",
+          "signature": "def get_last_scene_diff() -> Dict[str, Any]",
+          "parameters": "()",
+          "return_type": "Dict[str, Any]",
+          "docstring": "Get the scene diff from the last execute_code call.\n\n    Shows what nodes were added, removed, or modified during the last\n    code execution. Useful for understanding what changes were made.",
+          "decorators": [
+            "@mcp.tool()"
+          ],
+          "start_line": 296,
+          "end_line": 303,
+          "is_async": false
+        },
+        {
+          "name": "list_node_types",
+          "signature": "def list_node_types(\n    category: Optional[str] = None,\n    max_results: int = 100,\n    name_filter: Optional[str] = None,\n    offset: int = 0,\n) -> Dict[str, Any]",
+          "parameters": "(\n    category: Optional[str] = None,\n    max_results: int = 100,\n    name_filter: Optional[str] = None,\n    offset: int = 0,\n)",
+          "return_type": "Dict[str, Any]",
+          "docstring": "List available Houdini node types.\n\n    Args:\n        category: Optional category filter (e.g., \"Object\", \"Sop\", \"Cop2\", \"Vop\")\n        max_results: Maximum number of results to return (default: 100, max: 500)\n        name_filter: Optional substring filter for node type names (case-insensitive)\n        offset: Number of results to skip for pagination (default: 0)\n\n    Returns:\n        List of node types with their categories and descriptions.\n        Includes pagination info (has_more, next_offset) when applicable.\n\n    Note:\n        Large categories like \"Sop\" have thousands of node types.\n        Use name_filter to narrow results (e.g., name_filter=\"noise\" for noise-related SOPs).\n\n    Examples:\n        list_node_types(category=\"Object\")  # List Object-level nodes\n        list_node_types(category=\"Sop\", name_filter=\"noise\")  # Find noise SOPs\n        list_node_types(category=\"Sop\", name_filter=\"vdb\", max_results=50)  # VDB SOPs\n        list_node_types(category=\"Sop\", offset=100)  # Get next page of SOPs",
+          "decorators": [
+            "@mcp.tool()"
+          ],
+          "start_line": 307,
+          "end_line": 338,
+          "is_async": false
+        },
+        {
+          "name": "list_children",
+          "signature": "def list_children(\n    node_path: str,\n    recursive: bool = False,\n    max_depth: int = 10,\n    max_nodes: int = 1000,\n    compact: bool = False,\n) -> Dict[str, Any]",
+          "parameters": "(\n    node_path: str,\n    recursive: bool = False,\n    max_depth: int = 10,\n    max_nodes: int = 1000,\n    compact: bool = False,\n)",
+          "return_type": "Dict[str, Any]",
+          "docstring": "List child nodes with paths, types, and current input connections.\n\n    This tool is essential for understanding node networks and helps agents\n    insert nodes without breaking existing connections. Each child includes\n    detailed input connection information showing which nodes are connected\n    and at which indices.\n\n    Args:\n        node_path: Path to the parent node (e.g., \"/obj/geo1\")\n        recursive: If True, recursively traverse all descendants (default: False)\n        max_depth: Maximum recursion depth to prevent infinite loops (default: 10)\n        max_nodes: Maximum number of nodes to return as safety limit (default: 1000)\n        compact: When True, return only path/name/type without connection details (default: False)\n\n    Returns:\n        Dict with children array containing node info including:\n        - path: Full node path\n        - name: Node name\n        - type: Node type\n        - inputs: Array of input connections with source_node and output_index (omitted if compact=True)\n        - outputs: Array of output node paths (omitted if compact=True)\n\n    Example:\n        list_children(\"/obj/geo1\", recursive=True, max_depth=3)\n        list_children(\"/obj/geo1\", compact=True)  # Minimal payload",
+          "decorators": [
+            "@mcp.tool()"
+          ],
+          "start_line": 342,
+          "end_line": 378,
+          "is_async": false
+        },
+        {
+          "name": "find_nodes",
+          "signature": "def find_nodes(\n    root_path: str = \"/obj\",\n    pattern: str = \"*\",\n    node_type: Optional[str] = None,\n    max_results: int = 100,\n    offset: int = 0,\n) -> Dict[str, Any]",
+          "parameters": "(\n    root_path: str = \"/obj\",\n    pattern: str = \"*\",\n    node_type: Optional[str] = None,\n    max_results: int = 100,\n    offset: int = 0,\n)",
+          "return_type": "Dict[str, Any]",
+          "docstring": "Find nodes by name pattern or type using glob/substring matching.\n\n    Supports wildcard patterns (* and ?) for flexible searching. When pattern\n    contains no wildcards, also performs substring matching.\n\n    Args:\n        root_path: Root path to start search from (default: \"/obj\")\n        pattern: Glob pattern or substring to match node names (default: \"*\")\n                Examples: \"noise*\", \"*grid*\", \"sphere\"\n        node_type: Optional node type filter (e.g., \"sphere\", \"noise\", \"geo\")\n        max_results: Maximum number of results to return (default: 100)\n        offset: Number of results to skip for pagination (default: 0)\n\n    Returns:\n        Dict with matches array containing matching nodes with path, name, and type.\n        Includes pagination info (has_more, next_offset) when applicable.\n\n    Examples:\n        find_nodes(\"/obj\", \"noise*\") - Find all nodes starting with \"noise\"\n        find_nodes(\"/obj/geo1\", \"*\", node_type=\"sphere\") - Find all sphere nodes\n        find_nodes(\"/obj\", \"grid\") - Substring match for \"grid\"\n        find_nodes(\"/obj\", \"*\", offset=100) - Get next page of results",
+          "decorators": [
+            "@mcp.tool()"
+          ],
+          "start_line": 382,
+          "end_line": 415,
+          "is_async": false
+        },
+        {
+          "name": "render_viewport",
+          "signature": "def render_viewport(\n    camera_position: Optional[List[float]] = None,\n    camera_rotation: Optional[List[float]] = None,\n    look_at: Optional[str] = None,\n    resolution: Optional[List[int]] = None,\n    renderer: str = \"opengl\",\n    output_format: str = \"png\",\n    auto_frame: bool = True,\n    orthographic: bool = False,\n    karma_engine: str = \"cpu\",\n) -> Dict[str, Any]",
+          "parameters": "(\n    camera_position: Optional[List[float]] = None,\n    camera_rotation: Optional[List[float]] = None,\n    look_at: Optional[str] = None,\n    resolution: Optional[List[int]] = None,\n    renderer: str = \"opengl\",\n    output_format: str = \"png\",\n    auto_frame: bool = True,\n    orthographic: bool = False,\n    karma_engine: str = \"cpu\",\n)",
+          "return_type": "Dict[str, Any]",
+          "docstring": "Render the viewport and return the image as base64.\n\n    Creates a temporary camera, positions it to frame the scene geometry,\n    renders the scene, and returns the rendered image encoded as base64.\n    Useful for AI vision analysis of the current scene state.\n\n    Args:\n        camera_position: [x, y, z] world position for camera (default: auto-calculated)\n        camera_rotation: [rx, ry, rz] rotation in degrees (default: [-30, 45, 0] isometric)\n        look_at: Node path to look at (centers camera on this node's geometry)\n        resolution: [width, height] in pixels (default: [512, 512])\n        renderer: Render engine - \"opengl\" (fast) or \"karma\" (quality)\n        output_format: Image format - \"png\", \"jpg\", or \"exr\"\n        auto_frame: If True, automatically frame all visible geometry (default: True)\n        orthographic: If True, use orthographic projection (default: False)\n        karma_engine: Karma render engine - \"cpu\" (quality) or \"gpu\" (fast XPU). Only used when renderer=\"karma\"\n\n    Returns:\n        Dict with:\n        - image_base64: Base64-encoded image data\n        - format: Image format used\n        - resolution: [width, height]\n        - camera_path: Path to the temporary camera used\n        - bounding_box: Scene bounding box if auto_frame was used\n\n    Examples:\n        render_viewport()  # Auto-frame scene with isometric view\n        render_viewport(camera_rotation=[0, 0, 0])  # Front view\n        render_viewport(camera_rotation=[-90, 0, 0])  # Top view\n        render_viewport(look_at=\"/obj/geo1\", orthographic=True)\n        render_viewport(renderer=\"karma\", karma_engine=\"gpu\")  # Fast GPU render",
+          "decorators": [
+            "@mcp.tool()"
+          ],
+          "start_line": 419,
+          "end_line": 475,
+          "is_async": false
+        },
+        {
+          "name": "render_quad_view",
+          "signature": "def render_quad_view(\n    resolution: Optional[List[int]] = None,\n    renderer: str = \"opengl\",\n    output_format: str = \"png\",\n    orthographic: bool = True,\n    include_perspective: bool = True,\n    karma_engine: str = \"cpu\",\n) -> Dict[str, Any]",
+          "parameters": "(\n    resolution: Optional[List[int]] = None,\n    renderer: str = \"opengl\",\n    output_format: str = \"png\",\n    orthographic: bool = True,\n    include_perspective: bool = True,\n    karma_engine: str = \"cpu\",\n)",
+          "return_type": "Dict[str, Any]",
+          "docstring": "Render 4 canonical views (Front, Left, Top, Perspective) in one call.\n\n    Creates a camera rig and renders standardized views for spatial understanding.\n    Returns all 4 images as base64-encoded strings. This is more efficient than\n    calling render_viewport 4 times as it reuses the camera rig and calculates\n    the bounding box only once.\n\n    Args:\n        resolution: [width, height] in pixels (default: [512, 512])\n        renderer: Render engine - \"opengl\" (fast) or \"karma\" (quality)\n        output_format: Image format - \"png\", \"jpg\", or \"exr\"\n        orthographic: If True, use orthographic projection for Front/Left/Top views (default: True)\n        include_perspective: If True, include perspective view; if False, only orthographic views (default: True)\n        karma_engine: Karma render engine - \"cpu\" (quality) or \"gpu\" (fast XPU). Only used when renderer=\"karma\"\n\n    Returns:\n        Dict with:\n        - status: \"success\" or \"error\"\n        - views: List of view results, each containing:\n            - name: View name (front, left, top, perspective)\n            - rotation: [rx, ry, rz] camera rotation used\n            - image_base64: Base64-encoded image data\n            - format: Image format used\n            - resolution: [width, height]\n            - orthographic: Whether orthographic projection was used\n        - bounding_box: Scene bounding box info\n        - renderer: Render engine used\n        - total_render_time_ms: Total time for all renders\n\n    Examples:\n        render_quad_view()  # All 4 views with orthographic projection\n        render_quad_view(orthographic=False)  # All views with perspective\n        render_quad_view(resolution=[1024, 1024], renderer=\"karma\")  # Higher quality\n        render_quad_view(include_perspective=False)  # Only 3 orthographic views\n        render_quad_view(renderer=\"karma\", karma_engine=\"gpu\")  # Fast GPU renders",
+          "decorators": [
+            "@mcp.tool()"
+          ],
+          "start_line": 479,
+          "end_line": 533,
+          "is_async": false
+        },
+        {
+          "name": "list_render_nodes",
+          "signature": "def list_render_nodes() -> Dict[str, Any]",
+          "parameters": "()",
+          "return_type": "Dict[str, Any]",
+          "docstring": "List all render nodes (ROPs) in the /out context.\n\n    Returns information about each render node including type, path,\n    and basic configuration like camera and output path.\n\n    Returns:\n        Dict with:\n        - status: \"success\" or \"error\"\n        - count: Number of render nodes found\n        - render_nodes: List of render node info with:\n            - path: Full node path\n            - name: Node name\n            - type: ROP type (opengl, karma, ifd, etc.)\n            - camera: Camera path if set\n            - output: Output image path if set\n            - bypassed: Whether the node is bypassed\n\n    Examples:\n        list_render_nodes()  # List all ROPs in /out",
+          "decorators": [
+            "@mcp.tool()"
+          ],
+          "start_line": 537,
+          "end_line": 559,
+          "is_async": false
+        },
+        {
+          "name": "get_render_settings",
+          "signature": "def get_render_settings(rop_path: str) -> Dict[str, Any]",
+          "parameters": "(rop_path: str)",
+          "return_type": "Dict[str, Any]",
+          "docstring": "Get current render configuration for a ROP node.\n\n    Returns all relevant render settings based on the ROP type (Karma, Mantra, OpenGL).\n\n    Args:\n        rop_path: Full path to the ROP node (e.g., \"/out/karma1\")\n\n    Returns:\n        Dict with:\n        - status: \"success\" or \"error\"\n        - rop_path: Path to the ROP\n        - rop_type: Type of ROP (karma, ifd, opengl)\n        - settings: Dict of parameter names to current values\n        - schema: Dict describing available settings for this ROP type\n\n    Examples:\n        get_render_settings(\"/out/karma1\")\n        get_render_settings(\"/out/mantra1\")",
+          "decorators": [
+            "@mcp.tool()"
+          ],
+          "start_line": 563,
+          "end_line": 584,
+          "is_async": false
+        },
+        {
+          "name": "set_render_settings",
+          "signature": "def set_render_settings(\n    rop_path: str,\n    settings: Dict[str, Any],\n) -> Dict[str, Any]",
+          "parameters": "(\n    rop_path: str,\n    settings: Dict[str, Any],\n)",
+          "return_type": "Dict[str, Any]",
+          "docstring": "Modify render settings on a ROP node.\n\n    Args:\n        rop_path: Full path to the ROP node (e.g., \"/out/karma1\")\n        settings: Dict of parameter names to values to set\n\n    Returns:\n        Dict with:\n        - status: \"success\", \"partial\", or \"error\"\n        - rop_path: Path to the ROP\n        - updated: List of parameters that were updated\n        - failed: List of parameters that failed to update\n\n    Examples:\n        set_render_settings(\"/out/karma1\", {\"samplesperpixel\": 64, \"engine\": \"xpu\"})\n        set_render_settings(\"/out/mantra1\", {\"vm_samplesx\": 6, \"vm_samplesy\": 6})",
+          "decorators": [
+            "@mcp.tool()"
+          ],
+          "start_line": 588,
+          "end_line": 610,
+          "is_async": false
+        },
+        {
+          "name": "create_render_node",
+          "signature": "def create_render_node(\n    rop_type: str,\n    name: Optional[str] = None,\n    settings: Optional[Dict[str, Any]] = None,\n) -> Dict[str, Any]",
+          "parameters": "(\n    rop_type: str,\n    name: Optional[str] = None,\n    settings: Optional[Dict[str, Any]] = None,\n)",
+          "return_type": "Dict[str, Any]",
+          "docstring": "Create a new render node (ROP) with optional settings.\n\n    Args:\n        rop_type: Type of ROP to create. Common types:\n            - \"opengl\": Fast viewport render (recommended for previews)\n            - \"karma\": Karma renderer (CPU or GPU)\n            - \"ifd\": Mantra renderer\n        name: Optional name for the node (auto-generated if not provided)\n        settings: Optional dict of parameter values to set on creation\n\n    Returns:\n        Dict with:\n        - status: \"success\" or \"error\"\n        - rop_path: Path to the created ROP\n        - rop_type: Type of ROP created\n        - settings_applied: List of settings that were applied\n\n    Examples:\n        create_render_node(\"karma\", \"hero_render\", {\"engine\": \"xpu\", \"samplesperpixel\": 64})\n        create_render_node(\"opengl\", settings={\"antialias\": 8})\n        create_render_node(\"ifd\", \"final_render\")",
+          "decorators": [
+            "@mcp.tool()"
+          ],
+          "start_line": 614,
+          "end_line": 642,
+          "is_async": false
+        },
+        {
+          "name": "find_error_nodes",
+          "signature": "def find_error_nodes(\n    root_path: str = \"/\",\n    include_warnings: bool = True,\n    max_results: int = 100,\n    summarize: bool = False,\n) -> Dict[str, Any]",
+          "parameters": "(\n    root_path: str = \"/\",\n    include_warnings: bool = True,\n    max_results: int = 100,\n    summarize: bool = False,\n)",
+          "return_type": "Dict[str, Any]",
+          "docstring": "Find all nodes with cook errors or warnings in the scene.\n\n    Scans the entire node hierarchy starting from root_path and returns\n    all nodes that have errors or warnings. Essential for debugging\n    complex scenes where error locations are unknown.\n\n    Args:\n        root_path: Root path to start search from (default: \"/\" for entire scene)\n        include_warnings: Whether to include nodes with warnings (default: True)\n        max_results: Maximum number of results to return (default: 100)\n        summarize: If True, use AI to triage and prioritize errors (default: False).\n                  Provides actionable fix order and identifies root causes.\n\n    Returns:\n        Dict with error/warning nodes including:\n        - error_nodes: List of nodes with errors (path, name, type, errors)\n        - warning_nodes: List of nodes with warnings (if include_warnings=True)\n        - error_count: Number of error nodes found\n        - warning_count: Number of warning nodes found\n        - total_scanned: Number of nodes scanned\n        - ai_summary: (if summarize=True) AI-generated triage with prioritized fixes\n\n    Examples:\n        find_error_nodes()  # Find all errors in scene\n        find_error_nodes(\"/obj/geo1\")  # Find errors within a specific network\n        find_error_nodes(include_warnings=False)  # Only errors, no warnings\n        find_error_nodes(summarize=True)  # Get AI triage of errors",
+          "decorators": [
+            "@mcp.tool()"
+          ],
+          "start_line": 646,
+          "end_line": 689,
+          "is_async": true
+        },
+        {
+          "name": "check_connection",
+          "signature": "def check_connection() -> Dict[str, Any]",
+          "parameters": "()",
+          "return_type": "Dict[str, Any]",
+          "docstring": "Check Houdini connection status with detailed info.\n\n    Returns connection status, Houdini version, build info, and current hip file.\n    Attempts to connect if not already connected.",
+          "decorators": [
+            "@mcp.tool()"
+          ],
+          "start_line": 693,
+          "end_line": 717,
+          "is_async": false
+        },
+        {
+          "name": "ping_houdini",
+          "signature": "def ping_houdini() -> Dict[str, Any]",
+          "parameters": "()",
+          "return_type": "Dict[str, Any]",
+          "docstring": "Quick connectivity test to Houdini.\n\n    Returns True if Houdini RPC server is reachable.\n    Does not maintain a persistent connection.",
+          "decorators": [
+            "@mcp.tool()"
+          ],
+          "start_line": 721,
+          "end_line": 734,
+          "is_async": false
+        },
+        {
+          "name": "connect_nodes",
+          "signature": "def connect_nodes(\n    src_path: str, dst_path: str, dst_input_index: int = 0, src_output_index: int = 0\n) -> Dict[str, Any]",
+          "parameters": "(\n    src_path: str, dst_path: str, dst_input_index: int = 0, src_output_index: int = 0\n)",
+          "return_type": "Dict[str, Any]",
+          "docstring": "\"\"\"\n    Wire output of source node to input of destination node.\n\n    Validates that node types are compatible (e.g., SOP→SOP, OBJ→OBJ) before connecting.\n    Automatically disconnects existing connection if the destination input is already wired.\n\n    Args:\n        src_path: Path to source node (e.g., \"/obj/geo1/grid1\")\n        dst_path: Path to destination node (e.g., \"/obj/geo1/noise1\")\n        dst_input_index: Input index on destination node (default: 0)\n        src_output_index: Output index on source node (default: 0)\n\n    Returns:\n        Dict with connection result including validation and connection details.\n\n    Examples:\n        connect_nodes(\"/obj/geo1/grid1\", \"/obj/geo1/noise1\")\n        connect_nodes(\"/obj/geo1/grid1\", \"/obj/geo1/merge1\", dst_input_index=1)\n    \"\"\"",
+          "decorators": [
+            "@mcp.tool()"
+          ],
+          "start_line": 738,
+          "end_line": 762,
+          "is_async": false
+        },
+        {
+          "name": "onnect_node_input(nod",
+          "signature": "def onnect_node_input(node_path: str, input_index: int = 0) ->  -> [str, Any]:\n  ",
+          "parameters": "e_path: str, input_index: int = 0) -> ",
+          "return_type": "[str, Any]:\n  ",
+          "docstring": "Break/disconnect an input connection on a node.\n\n    Args:\n        node_path: Path to the node (e.g., \"/obj/geo1/noise1\")\n        input_index: Input index to disconnect (default: 0)\n\n    Returns:\n        Dict with disconnection result including previous connection info if applicable.\n\n    Examples:\n        disconnect_node_input(\"/obj/geo1/noise1\")  # Disconnect first input\n        disconnect_node_input(\"/obj/geo1/merge1\", input_index=1)  # Disconnect second input\n    \"\"\"",
+          "decorators": [
+            ".tool()\ndef"
+          ],
+          "start_line": 766,
+          "end_line": 781,
+          "is_async": false
+        },
+        {
+          "name": "node_flags(\n  ",
+          "signature": "def node_flags(\n    node_path: str,\n    display: Optional[bool] = None,\n    render: Optional[bool] = None,\n    bypass: Optional[bool] = None,\n) ->  -> [str, Any]:\n  ",
+          "parameters": "  node_path: str,\n    display: Optional[bool] = None,\n    render: Optional[bool] = None,\n    bypass: Optional[bool] = None,\n) -> ",
+          "return_type": "[str, Any]:\n  ",
+          "docstring": "Set display, render, and bypass flags on a node.\n\n    Only non-None values are set, allowing partial flag updates.\n    Checks for flag availability using hasattr() before setting.\n\n    Args:\n        node_path: Path to the node (e.g., \"/obj/geo1/sphere1\")\n        display: Display flag value (True/False) or None to skip\n        render: Render flag value (True/False) or None to skip\n        bypass: Bypass flag value (True/False) or None to skip\n\n    Returns:\n        Dict with result and flags that were set.\n\n    Examples:\n        set_node_flags(\"/obj/geo1/sphere1\", display=True, render=True)\n        set_node_flags(\"/obj/geo1/noise1\", bypass=True)\n        set_node_flags(\"/obj/geo1/mountain1\", display=True)  # Only set display\n    \"\"\"",
+          "decorators": [
+            ".tool()\ndef"
+          ],
+          "start_line": 785,
+          "end_line": 811,
+          "is_async": false
+        },
+        {
+          "name": "der_inputs(nod",
+          "signature": "def der_inputs(node_path: str, new_order: List[int]) ->  -> [str, Any]:\n  ",
+          "parameters": "e_path: str, new_order: List[int]) -> ",
+          "return_type": "[str, Any]:\n  ",
+          "docstring": "Reorder inputs on a node (useful for merge nodes).\n\n    Stores existing connections, disconnects all, then reconnects in new order.\n    new_order specifies the new position for each input: [1, 0, 2] swaps first two inputs.\n\n    Args:\n        node_path: Path to the node (e.g., \"/obj/geo1/merge1\")\n        new_order: List specifying new input order (e.g., [1, 0, 2] to swap first two)\n\n    Returns:\n        Dict with reordering result including reconnection details.\n\n    Examples:\n        reorder_inputs(\"/obj/geo1/merge1\", [1, 0, 2, 3])  # Swap first two inputs\n        reorder_inputs(\"/obj/geo1/merge1\", [2, 1, 0])  # Reverse three inputs\n    \"\"\"",
+          "decorators": [
+            ".tool()\ndef"
+          ],
+          "start_line": 815,
+          "end_line": 833,
+          "is_async": false
+        },
+        {
+          "name": "parameter_schema(\n  ",
+          "signature": "def parameter_schema(\n    node_path: str, parm_name: Optional[str] = None, max_parms: int = 100\n) ->  -> [str, Any]:\n  ",
+          "parameters": "  node_path: str, parm_name: Optional[str] = None, max_parms: int = 100\n) -> ",
+          "return_type": "[str, Any]:\n  ",
+          "docstring": "Get parameter metadata/schema for intelligent parameter setting.\n\n    Returns detailed parameter information including types, defaults, ranges,\n    menu items, tuple sizes, and current values. Essential for understanding\n    what parameters are available on a node and how to set them correctly.\n\n    Args:\n        node_path: Full path to the node (e.g., \"/obj/geo1/sphere1\")\n        parm_name: Optional specific parameter name. If provided, returns only that parameter's schema.\n                  If None, returns schema for all parameters (up to max_parms)\n        max_parms: Maximum number of parameters to return when parm_name is None (default: 100)\n\n    Returns:\n        Dict containing parameter schemas with type information, defaults, ranges, and current values.\n\n    Schema includes:\n        - name: Parameter name\n        - label: UI label\n        - type: Parameter type (float, int, string, menu, toggle, vector, ramp, etc.)\n        - default: Default value(s)\n        - min/max: Numeric ranges (if applicable)\n        - menu_items: List of {label, value} for menu parameters\n        - tuple_size: Size for vector parameters\n        - is_animatable: Whether parameter can be keyframed\n        - current_value: Current parameter value\n\n    Examples:\n        # Get all parameters on a sphere\n        get_parameter_schema(\"/obj/geo1/sphere1\")\n\n        # Get specific parameter info\n        get_parameter_schema(\"/obj/geo1/sphere1\", parm_name=\"radx\")\n\n        # Get info for translate parameter (vector)\n        get_parameter_schema(\"/obj/geo1\", parm_name=\"t\")\n    \"\"\"",
+          "decorators": [
+            ".tool()\ndef"
+          ],
+          "start_line": 837,
+          "end_line": 877,
+          "is_async": false
+        },
+        {
+          "name": "geo_summary(\n  ",
+          "signature": "def geo_summary(\n    node_path: str,\n    max_sample_points: int = 100,\n    include_attributes: bool = True,\n    include_groups: bool = True,\n    summarize: bool = False,\n) ->  -> [str, Any]:\n  ",
+          "parameters": "  node_path: str,\n    max_sample_points: int = 100,\n    include_attributes: bool = True,\n    include_groups: bool = True,\n    summarize: bool = False,\n) -> ",
+          "return_type": "[str, Any]:\n  ",
+          "docstring": "Get geometry statistics and metadata for verification.\n\n    Returns comprehensive geometry information including point/primitive counts,\n    bounding box, attributes, groups, and optionally sample points. This tool is\n    essential for agents to verify results after geometry operations.\n\n    Args:\n        node_path: Full path to the SOP node (e.g., \"/obj/geo1/sphere1\")\n        max_sample_points: Maximum number of sample points to return (default: 100, max: 10000).\n                          Set to 0 to skip point sampling.\n        include_attributes: Whether to include attribute metadata (default: True)\n        include_groups: Whether to include group information (default: True)\n        summarize: If True, use AI to generate a concise summary of the geometry (default: False).\n                  Useful for large/complex geometry to reduce token usage.\n\n    Returns:\n        Dict with comprehensive geometry summary including:\n        - point_count, primitive_count, vertex_count: Geometry topology stats\n        - bounding_box: {min, max, size, center} vectors in world space\n        - cook_state: Current cook state (\"cooked\", \"dirty\", \"uncooked\", \"error\")\n        - attributes: Metadata for point/primitive/vertex/detail attributes\n        - groups: Names of point and primitive groups\n        - sample_points: Optional array of first N points with their attribute values\n        - ai_summary: (if summarize=True) AI-generated insights about the geometry\n\n    Edge Cases:\n        - Uncooked geometry: Tool will attempt to cook the node first\n        - Empty geometry: Returns zeros for counts, not an error\n        - Massive geometry (>1M points): Automatically caps sampling with warning\n        - No geometry/Not a SOP: Returns error status\n\n    Examples:\n        # Basic geometry summary with 50 sample points\n        get_geo_summary(\"/obj/geo1/sphere1\", max_sample_points=50)\n\n        # Just get counts and bbox, skip attributes/groups/samples\n        get_geo_summary(\"/obj/geo1/grid1\", max_sample_points=0,\n                       include_attributes=False, include_groups=False)\n\n        # Full detail for verification with AI summary\n        get_geo_summary(\"/obj/geo1/noise1\", max_sample_points=200, summarize=True)\n    \"\"\"",
+          "decorators": [
+            ".tool()\nasy"
+          ],
+          "start_line": 881,
+          "end_line": 939,
+          "is_async": true
+        },
+        {
+          "name": "houdini_help(\n  ",
+          "signature": "def houdini_help(\n    help_type: str,\n    item_name: str,\n    timeout: int = 10,\n) ->  -> [str, Any]:\n  ",
+          "parameters": "  help_type: str,\n    item_name: str,\n    timeout: int = 10,\n) -> ",
+          "return_type": "[str, Any]:\n  ",
+          "docstring": "Fetch Houdini documentation from SideFX website.\n\n    Retrieves and parses help documentation for nodes, VEX functions,\n    and Python API. Helps AI understand Houdini concepts without\n    hallucinating parameter names or functionality.\n\n    NOTE: This tool does NOT require a Houdini connection - it fetches\n    documentation directly from the SideFX website.\n\n    Args:\n        help_type: Type of documentation to fetch. Supported types:\n            - \"sop\": SOP nodes (e.g., \"box\", \"scatter\", \"vdbfrompolygons\")\n            - \"obj\": Object nodes (e.g., \"geo\", \"cam\", \"light\")\n            - \"dop\": DOP nodes (e.g., \"pyrosolver\", \"rbdpackedobject\")\n            - \"cop2\": COP nodes (e.g., \"mosaic\", \"blur\")\n            - \"chop\": CHOP nodes (e.g., \"math\", \"wave\")\n            - \"vop\": VOP nodes (e.g., \"bind\", \"noise\")\n            - \"lop\": LOP/Solaris nodes (e.g., \"usdimport\", \"materiallibrary\")\n            - \"top\": TOP/PDG nodes (e.g., \"pythonscript\", \"wedge\")\n            - \"rop\": ROP nodes (e.g., \"geometry\", \"karma\")\n            - \"vex_function\": VEX functions (e.g., \"noise\", \"lerp\", \"chramp\")\n            - \"python_hou\": Python hou module classes (e.g., \"Node\", \"Geometry\")\n        item_name: Name of the node or function (e.g., \"box\", \"noise\", \"Node\")\n        timeout: Request timeout in seconds (default: 10)\n\n    Returns:\n        Dict with:\n        - status: \"success\" or \"error\"\n        - title: Documentation title\n        - url: Source URL\n        - description: Summary description\n        - parameters: List of parameters with names, descriptions, and options\n        - inputs: List of input connections (for nodes)\n        - outputs: List of output connections (for nodes)\n        - vex_info: Signature and return type (for VEX functions)\n        - methods: Class methods (for Python hou module)\n\n    Examples:\n        get_houdini_help(\"sop\", \"box\")  # Get box SOP documentation\n        get_houdini_help(\"vex_function\", \"noise\")  # Get VEX noise function docs\n        get_houdini_help(\"python_hou\", \"Node\")  # Get hou.Node class docs\n        get_houdini_help(\"obj\", \"cam\")  # Get camera object docs\n    \"\"\"",
+          "decorators": [
+            ".tool()\ndef"
+          ],
+          "start_line": 943,
+          "end_line": 992,
+          "is_async": false
+        },
+        {
+          "name": "te_material(\n  ",
+          "signature": "def te_material(\n    material_type: str = \"principledshader\",\n    name: Optional[str] = None,\n    parent_path: str = \"/mat\",\n    parameters: Optional[Dict[str, Any]] = None,\n) ->  -> [str, Any]:\n  ",
+          "parameters": "  material_type: str = \"principledshader\",\n    name: Optional[str] = None,\n    parent_path: str = \"/mat\",\n    parameters: Optional[Dict[str, Any]] = None,\n) -> ",
+          "return_type": "[str, Any]:\n  ",
+          "docstring": "Create a new material/shader node.\n\n    Creates a material node in the specified context (typically /mat or /shop).\n    Supports common material types like Principled Shader, MaterialX, and classic shaders.\n\n    Args:\n        material_type: Type of material to create. Common types:\n            - \"principledshader\": Houdini's standard PBR shader (recommended)\n            - \"mtlxstandard_surface\": MaterialX Standard Surface\n            - \"classicshader\": Classic Mantra shader\n        name: Optional name for the material. Auto-generated if not provided.\n        parent_path: Parent context path (default: \"/mat\", alternative: \"/shop\")\n        parameters: Optional dict of parameter values to set on the material.\n            Common principledshader parameters:\n            - basecolor: [r, g, b] base color\n            - rough: float roughness (0-1)\n            - metallic: float metallic (0-1)\n\n    Returns:\n        Dict with material_path, material_name, material_type, parameters_set\n\n    Examples:\n        create_material()  # Create default principled shader\n        create_material(\"principledshader\", \"red_metal\",\n                       parameters={\"basecolor\": [1, 0, 0], \"metallic\": 1.0})\n    \"\"\"",
+          "decorators": [
+            ".tool()\ndef"
+          ],
+          "start_line": 996,
+          "end_line": 1031,
+          "is_async": false
+        },
+        {
+          "name": "gn_material(\n  ",
+          "signature": "def gn_material(\n    geometry_path: str,\n    material_path: str,\n    group: str = \"\",\n) ->  -> [str, Any]:\n  ",
+          "parameters": "  geometry_path: str,\n    material_path: str,\n    group: str = \"\",\n) -> ",
+          "return_type": "[str, Any]:\n  ",
+          "docstring": "Assign a material to geometry.\n\n    Creates a Material SOP inside the geometry node to apply the material,\n    or sets the shop_materialpath parameter directly.\n\n    Args:\n        geometry_path: Path to the geometry OBJ node (e.g., \"/obj/geo1\")\n        material_path: Path to the material node (e.g., \"/mat/principledshader1\")\n        group: Optional primitive group to apply material to (empty = all primitives)\n\n    Returns:\n        Dict with geometry_path, material_path, material_sop_path, method\n\n    Examples:\n        assign_material(\"/obj/geo1\", \"/mat/red_metal\")\n        assign_material(\"/obj/geo1\", \"/mat/gold\", group=\"top_faces\")\n    \"\"\"",
+          "decorators": [
+            ".tool()\ndef"
+          ],
+          "start_line": 1035,
+          "end_line": 1058,
+          "is_async": false
+        },
+        {
+          "name": "material_info(mat",
+          "signature": "def material_info(material_path: str) ->  -> [str, Any]:\n  ",
+          "parameters": "erial_path: str) -> ",
+          "return_type": "[str, Any]:\n  ",
+          "docstring": "Get detailed information about a material node.\n\n    Returns material type, parameters, and texture references.\n\n    Args:\n        material_path: Path to the material node (e.g., \"/mat/principledshader1\")\n\n    Returns:\n        Dict with:\n        - material_path: Path to the material\n        - material_name: Name of the material\n        - material_type: Type of material (e.g., \"principledshader\")\n        - parameters: Dict of parameter names to current values\n        - textures: List of texture file references found\n\n    Examples:\n        get_material_info(\"/mat/principledshader1\")\n    \"\"\"",
+          "decorators": [
+            ".tool()\ndef"
+          ],
+          "start_line": 1062,
+          "end_line": 1082,
+          "is_async": false
+        },
+        {
+          "name": "ut_children(\n  ",
+          "signature": "def ut_children(\n    node_path: str,\n    horizontal_spacing: float = 2.0,\n    vertical_spacing: float = 1.0,\n) ->  -> [str, Any]:\n  ",
+          "parameters": "  node_path: str,\n    horizontal_spacing: float = 2.0,\n    vertical_spacing: float = 1.0,\n) -> ",
+          "return_type": "[str, Any]:\n  ",
+          "docstring": "Auto-layout child nodes in a network.\n\n    Calls Houdini's built-in layoutChildren() to automatically arrange\n    child nodes in a clean, organized layout.\n\n    Args:\n        node_path: Path to the parent node (e.g., \"/obj/geo1\")\n        horizontal_spacing: Horizontal spacing between nodes (default: 2.0)\n        vertical_spacing: Vertical spacing between nodes (default: 1.0)\n\n    Returns:\n        Dict with node_path and child_count\n\n    Examples:\n        layout_children(\"/obj/geo1\")\n        layout_children(\"/obj/geo1\", horizontal_spacing=3.0, vertical_spacing=2.0)\n    \"\"\"",
+          "decorators": [
+            ".tool()\ndef"
+          ],
+          "start_line": 1086,
+          "end_line": 1111,
+          "is_async": false
+        },
+        {
+          "name": "node_color(nod",
+          "signature": "def node_color(node_path: str, color: List[float]) ->  -> [str, Any]:\n  ",
+          "parameters": "e_path: str, color: List[float]) -> ",
+          "return_type": "[str, Any]:\n  ",
+          "docstring": "Set the display color of a node in the network editor.\n\n    Args:\n        node_path: Path to the node (e.g., \"/obj/geo1/sphere1\")\n        color: RGB color values as [r, g, b] where each value is 0.0-1.0\n\n    Returns:\n        Dict with node_path and color\n\n    Examples:\n        set_node_color(\"/obj/geo1/sphere1\", [1, 0, 0])  # Red\n        set_node_color(\"/obj/geo1/important\", [1, 1, 0])  # Yellow\n    \"\"\"",
+          "decorators": [
+            ".tool()\ndef"
+          ],
+          "start_line": 1115,
+          "end_line": 1130,
+          "is_async": false
+        },
+        {
+          "name": "node_position(nod",
+          "signature": "def node_position(node_path: str, x: float, y: float) ->  -> [str, Any]:\n  ",
+          "parameters": "e_path: str, x: float, y: float) -> ",
+          "return_type": "[str, Any]:\n  ",
+          "docstring": "Set the position of a node in the network editor.\n\n    Args:\n        node_path: Path to the node (e.g., \"/obj/geo1/sphere1\")\n        x: X position in network editor units\n        y: Y position in network editor units\n\n    Returns:\n        Dict with node_path and position\n\n    Examples:\n        set_node_position(\"/obj/geo1/sphere1\", 0, 0)\n        set_node_position(\"/obj/geo1/sphere1\", 5.0, -3.0)\n    \"\"\"",
+          "decorators": [
+            ".tool()\ndef"
+          ],
+          "start_line": 1134,
+          "end_line": 1150,
+          "is_async": false
+        },
+        {
+          "name": "te_network_box(\n  ",
+          "signature": "def te_network_box(\n    parent_path: str,\n    node_paths: List[str],\n    label: str = \"\",\n    color: Optional[List[float]] = None,\n) ->  -> [str, Any]:\n  ",
+          "parameters": "  parent_path: str,\n    node_paths: List[str],\n    label: str = \"\",\n    color: Optional[List[float]] = None,\n) -> ",
+          "return_type": "[str, Any]:\n  ",
+          "docstring": "Create a network box around a group of nodes.\n\n    Network boxes help organize and visually group related nodes.\n\n    Args:\n        parent_path: Path to the parent network (e.g., \"/obj/geo1\")\n        node_paths: List of node paths to include in the box\n        label: Optional label text for the network box\n        color: Optional RGB color [r, g, b] for the box (0.0-1.0 each)\n\n    Returns:\n        Dict with network_box_name, nodes_contained, label\n\n    Examples:\n        create_network_box(\"/obj/geo1\", [\"/obj/geo1/sphere1\", \"/obj/geo1/noise1\"], \"Deform\")\n    \"\"\"",
+          "decorators": [
+            ".tool()\ndef"
+          ],
+          "start_line": 1154,
+          "end_line": 1179,
+          "is_async": false
+        },
+        {
+          "name": "ge_cache(act",
+          "signature": "def ge_cache(action: str = \"stats\") ->  -> [str, Any]:\n  ",
+          "parameters": "ion: str = \"stats\") -> ",
+          "return_type": "[str, Any]:\n  ",
+          "docstring": "Manage the Houdini MCP cache system.\n\n    The cache stores frequently-accessed data like node types and parameter\n    schemas to improve performance. Node types are cached on first access\n    and subsequent calls are instant.\n\n    Args:\n        action: Cache action to perform:\n            - \"stats\": Get cache statistics (hits, misses, entry counts)\n            - \"invalidate\": Clear all caches (forces refresh on next access)\n            - \"warmup\": Pre-populate caches (may take a few seconds)\n\n    Returns:\n        Dict with cache information including:\n        - action: The action that was performed\n        - For \"stats\": Cache statistics for node_types and parameter_schemas\n        - For \"invalidate\": Confirmation message\n        - For \"warmup\": Warmup timing and entry counts\n\n    Examples:\n        manage_cache()  # Get cache stats (default)\n        manage_cache(\"stats\")  # Same as above\n        manage_cache(\"invalidate\")  # Clear caches\n        manage_cache(\"warmup\")  # Pre-populate caches\n    \"\"\"",
+          "decorators": [
+            ".tool()\ndef"
+          ],
+          "start_line": 1183,
+          "end_line": 1253,
+          "is_async": false
+        },
+        {
+          "name": "summarization_status() -",
+          "signature": "def summarization_status() ->  -> [str, Any]:\n  ",
+          "parameters": "> ",
+          "return_type": "[str, Any]:\n  ",
+          "docstring": "Get AI summarization configuration and status.\n\n    Returns current summarization settings including:\n    - Whether summarization is enabled\n    - Which model is being used\n    - Proxy URL\n    - Token thresholds for automatic summarization\n\n    Use this to verify AI summarization is properly configured\n    before using summarize=True on other tools.\n\n    Returns:\n        Dict with summarization configuration including:\n        - enabled: Whether AI summarization is active\n        - model: Claude model used for summarization\n        - proxy_url: URL of the Claude API proxy\n        - auto_threshold_tokens: Token count that triggers auto-summarization\n        - target_summary_tokens: Target size for generated summaries\n    \"\"\"",
+          "decorators": [
+            ".tool()\ndef"
+          ],
+          "start_line": 1257,
+          "end_line": 1278,
+          "is_async": false
+        },
+        {
+          "name": "ure_pane_screenshot(\n  ",
+          "signature": "def ure_pane_screenshot(\n    pane_type_name: str = \"NetworkEditor\",\n    save_path: Optional[str] = None,\n    fit_contents: bool = False,\n) ->  -> [str, Any]:\n  ",
+          "parameters": "  pane_type_name: str = \"NetworkEditor\",\n    save_path: Optional[str] = None,\n    fit_contents: bool = False,\n) -> ",
+          "return_type": "[str, Any]:\n  ",
+          "docstring": "Capture a screenshot of a Houdini pane tab.\n\n    Uses Qt screen grab to capture the specified pane type. Returns\n    base64-encoded PNG or saves to disk if save_path provided.\n\n    Args:\n        pane_type_name: Pane type to capture (default: \"NetworkEditor\")\n            Common types: NetworkEditor, SceneViewer, Parm, IPRViewer,\n            CompositorViewer, ChannelEditor, PythonShell, Textport\n        save_path: Optional path to save PNG file (returns base64 if not provided)\n        fit_contents: If True, fit/frame all contents before capture (default: False).\n            When False, captures the current view (what the user is looking at).\n            Supported for: NetworkEditor, SceneViewer, CompositorViewer, ChannelEditor.\n\n    Returns:\n        Dict with status, geometry, and either image_base64 or file_path\n\n    Note:\n        Panes on inactive desktops cannot be captured (invalid geometry).\n        Use list_visible_panes() to find capturable panes.\n    \"\"\"",
+          "decorators": [
+            ".tool()\ndef"
+          ],
+          "start_line": 1282,
+          "end_line": 1311,
+          "is_async": false
+        },
+        {
+          "name": "ure_multiple_panes(\n  ",
+          "signature": "def ure_multiple_panes(\n    pane_types: List[str],\n    save_dir: Optional[str] = None,\n) ->  -> [str, Any]:\n  ",
+          "parameters": "  pane_types: List[str],\n    save_dir: Optional[str] = None,\n) -> ",
+          "return_type": "[str, Any]:\n  ",
+          "docstring": "Capture screenshots of multiple pane types in one call.\n\n    More efficient than calling capture_pane_screenshot multiple times\n    as it reuses Qt module references.\n\n    Args:\n        pane_types: List of pane type names to capture\n            e.g., [\"NetworkEditor\", \"SceneViewer\", \"Parm\"]\n        save_dir: Optional directory to save PNGs (returns base64 if not provided)\n\n    Returns:\n        Dict with:\n        - status: \"success\" if any captures succeeded\n        - success_count: Number of successful captures\n        - total_requested: Number of pane types requested\n        - results: Per-pane results with image_base64 or file_path\n    \"\"\"",
+          "decorators": [
+            ".tool()\ndef"
+          ],
+          "start_line": 1334,
+          "end_line": 1356,
+          "is_async": false
+        },
+        {
+          "name": "er_node_network(\n  ",
+          "signature": "def er_node_network(\n    node_path: str = \"/obj\",\n    fit_contents: bool = True,\n) ->  -> [str, Any]:\n  ",
+          "parameters": "  node_path: str = \"/obj\",\n    fit_contents: bool = True,\n) -> ",
+          "return_type": "[str, Any]:\n  ",
+          "docstring": "Capture a screenshot of a node's network showing its children.\n\n    Navigates the NetworkEditor to the specified node and captures a screenshot.\n    Useful for visualizing the network structure of any node context.\n\n    Args:\n        node_path: Path to the node whose network to capture (default: \"/obj\").\n            The NetworkEditor will navigate into this node to show its children.\n            Examples: \"/obj\", \"/obj/geo1\", \"/stage\", \"/mat\"\n        fit_contents: If True, frame all children in view before capture (default: True).\n            Set to False to capture the current zoom/pan state.\n\n    Returns:\n        Dict with:\n        - status: \"success\" or \"error\"\n        - node_path: The node path that was navigated to\n        - child_count: Number of children in the network\n        - geometry: x, y, width, height of the captured region\n        - image_base64: Base64-encoded PNG image data\n\n    Example:\n        render_node_network(\"/obj\")  # Capture /obj network\n        render_node_network(\"/obj/geo1\")  # Capture SOPs inside geo1\n        render_node_network(\"/stage\")  # Capture LOPs/Solaris network\n    \"\"\"",
+          "decorators": [
+            ".tool()\ndef"
+          ],
+          "start_line": 1360,
+          "end_line": 1390,
+          "is_async": false
+        },
+        {
+          "name": "server(tra",
+          "signature": "def server(transport: str = \"http\", port: int = 3055) ->  -> :\n  ",
+          "parameters": "nsport: str = \"http\", port: int = 3055) -> ",
+          "return_type": ":\n  ",
+          "docstring": "un the MCP server.\"\"\"",
+          "decorators": [],
+          "start_line": 1393,
+          "end_line": 1404,
+          "is_async": false
+        }
+      ],
+      "parsedAt": 1769587469201
+    },
+    "houdini_mcp/tools/_common.py": {
+      "path": "houdini_mcp/tools/_common.py",
+      "contentHash": "fd1e5faf095ceb0196098e074307276c",
+      "mtime": 1766954454876.3857,
+      "functions": [
+        {
+          "name": "handle_connection_errors",
+          "signature": "def handle_connection_errors(operation_name: str) -> Callable",
+          "parameters": "(operation_name: str)",
+          "return_type": "Callable",
+          "docstring": "Decorator that wraps tool functions with consistent error handling.\n\n    Handles the three-tier error pattern:\n    1. HoudiniConnectionError - Returns simple error response\n    2. CONNECTION_ERRORS - Calls _handle_connection_error for graceful recovery\n    3. Generic Exception - Logs and returns error with traceback\n\n    Args:\n        operation_name: Name of the operation (used in error messages)\n\n    Returns:\n        Decorated function with error handling\n\n    Example:\n        @handle_connection_errors(\"get_scene_info\")\n        def get_scene_info(host: str = \"localhost\", port: int = 18811) -> Dict[str, Any]:\n            hou = ensure_connected(host, port)\n            # ... actual logic without try/except boilerplate\n            return {\"status\": \"success\", ...}",
+          "decorators": [],
+          "start_line": 82,
+          "end_line": 124,
+          "is_async": false
+        },
+        {
+          "name": "validate_resolution",
+          "signature": "def validate_resolution(\n    resolution: List[int],\n    min_size: int = 64,\n    max_size: int = 4096,\n) -> Optional[Dict[str, Any]]",
+          "parameters": "(\n    resolution: List[int],\n    min_size: int = 64,\n    max_size: int = 4096,\n)",
+          "return_type": "Optional[Dict[str, Any]]",
+          "docstring": "Validate render resolution dimensions.\n\n    Returns an error dict if validation fails, None if valid.\n\n    Args:\n        resolution: [width, height] in pixels\n        min_size: Minimum dimension size (default: 64)\n        max_size: Maximum dimension size (default: 4096)\n\n    Returns:\n        None if valid, error dict if invalid\n\n    Example:\n        if error := validate_resolution(resolution):\n            return error\n        # Continue with valid resolution...",
+          "decorators": [],
+          "start_line": 202,
+          "end_line": 230,
+          "is_async": false
+        },
+        {
+          "name": "semaphore_gather",
+          "signature": "def semaphore_gather(\n    *coroutines: Coroutine[Any, Any, T],\n    max_concurrent: Optional[int] = None,\n    return_exceptions: bool = False,\n) -> List[Any]",
+          "parameters": "(\n    *coroutines: Coroutine[Any, Any, T],\n    max_concurrent: Optional[int] = None,\n    return_exceptions: bool = False,\n)",
+          "return_type": "List[Any]",
+          "docstring": "Execute coroutines with bounded concurrency using a semaphore.\n\n    Prevents overwhelming Houdini with too many concurrent operations.\n    This is critical for batch operations like creating many nodes or\n    setting many parameters simultaneously.\n\n    Args:\n        *coroutines: Variable number of coroutines to execute\n        max_concurrent: Maximum concurrent executions (default: SEMAPHORE_LIMIT)\n        return_exceptions: If True, exceptions are returned instead of raised\n\n    Returns:\n        List of results in the same order as input coroutines\n\n    Example:\n        # Create 100 nodes with max 10 concurrent operations\n        results = await semaphore_gather(\n            *[create_node_async(f\"node_{i}\") for i in range(100)],\n            max_concurrent=10\n        )",
+          "decorators": [],
+          "start_line": 689,
+          "end_line": 726,
+          "is_async": true
+        },
+        {
+          "name": "batch_items",
+          "signature": "def batch_items(items: List[Any], batch_size: int) -> List[List[Any]]",
+          "parameters": "(items: List[Any], batch_size: int)",
+          "return_type": "List[List[Any]]",
+          "docstring": "Split a list into batches of specified size.\n\n    Useful for breaking up large operations into manageable chunks\n    that can be processed sequentially or in parallel.\n\n    Args:\n        items: List of items to batch\n        batch_size: Maximum size of each batch\n\n    Returns:\n        List of batches (each batch is a list)\n\n    Example:\n        nodes = [\"node1\", \"node2\", \"node3\", \"node4\", \"node5\"]\n        batches = batch_items(nodes, 2)\n        # Returns: [[\"node1\", \"node2\"], [\"node3\", \"node4\"], [\"node5\"]]",
+          "decorators": [],
+          "start_line": 729,
+          "end_line": 748,
+          "is_async": false
+        },
+        {
+          "name": "run_in_executor",
+          "signature": "def run_in_executor(func: Any, *args: Any, **kwargs: Any) -> Any",
+          "parameters": "(func: Any, *args: Any, **kwargs: Any)",
+          "return_type": "Any",
+          "docstring": "Run a synchronous function in a thread pool executor.\n\n    Useful for wrapping blocking Houdini RPC calls in async context.\n\n    Args:\n        func: Synchronous function to execute\n        *args: Positional arguments for the function\n        **kwargs: Keyword arguments for the function\n\n    Returns:\n        Result of the function\n\n    Example:\n        result = await run_in_executor(sync_houdini_operation, param1, param2)",
+          "decorators": [],
+          "start_line": 751,
+          "end_line": 772,
+          "is_async": true
+        }
+      ],
+      "parsedAt": 1769587469201
+    },
+    "houdini_mcp/tools/cache.py": {
+      "path": "houdini_mcp/tools/cache.py",
+      "contentHash": "ada0c1c2f82944ff7b88c66491521dbb",
+      "mtime": 1766914794487.4106,
+      "functions": [
+        {
+          "name": "invalidate_all_caches",
+          "signature": "def invalidate_all_caches() -> None",
+          "parameters": "()",
+          "return_type": "None",
+          "docstring": "Invalidate all caches.\n\n    Call this when:\n    - Loading a new scene\n    - Creating a new scene\n    - Plugins are loaded/unloaded\n    - Reconnecting to Houdini",
+          "decorators": [],
+          "start_line": 434,
+          "end_line": 446,
+          "is_async": false
+        },
+        {
+          "name": "get_cache_stats",
+          "signature": "def get_cache_stats() -> Dict[str, Any]",
+          "parameters": "()",
+          "return_type": "Dict[str, Any]",
+          "docstring": "Get statistics for all caches.\n\n    Returns:\n        Dict with stats for each cache",
+          "decorators": [],
+          "start_line": 449,
+          "end_line": 474,
+          "is_async": false
+        }
+      ],
+      "parsedAt": 1769587469202
+    },
+    "houdini_mcp/tools/code.py": {
+      "path": "houdini_mcp/tools/code.py",
+      "contentHash": "efd9c59b37e56c5cb723cdf4667f7db3",
+      "mtime": 1766951114529.325,
+      "functions": [
+        {
+          "name": "execute_code",
+          "signature": "def execute_code(\n    code: str,\n    capture_diff: bool = False,\n    max_stdout_size: int = 100000,\n    max_stderr_size: int = 100000,\n    max_diff_nodes: int = 1000,\n    timeout: int = 30,\n    allow_dangerous: bool = False,\n    host: str = \"localhost\",\n    port: int = 18811,\n) -> Dict[str, Any]",
+          "parameters": "(\n    code: str,\n    capture_diff: bool = False,\n    max_stdout_size: int = 100000,\n    max_stderr_size: int = 100000,\n    max_diff_nodes: int = 1000,\n    timeout: int = 30,\n    allow_dangerous: bool = False,\n    host: str = \"localhost\",\n    port: int = 18811,\n)",
+          "return_type": "Dict[str, Any]",
+          "docstring": "Execute Python code in Houdini with optional scene diff tracking and safety rails.\n\n    Args:\n        code: Python code to execute. The 'hou' module is available.\n        capture_diff: If True, captures before/after scene state for comparison\n        max_stdout_size: Maximum stdout size in bytes (default: 100000 = 100KB)\n        max_stderr_size: Maximum stderr size in bytes (default: 100000 = 100KB)\n        max_diff_nodes: Maximum number of nodes in scene diff added_nodes (default: 1000)\n        timeout: Execution timeout in seconds (default: 30). Note: May be limited by RPyC.\n        allow_dangerous: If True, allows execution of code with dangerous patterns (default: False)\n\n    Returns:\n        Dict with execution result including stdout/stderr and scene changes.\n        May include truncation flags if output was truncated:\n        - stdout_truncated: True if stdout was truncated\n        - stderr_truncated: True if stderr was truncated\n        - diff_truncated: True if scene diff was truncated\n        May include warnings for dangerous patterns even when allowed.",
+          "decorators": [
+            "@handle_connection_errors(\"execute_code\")"
+          ],
+          "start_line": 31,
+          "end_line": 195,
+          "is_async": false
+        },
+        {
+          "name": "get_last_scene_diff",
+          "signature": "def get_last_scene_diff() -> Dict[str, Any]",
+          "parameters": "()",
+          "return_type": "Dict[str, Any]",
+          "docstring": "Get the scene diff from the last execute_code call.\n\n    Returns:\n        Dict with scene changes from last code execution.",
+          "decorators": [],
+          "start_line": 198,
+          "end_line": 213,
+          "is_async": false
+        }
+      ],
+      "parsedAt": 1769587469202
+    },
+    "houdini_mcp/tools/errors.py": {
+      "path": "houdini_mcp/tools/errors.py",
+      "contentHash": "fa83e6af593f479d154a131f26b5156b",
+      "mtime": 1766951327786.6418,
+      "functions": [
+        {
+          "name": "find_error_nodes",
+          "signature": "def find_error_nodes(\n    root_path: str = \"/\",\n    include_warnings: bool = True,\n    max_results: int = 100,\n    host: str = \"localhost\",\n    port: int = 18811,\n) -> Dict[str, Any]",
+          "parameters": "(\n    root_path: str = \"/\",\n    include_warnings: bool = True,\n    max_results: int = 100,\n    host: str = \"localhost\",\n    port: int = 18811,\n)",
+          "return_type": "Dict[str, Any]",
+          "docstring": "Find all nodes with cook errors or warnings in the scene.\n\n    Scans the entire node hierarchy starting from root_path and returns\n    all nodes that have errors or warnings. Essential for debugging\n    complex scenes where error locations are unknown.\n\n    Args:\n        root_path: Root path to start search from (default: \"/\" for entire scene)\n        include_warnings: Whether to include nodes with warnings (default: True)\n        max_results: Maximum number of results to return (default: 100)\n        host: Houdini RPC server host\n        port: Houdini RPC server port\n\n    Returns:\n        Dict with error/warning nodes including:\n        - error_nodes: List of nodes with errors\n        - warning_nodes: List of nodes with warnings (if include_warnings=True)\n        - total_scanned: Number of nodes scanned\n\n    Example:\n        find_error_nodes()  # Find all errors in scene\n        find_error_nodes(\"/obj/geo1\")  # Find errors within a specific network\n        find_error_nodes(include_warnings=False)  # Only errors, no warnings",
+          "decorators": [
+            "@handle_connection_errors(\"find_error_nodes\")"
+          ],
+          "start_line": 20,
+          "end_line": 161,
+          "is_async": false
+        }
+      ],
+      "parsedAt": 1769587469202
+    },
+    "houdini_mcp/tools/geometry.py": {
+      "path": "houdini_mcp/tools/geometry.py",
+      "contentHash": "f1a93364c1e323efc1d5fe7019cb7f3b",
+      "mtime": 1766950977841.9172,
+      "functions": [
+        {
+          "name": "get_geo_summary",
+          "signature": "def get_geo_summary(\n    node_path: str,\n    max_sample_points: int = 100,\n    include_attributes: bool = True,\n    include_groups: bool = True,\n    host: str = \"localhost\",\n    port: int = 18811,\n) -> Dict[str, Any]",
+          "parameters": "(\n    node_path: str,\n    max_sample_points: int = 100,\n    include_attributes: bool = True,\n    include_groups: bool = True,\n    host: str = \"localhost\",\n    port: int = 18811,\n)",
+          "return_type": "Dict[str, Any]",
+          "docstring": "Get geometry statistics and metadata for verification.\n\n    Returns comprehensive geometry information including point/primitive counts,\n    bounding box, attributes, groups, and optionally sample points. Useful for\n    agents to verify results after operations.\n\n    This function executes geometry analysis on the Houdini side to avoid\n    slow RPC iteration over large point/primitive counts.\n\n    Args:\n        node_path: Path to the SOP node (e.g., \"/obj/geo1/sphere1\")\n        max_sample_points: Maximum number of sample points to return (default: 100, max: 10000)\n        include_attributes: Whether to include attribute metadata (default: True)\n        include_groups: Whether to include group information (default: True)\n\n    Returns:\n        Dict with geometry summary including:\n        - status: \"success\" or \"error\"\n        - node_path: Path to the node\n        - cook_state: \"cooked\", \"dirty\", \"uncooked\", or \"error\"\n        - point_count: Number of points\n        - primitive_count: Number of primitives\n        - vertex_count: Total number of vertices across all primitives\n        - bounding_box: {min, max, size, center} in world space\n        - attributes: {point, primitive, vertex, detail} attribute lists\n        - groups: {point, primitive} group lists\n        - sample_points: Optional list of first N points with attribute values\n\n    Example:\n        get_geo_summary(\"/obj/geo1/sphere1\", max_sample_points=50)\n\n    Edge cases:\n        - Uncooked geometry: Will attempt to cook first\n        - Empty geometry: Returns zeros, not error\n        - Massive geometry (>1M points): Caps sampling with warning\n        - No bounding box: Returns None for bbox fields",
+          "decorators": [
+            "@handle_connection_errors(\"get_geometry_summary\")"
+          ],
+          "start_line": 20,
+          "end_line": 247,
+          "is_async": false
+        }
+      ],
+      "parsedAt": 1769587469202
+    },
+    "houdini_mcp/tools/help.py": {
+      "path": "houdini_mcp/tools/help.py",
+      "contentHash": "cbc10dc176e12792515d867f99fdc155",
+      "mtime": 1766899326059.6353,
+      "functions": [
+        {
+          "name": "get_houdini_help",
+          "signature": "def get_houdini_help(\n    help_type: str,\n    item_name: str,\n    timeout: int = 10,\n) -> Dict[str, Any]",
+          "parameters": "(\n    help_type: str,\n    item_name: str,\n    timeout: int = 10,\n)",
+          "return_type": "Dict[str, Any]",
+          "docstring": "Fetch Houdini documentation from SideFX website.\n\n    Retrieves and parses help documentation for nodes, VEX functions,\n    and Python API. Helps AI understand Houdini concepts without\n    hallucinating parameter names or functionality.\n\n    NOTE: This tool does NOT require a Houdini connection - it fetches\n    documentation directly from the SideFX website.\n\n    Args:\n        help_type: Type of documentation to fetch. Supported types:\n            - \"sop\": SOP nodes (e.g., \"box\", \"scatter\", \"vdbfrompolygons\")\n            - \"obj\": Object nodes (e.g., \"geo\", \"cam\", \"light\")\n            - \"dop\": DOP nodes (e.g., \"pyrosolver\", \"rbdpackedobject\")\n            - \"cop2\": COP nodes (e.g., \"mosaic\", \"blur\")\n            - \"chop\": CHOP nodes (e.g., \"math\", \"wave\")\n            - \"vop\": VOP nodes (e.g., \"bind\", \"noise\")\n            - \"lop\": LOP/Solaris nodes (e.g., \"usdimport\", \"materiallibrary\")\n            - \"top\": TOP/PDG nodes (e.g., \"pythonscript\", \"wedge\")\n            - \"rop\": ROP nodes (e.g., \"geometry\", \"karma\")\n            - \"vex_function\": VEX functions (e.g., \"noise\", \"lerp\", \"chramp\")\n            - \"python_hou\": Python hou module classes (e.g., \"Node\", \"Geometry\")\n        item_name: Name of the node or function (e.g., \"box\", \"noise\", \"Node\")\n        timeout: Request timeout in seconds (default: 10)\n\n    Returns:\n        Dict with:\n        - status: \"success\" or \"error\"\n        - title: Documentation title\n        - url: Source URL\n        - description: Summary description\n        - parameters: List of parameters with names, descriptions, and options\n        - inputs: List of input connections (for nodes)\n        - outputs: List of output connections (for nodes)\n\n    Examples:\n        get_houdini_help(\"sop\", \"box\")  # Get box SOP documentation\n        get_houdini_help(\"vex_function\", \"noise\")  # Get VEX noise function docs\n        get_houdini_help(\"python_hou\", \"Node\")  # Get hou.Node class docs\n        get_houdini_help(\"obj\", \"cam\")  # Get camera object docs",
+          "decorators": [],
+          "start_line": 16,
+          "end_line": 272,
+          "is_async": false
+        }
+      ],
+      "parsedAt": 1769587469202
+    },
+    "houdini_mcp/tools/hscript.py": {
+      "path": "houdini_mcp/tools/hscript.py",
+      "contentHash": "f7a3e271db8a1fd25195df0fa5ea4b90",
+      "mtime": 1766910646565.7002,
+      "functions": [
+        {
+          "name": "get_batch",
+          "signature": "def get_batch(hou: Any) -> HscriptBatch",
+          "parameters": "(hou: Any)",
+          "return_type": "HscriptBatch",
+          "docstring": "Get an HscriptBatch instance.\n\n    Args:\n        hou: The hou module\n\n    Returns:\n        HscriptBatch instance",
+          "decorators": [],
+          "start_line": 690,
+          "end_line": 700,
+          "is_async": false
+        },
+        {
+          "name": "fast_list_paths",
+          "signature": "def fast_list_paths(hou: Any, root_path: str = \"/obj\") -> List[str]",
+          "parameters": "(hou: Any, root_path: str = \"/obj\")",
+          "return_type": "List[str]",
+          "docstring": "Convenience function to list all paths under a root.\n\n    Args:\n        hou: The hou module\n        root_path: Root path to enumerate\n\n    Returns:\n        List of all node paths",
+          "decorators": [],
+          "start_line": 703,
+          "end_line": 714,
+          "is_async": false
+        },
+        {
+          "name": "fast_get_scene_tree",
+          "signature": "def fast_get_scene_tree(hou: Any, root_path: str = \"/obj\") -> List[Dict[str, Any]]",
+          "parameters": "(hou: Any, root_path: str = \"/obj\")",
+          "return_type": "List[Dict[str, Any]]",
+          "docstring": "Convenience function to get scene tree.\n\n    Args:\n        hou: The hou module\n        root_path: Root path to enumerate\n\n    Returns:\n        Hierarchical scene tree",
+          "decorators": [],
+          "start_line": 717,
+          "end_line": 728,
+          "is_async": false
+        }
+      ],
+      "parsedAt": 1769587469202
+    },
+    "houdini_mcp/tools/layout.py": {
+      "path": "houdini_mcp/tools/layout.py",
+      "contentHash": "67cf93bd0b7e1d6e216e7b72d1562da5",
+      "mtime": 1766951200807.476,
+      "functions": [
+        {
+          "name": "layout_children",
+          "signature": "def layout_children(\n    node_path: str,\n    horizontal_spacing: float = 2.0,\n    vertical_spacing: float = 1.0,\n    host: str = \"localhost\",\n    port: int = 18811,\n) -> Dict[str, Any]",
+          "parameters": "(\n    node_path: str,\n    horizontal_spacing: float = 2.0,\n    vertical_spacing: float = 1.0,\n    host: str = \"localhost\",\n    port: int = 18811,\n)",
+          "return_type": "Dict[str, Any]",
+          "docstring": "Auto-layout child nodes in a network.\n\n    Calls Houdini's built-in layoutChildren() to automatically arrange\n    child nodes in a clean, organized layout.\n\n    Args:\n        node_path: Path to the parent node (e.g., \"/obj/geo1\")\n        horizontal_spacing: Horizontal spacing between nodes (default: 2.0)\n        vertical_spacing: Vertical spacing between nodes (default: 1.0)\n        host: Houdini RPC server host\n        port: Houdini RPC server port\n\n    Returns:\n        Dict with:\n        - status: \"success\" or \"error\"\n        - node_path: Path to the parent node\n        - child_count: Number of children that were laid out\n\n    Examples:\n        layout_children(\"/obj/geo1\")\n        layout_children(\"/obj/geo1\", horizontal_spacing=3.0, vertical_spacing=2.0)",
+          "decorators": [
+            "@handle_connection_errors(\"layout_children\")"
+          ],
+          "start_line": 19,
+          "end_line": 78,
+          "is_async": false
+        },
+        {
+          "name": "set_node_color",
+          "signature": "def set_node_color(\n    node_path: str,\n    color: List[float],\n    host: str = \"localhost\",\n    port: int = 18811,\n) -> Dict[str, Any]",
+          "parameters": "(\n    node_path: str,\n    color: List[float],\n    host: str = \"localhost\",\n    port: int = 18811,\n)",
+          "return_type": "Dict[str, Any]",
+          "docstring": "Set the display color of a node in the network editor.\n\n    Args:\n        node_path: Path to the node (e.g., \"/obj/geo1/sphere1\")\n        color: RGB color values as [r, g, b] where each value is 0.0-1.0\n               Common colors:\n               - Red: [1, 0, 0]\n               - Green: [0, 1, 0]\n               - Blue: [0, 0, 1]\n               - Yellow: [1, 1, 0]\n               - Orange: [1, 0.5, 0]\n               - Purple: [0.5, 0, 1]\n        host: Houdini RPC server host\n        port: Houdini RPC server port\n\n    Returns:\n        Dict with:\n        - status: \"success\" or \"error\"\n        - node_path: Path to the node\n        - color: The color that was set\n\n    Examples:\n        set_node_color(\"/obj/geo1/sphere1\", [1, 0, 0])  # Red\n        set_node_color(\"/obj/geo1/important_node\", [1, 1, 0])  # Yellow",
+          "decorators": [
+            "@handle_connection_errors(\"set_node_color\")"
+          ],
+          "start_line": 82,
+          "end_line": 135,
+          "is_async": false
+        },
+        {
+          "name": "set_node_position",
+          "signature": "def set_node_position(\n    node_path: str,\n    x: float,\n    y: float,\n    host: str = \"localhost\",\n    port: int = 18811,\n) -> Dict[str, Any]",
+          "parameters": "(\n    node_path: str,\n    x: float,\n    y: float,\n    host: str = \"localhost\",\n    port: int = 18811,\n)",
+          "return_type": "Dict[str, Any]",
+          "docstring": "Set the position of a node in the network editor.\n\n    Args:\n        node_path: Path to the node (e.g., \"/obj/geo1/sphere1\")\n        x: X position in network editor units\n        y: Y position in network editor units\n        host: Houdini RPC server host\n        port: Houdini RPC server port\n\n    Returns:\n        Dict with:\n        - status: \"success\" or \"error\"\n        - node_path: Path to the node\n        - position: [x, y] the position that was set\n\n    Examples:\n        set_node_position(\"/obj/geo1/sphere1\", 0, 0)\n        set_node_position(\"/obj/geo1/sphere1\", 5.0, -3.0)",
+          "decorators": [
+            "@handle_connection_errors(\"set_node_position\")"
+          ],
+          "start_line": 139,
+          "end_line": 180,
+          "is_async": false
+        },
+        {
+          "name": "create_network_box",
+          "signature": "def create_network_box(\n    parent_path: str,\n    node_paths: List[str],\n    label: str = \"\",\n    color: Optional[List[float]] = None,\n    host: str = \"localhost\",\n    port: int = 18811,\n) -> Dict[str, Any]",
+          "parameters": "(\n    parent_path: str,\n    node_paths: List[str],\n    label: str = \"\",\n    color: Optional[List[float]] = None,\n    host: str = \"localhost\",\n    port: int = 18811,\n)",
+          "return_type": "Dict[str, Any]",
+          "docstring": "Create a network box around a group of nodes.\n\n    Network boxes help organize and visually group related nodes\n    in the network editor.\n\n    Args:\n        parent_path: Path to the parent network (e.g., \"/obj/geo1\")\n        node_paths: List of node paths to include in the box\n        label: Optional label text for the network box\n        color: Optional RGB color [r, g, b] for the box (0.0-1.0 each)\n        host: Houdini RPC server host\n        port: Houdini RPC server port\n\n    Returns:\n        Dict with:\n        - status: \"success\" or \"error\"\n        - network_box_path: Path to the created network box\n        - nodes_contained: List of nodes in the box\n        - label: The label set on the box\n\n    Examples:\n        create_network_box(\"/obj/geo1\", [\"/obj/geo1/sphere1\", \"/obj/geo1/noise1\"], \"Deform Setup\")\n        create_network_box(\"/obj/geo1\", [\"/obj/geo1/box1\"], \"Input\", color=[0.2, 0.6, 0.2])",
+          "decorators": [
+            "@handle_connection_errors(\"create_network_box\")"
+          ],
+          "start_line": 184,
+          "end_line": 267,
+          "is_async": false
+        }
+      ],
+      "parsedAt": 1769587469202
+    },
+    "houdini_mcp/tools/materials.py": {
+      "path": "houdini_mcp/tools/materials.py",
+      "contentHash": "ae0bf74c8177b3a53014db59e6dd38cb",
+      "mtime": 1766951736864.8408,
+      "functions": [
+        {
+          "name": "create_material",
+          "signature": "def create_material(\n    material_type: str = \"principledshader\",\n    name: Optional[str] = None,\n    parent_path: str = \"/mat\",\n    parameters: Optional[Dict[str, Any]] = None,\n    host: str = \"localhost\",\n    port: int = 18811,\n) -> Dict[str, Any]",
+          "parameters": "(\n    material_type: str = \"principledshader\",\n    name: Optional[str] = None,\n    parent_path: str = \"/mat\",\n    parameters: Optional[Dict[str, Any]] = None,\n    host: str = \"localhost\",\n    port: int = 18811,\n)",
+          "return_type": "Dict[str, Any]",
+          "docstring": "Create a new material/shader node.\n\n    Creates a material node in the specified context (typically /mat or /shop).\n    Supports common material types like Principled Shader, MaterialX, and classic shaders.\n\n    Args:\n        material_type: Type of material to create. Common types:\n            - \"principledshader\": Houdini's standard PBR shader (recommended)\n            - \"mtlxstandard_surface\": MaterialX Standard Surface\n            - \"classicshader\": Classic Mantra shader\n            - \"arnold::standard_surface\": Arnold Standard Surface (if Arnold installed)\n        name: Optional name for the material. Auto-generated if not provided.\n        parent_path: Parent context path (default: \"/mat\", alternative: \"/shop\")\n        parameters: Optional dict of parameter values to set on the material.\n            Common principledshader parameters:\n            - basecolor: [r, g, b] base color\n            - rough: float roughness (0-1)\n            - metallic: float metallic (0-1)\n            - ior: float index of refraction\n            - basecolor_texture: string path to texture file\n\n    Returns:\n        Dict with:\n        - status: \"success\" or \"error\"\n        - material_path: Path to the created material node\n        - material_name: Name of the material\n        - material_type: Type of material created\n        - parameters_set: List of parameters that were set\n\n    Examples:\n        create_material()  # Create default principled shader\n        create_material(\"principledshader\", \"red_metal\",\n                       parameters={\"basecolor\": [1, 0, 0], \"metallic\": 1.0})\n        create_material(\"mtlxstandard_surface\", \"gold_mtlx\")",
+          "decorators": [
+            "@handle_connection_errors(\"create_material\")"
+          ],
+          "start_line": 20,
+          "end_line": 126,
+          "is_async": false
+        },
+        {
+          "name": "assign_material",
+          "signature": "def assign_material(\n    geometry_path: str,\n    material_path: str,\n    group: str = \"\",\n    host: str = \"localhost\",\n    port: int = 18811,\n) -> Dict[str, Any]",
+          "parameters": "(\n    geometry_path: str,\n    material_path: str,\n    group: str = \"\",\n    host: str = \"localhost\",\n    port: int = 18811,\n)",
+          "return_type": "Dict[str, Any]",
+          "docstring": "Assign a material to geometry.\n\n    Creates a Material SOP inside the geometry node to apply the material.\n    If a Material SOP already exists, updates it instead.\n\n    Args:\n        geometry_path: Path to the geometry OBJ node (e.g., \"/obj/geo1\")\n        material_path: Path to the material node (e.g., \"/mat/principledshader1\")\n        group: Optional primitive group to apply material to (empty = all primitives)\n\n    Returns:\n        Dict with:\n        - status: \"success\" or \"error\"\n        - geometry_path: Path to the geometry node\n        - material_path: Path to the assigned material\n        - material_sop_path: Path to the Material SOP that was created/modified\n        - method: \"material_sop\" or \"shop_materialpath\"\n\n    Examples:\n        assign_material(\"/obj/geo1\", \"/mat/red_metal\")\n        assign_material(\"/obj/geo1\", \"/mat/gold\", group=\"top_faces\")",
+          "decorators": [
+            "@handle_connection_errors(\"assign_material\")"
+          ],
+          "start_line": 130,
+          "end_line": 246,
+          "is_async": false
+        },
+        {
+          "name": "get_material_info",
+          "signature": "def get_material_info(\n    material_path: str,\n    host: str = \"localhost\",\n    port: int = 18811,\n) -> Dict[str, Any]",
+          "parameters": "(\n    material_path: str,\n    host: str = \"localhost\",\n    port: int = 18811,\n)",
+          "return_type": "Dict[str, Any]",
+          "docstring": "Get detailed information about a material node.\n\n    Returns material type, parameters, and texture references.\n\n    Args:\n        material_path: Path to the material node (e.g., \"/mat/principledshader1\")\n\n    Returns:\n        Dict with:\n        - status: \"success\" or \"error\"\n        - material_path: Path to the material\n        - material_name: Name of the material\n        - material_type: Type of material (e.g., \"principledshader\")\n        - parameters: Dict of parameter names to current values\n        - textures: List of texture file references found in parameters\n\n    Examples:\n        get_material_info(\"/mat/principledshader1\")\n        get_material_info(\"/mat/mtlxstandard_surface1\")",
+          "decorators": [
+            "@handle_connection_errors(\"get_material_info\")"
+          ],
+          "start_line": 250,
+          "end_line": 367,
+          "is_async": false
+        }
+      ],
+      "parsedAt": 1769587469203
+    },
+    "houdini_mcp/tools/nodes.py": {
+      "path": "houdini_mcp/tools/nodes.py",
+      "contentHash": "0722493112723e1893f13b4e03c0b8af",
+      "mtime": 1766955090652.3823,
+      "functions": [
+        {
+          "name": "create_node",
+          "signature": "def create_node(\n    node_type: str,\n    parent_path: str = \"/obj\",\n    name: Optional[str] = None,\n    host: str = \"localhost\",\n    port: int = 18811,\n) -> Dict[str, Any]",
+          "parameters": "(\n    node_type: str,\n    parent_path: str = \"/obj\",\n    name: Optional[str] = None,\n    host: str = \"localhost\",\n    port: int = 18811,\n)",
+          "return_type": "Dict[str, Any]",
+          "docstring": "Create a new node in the Houdini scene.\n\n    Args:\n        node_type: The type of node to create (e.g., \"geo\", \"sphere\", \"box\")\n        parent_path: The parent node path (default: \"/obj\")\n        name: Optional name for the new node\n\n    Returns:\n        Dict with created node information.",
+          "decorators": [
+            "@handle_connection_errors(\"create_node\")"
+          ],
+          "start_line": 32,
+          "end_line": 66,
+          "is_async": false
+        },
+        {
+          "name": "get_node_info",
+          "signature": "def get_node_info(\n    node_path: str,\n    include_params: bool = True,\n    max_params: int = 50,\n    include_input_details: bool = True,\n    include_errors: bool = False,\n    force_cook: bool = False,\n    compact: bool = False,\n    host: str = \"localhost\",\n    port: int = 18811,\n) -> Dict[str, Any]",
+          "parameters": "(\n    node_path: str,\n    include_params: bool = True,\n    max_params: int = 50,\n    include_input_details: bool = True,\n    include_errors: bool = False,\n    force_cook: bool = False,\n    compact: bool = False,\n    host: str = \"localhost\",\n    port: int = 18811,\n)",
+          "return_type": "Dict[str, Any]",
+          "docstring": "Get detailed information about a node.\n\n    Args:\n        node_path: Path to the node\n        include_params: Whether to include parameter values\n        max_params: Maximum number of parameters to return\n        include_input_details: When True, expand input connections to show source node,\n                              output index, and connection index details\n        include_errors: When True, include cook state and error/warning information\n        force_cook: When True, force cook the node before checking errors (requires include_errors=True)\n        compact: When True, return minimal info (path, type, counts only)\n\n    Returns:\n        Dict with node information. When include_errors=True, also includes cook_info\n        with cook_state, errors, warnings, and last_cook_time.",
+          "decorators": [
+            "@handle_connection_errors(\"get_node_info\")"
+          ],
+          "start_line": 70,
+          "end_line": 268,
+          "is_async": false
+        },
+        {
+          "name": "delete_node",
+          "signature": "def delete_node(node_path: str, host: str = \"localhost\", port: int = 18811) -> Dict[str, Any]",
+          "parameters": "(node_path: str, host: str = \"localhost\", port: int = 18811)",
+          "return_type": "Dict[str, Any]",
+          "docstring": "Delete a node from the scene.\n\n    Args:\n        node_path: Path to the node to delete\n\n    Returns:\n        Dict with result.",
+          "decorators": [
+            "@handle_connection_errors(\"delete_node\")"
+          ],
+          "start_line": 272,
+          "end_line": 295,
+          "is_async": false
+        },
+        {
+          "name": "list_node_types",
+          "signature": "def list_node_types(\n    category: Optional[str] = None,\n    max_results: int = 100,\n    name_filter: Optional[str] = None,\n    offset: int = 0,\n    host: str = \"localhost\",\n    port: int = 18811,\n) -> Dict[str, Any]",
+          "parameters": "(\n    category: Optional[str] = None,\n    max_results: int = 100,\n    name_filter: Optional[str] = None,\n    offset: int = 0,\n    host: str = \"localhost\",\n    port: int = 18811,\n)",
+          "return_type": "Dict[str, Any]",
+          "docstring": "List available node types, optionally filtered by category.\n\n    Uses in-memory caching for fast repeated queries. Node types are fetched\n    once per session and cached - subsequent calls filter from cache instantly.\n\n    Args:\n        category: Optional category filter (e.g., \"Object\", \"Sop\", \"Cop2\", \"Vop\")\n        max_results: Maximum number of results to return (default: 100, max: 500)\n        name_filter: Optional substring filter for node type names (case-insensitive)\n        offset: Number of results to skip for pagination (default: 0)\n\n    Returns:\n        Dict with list of node types and pagination info.\n\n    Note:\n        Large categories like \"Sop\" have thousands of node types.\n        Use name_filter to narrow results (e.g., name_filter=\"noise\" for noise-related SOPs).\n        Use offset for pagination through large result sets.\n\n    Performance:\n        - First call: ~200-500ms (populates cache using batch fetch)\n        - Subsequent calls: <1ms (filters from cache)",
+          "decorators": [
+            "@handle_connection_errors(\"list_node_types\")"
+          ],
+          "start_line": 299,
+          "end_line": 393,
+          "is_async": false
+        },
+        {
+          "name": "list_children",
+          "signature": "def list_children(\n    node_path: str,\n    recursive: bool = False,\n    max_depth: int = 10,\n    max_nodes: int = 1000,\n    compact: bool = False,\n    host: str = \"localhost\",\n    port: int = 18811,\n) -> Dict[str, Any]",
+          "parameters": "(\n    node_path: str,\n    recursive: bool = False,\n    max_depth: int = 10,\n    max_nodes: int = 1000,\n    compact: bool = False,\n    host: str = \"localhost\",\n    port: int = 18811,\n)",
+          "return_type": "Dict[str, Any]",
+          "docstring": "List child nodes with paths, types, and current input connections.\n\n    This tool is essential for agents to understand node networks and insert\n    nodes without breaking existing connections.\n\n    Args:\n        node_path: Path to the parent node\n        recursive: If True, recursively traverse child nodes\n        max_depth: Maximum recursion depth (prevents infinite loops)\n        max_nodes: Maximum number of nodes to return (safety limit)\n        compact: If True, return only path/name/type without connection details\n\n    Returns:\n        Dict with child nodes including their connection information.\n        When compact=True, inputs/outputs are omitted for reduced payload size.",
+          "decorators": [
+            "@handle_connection_errors(\"list_children\")"
+          ],
+          "start_line": 397,
+          "end_line": 519,
+          "is_async": false
+        },
+        {
+          "name": "find_nodes",
+          "signature": "def find_nodes(\n    root_path: str = \"/obj\",\n    pattern: str = \"*\",\n    node_type: Optional[str] = None,\n    max_results: int = 100,\n    offset: int = 0,\n    host: str = \"localhost\",\n    port: int = 18811,\n) -> Dict[str, Any]",
+          "parameters": "(\n    root_path: str = \"/obj\",\n    pattern: str = \"*\",\n    node_type: Optional[str] = None,\n    max_results: int = 100,\n    offset: int = 0,\n    host: str = \"localhost\",\n    port: int = 18811,\n)",
+          "return_type": "Dict[str, Any]",
+          "docstring": "Find nodes by name pattern or type using glob/substring matching.\n\n    Args:\n        root_path: Root path to start search from\n        pattern: Glob pattern or substring to match against node names (* for wildcard)\n        node_type: Optional node type filter (e.g., \"sphere\", \"noise\", \"geo\")\n        max_results: Maximum number of results to return\n        offset: Number of results to skip for pagination (default: 0)\n\n    Returns:\n        Dict with matching nodes and their types.\n        Includes pagination info (has_more, next_offset) when applicable.\n\n    Example:\n        find_nodes(\"/obj\", \"noise*\", max_results=50)\n        find_nodes(\"/obj/geo1\", \"*\", node_type=\"sphere\")\n        find_nodes(\"/obj\", \"*\", offset=100)  # Get next page",
+          "decorators": [
+            "@handle_connection_errors(\"find_nodes\")"
+          ],
+          "start_line": 523,
+          "end_line": 702,
+          "is_async": false
+        }
+      ],
+      "parsedAt": 1769587469203
+    },
+    "houdini_mcp/tools/pane_screenshot.py": {
+      "path": "houdini_mcp/tools/pane_screenshot.py",
+      "contentHash": "87d30082a14ad1a1a57922059d0529e9",
+      "mtime": 1766965001935.5527,
+      "functions": [
+        {
+          "name": "capture_pane_screenshot",
+          "signature": "def capture_pane_screenshot(\n    pane_type_name: str = \"NetworkEditor\",\n    save_path: Optional[str] = None,\n    fit_contents: bool = False,\n    host: str = \"localhost\",\n    port: int = 18811,\n) -> Dict[str, Any]",
+          "parameters": "(\n    pane_type_name: str = \"NetworkEditor\",\n    save_path: Optional[str] = None,\n    fit_contents: bool = False,\n    host: str = \"localhost\",\n    port: int = 18811,\n)",
+          "return_type": "Dict[str, Any]",
+          "docstring": "Capture a screenshot of a Houdini pane tab using Qt screen grab.\n\n    This function captures the screen region occupied by a specific pane tab\n    in the Houdini interface. It uses PySide2/Qt's screen grab functionality\n    accessed remotely via RPyC.\n\n    Args:\n        pane_type_name: Name of the pane type to capture. Common values:\n            - \"NetworkEditor\": Node network editor (default)\n            - \"SceneViewer\": 3D scene viewer\n            - \"Parm\": Parameter editor panel\n            - \"CompositorViewer\": Compositor/COP viewer\n            - \"IPRViewer\": Interactive render preview\n            - \"ChannelEditor\": Animation channel editor\n            - \"ParmSpreadsheet\": Parameter spreadsheet\n            - \"Textport\": Houdini textport/console\n            - \"PythonShell\": Python shell\n        save_path: Optional path to save PNG file. If provided, saves to disk\n            instead of returning base64. Parent directories are created if needed.\n        fit_contents: If True, fit/frame all contents before capture (default: False).\n            Supported for: NetworkEditor (frames all nodes), SceneViewer (frames geometry),\n            CompositorViewer, ChannelEditor. When False, captures the current view\n            (useful for showing what you're actively working on).\n        host: Houdini RPC server hostname (default: \"localhost\")\n        port: Houdini RPC server port (default: 18811)\n\n    Returns:\n        Dict containing:\n        - status: \"success\" or \"error\"\n        - pane_type: The pane type that was captured\n        - pane_name: The name of the specific pane instance\n        - geometry: Dict with x, y, width, height of the captured region\n        - image_format: Image format (\"png\")\n        - image_size_bytes: Size of the image data in bytes\n        - image_base64: Base64-encoded PNG image data (if save_path not provided)\n        - file_path: Absolute path to saved file (if save_path provided)\n\n        On error:\n        - status: \"error\"\n        - message: Error description\n        - available_types: List of available pane types (if pane type not found)\n\n    Example:\n        # Capture the network editor as-is (current view)\n        result = capture_pane_screenshot(\"NetworkEditor\")\n\n        # Capture with all nodes framed\n        result = capture_pane_screenshot(\"NetworkEditor\", fit_contents=True)\n\n        # Capture and save directly to disk\n        result = capture_pane_screenshot(\"SceneViewer\", save_path=\"/tmp/scene.png\")\n        if result[\"status\"] == \"success\":\n            print(f\"Saved to: {result['file_path']}\")",
+          "decorators": [
+            "@handle_connection_errors(\"capture_pane_screenshot\")"
+          ],
+          "start_line": 275,
+          "end_line": 369,
+          "is_async": false
+        },
+        {
+          "name": "list_visible_panes",
+          "signature": "def list_visible_panes(\n    host: str = \"localhost\",\n    port: int = 18811,\n) -> Dict[str, Any]",
+          "parameters": "(\n    host: str = \"localhost\",\n    port: int = 18811,\n)",
+          "return_type": "Dict[str, Any]",
+          "docstring": "List all visible pane tabs in the current Houdini layout.\n\n    This is useful for discovering what panes are available for screenshots.\n    Panes on inactive desktops will have is_visible=False and cannot be captured.\n\n    Args:\n        host: Houdini RPC server hostname (default: \"localhost\")\n        port: Houdini RPC server port (default: 18811)\n\n    Returns:\n        Dict containing:\n        - status: \"success\" or \"error\"\n        - current_desktop: Name of the current active desktop\n        - panes: List of dicts with pane info:\n            - name: Pane tab name\n            - type: Pane type name\n            - desktop: Desktop name containing this pane\n            - is_current_desktop: Whether pane is on the active desktop\n            - is_visible: Whether pane has valid geometry (can be captured)\n            - geometry: Dict with width/height (None if not visible)\n            - capturable: True if pane can be captured (visible and on current desktop)\n        - capturable_count: Number of panes that can be captured\n        - total_count: Total number of panes found\n        - available_types: List of all valid pane type names",
+          "decorators": [
+            "@handle_connection_errors(\"list_visible_panes\")"
+          ],
+          "start_line": 373,
+          "end_line": 464,
+          "is_async": false
+        },
+        {
+          "name": "render_node_network",
+          "signature": "def render_node_network(\n    node_path: str = \"/obj\",\n    fit_contents: bool = True,\n    host: str = \"localhost\",\n    port: int = 18811,\n) -> Dict[str, Any]",
+          "parameters": "(\n    node_path: str = \"/obj\",\n    fit_contents: bool = True,\n    host: str = \"localhost\",\n    port: int = 18811,\n)",
+          "return_type": "Dict[str, Any]",
+          "docstring": "Capture a screenshot of a node's network showing its children.\n\n    This is a convenience wrapper that navigates the NetworkEditor to the specified\n    node, optionally frames all children, and captures a screenshot. Useful for\n    visualizing the network structure of any node context.\n\n    Args:\n        node_path: Path to the node whose network to capture (default: \"/obj\").\n            The NetworkEditor will navigate into this node to show its children.\n            Examples: \"/obj\", \"/obj/geo1\", \"/stage\", \"/mat\"\n        fit_contents: If True, frame all children in view before capture (default: True).\n            Set to False to capture the current zoom/pan state.\n        host: Houdini RPC server hostname (default: \"localhost\")\n        port: Houdini RPC server port (default: 18811)\n\n    Returns:\n        Dict containing:\n        - status: \"success\" or \"error\"\n        - node_path: The node path that was navigated to\n        - child_count: Number of children in the network\n        - pane_type: \"NetworkEditor\"\n        - pane_name: Name of the network editor pane used\n        - geometry: Dict with x, y, width, height of the captured region\n        - image_format: Image format (\"png\")\n        - image_size_bytes: Size of the image data in bytes\n        - image_base64: Base64-encoded PNG image data\n\n        On error:\n        - status: \"error\"\n        - message: Error description\n\n    Example:\n        # Capture /obj network with all nodes framed\n        result = render_node_network(\"/obj\")\n\n        # Capture a specific geo node's network\n        result = render_node_network(\"/obj/geo1\")\n\n        # Capture SOPs inside a geometry object\n        result = render_node_network(\"/obj/geo1\")\n\n        # Capture the /stage context (LOPs/Solaris)\n        result = render_node_network(\"/stage\")",
+          "decorators": [
+            "@handle_connection_errors(\"render_node_network\")"
+          ],
+          "start_line": 468,
+          "end_line": 578,
+          "is_async": false
+        },
+        {
+          "name": "capture_multiple_panes",
+          "signature": "def capture_multiple_panes(\n    pane_types: List[str],\n    save_dir: Optional[str] = None,\n    host: str = \"localhost\",\n    port: int = 18811,\n) -> Dict[str, Any]",
+          "parameters": "(\n    pane_types: List[str],\n    save_dir: Optional[str] = None,\n    host: str = \"localhost\",\n    port: int = 18811,\n)",
+          "return_type": "Dict[str, Any]",
+          "docstring": "Capture screenshots of multiple pane types in one call.\n\n    This is more efficient than calling capture_pane_screenshot multiple times\n    as it reuses the Qt module references and connection.\n\n    Args:\n        pane_types: List of pane type names to capture (e.g., [\"NetworkEditor\", \"SceneViewer\"])\n        save_dir: Optional directory to save PNG files. If provided, saves files\n            as \"{pane_type}.png\" in this directory. Parent directories are created if needed.\n            If not provided, returns base64-encoded images.\n        host: Houdini RPC server hostname (default: \"localhost\")\n        port: Houdini RPC server port (default: 18811)\n\n    Returns:\n        Dict containing:\n        - status: \"success\" if at least one capture succeeded, \"error\" if all failed\n        - success_count: Number of successful captures\n        - total_requested: Total number of pane types requested\n        - results: Dict mapping pane type names to their capture results\n            Each result is a dict with the same format as capture_pane_screenshot\n\n    Example:\n        # Capture multiple panes and get base64\n        result = capture_multiple_panes([\"NetworkEditor\", \"SceneViewer\", \"Parm\"])\n        for pane_type, data in result[\"results\"].items():\n            if data[\"status\"] == \"success\":\n                print(f\"{pane_type}: {data['image_size_bytes']} bytes\")\n\n        # Capture and save to directory\n        result = capture_multiple_panes(\n            [\"NetworkEditor\", \"SceneViewer\"],\n            save_dir=\"/tmp/houdini_captures\"\n        )\n        # Creates /tmp/houdini_captures/NetworkEditor.png, etc.",
+          "decorators": [
+            "@handle_connection_errors(\"capture_multiple_panes\")"
+          ],
+          "start_line": 582,
+          "end_line": 664,
+          "is_async": false
+        }
+      ],
+      "parsedAt": 1769587469203
+    },
+    "houdini_mcp/tools/parameters.py": {
+      "path": "houdini_mcp/tools/parameters.py",
+      "contentHash": "bc65f0e583b0c857d8292a5a1a218ab9",
+      "mtime": 1766951267753.145,
+      "functions": [
+        {
+          "name": "set_parameter",
+          "signature": "def set_parameter(\n    node_path: str, param_name: str, value: Any, host: str = \"localhost\", port: int = 18811\n) -> Dict[str, Any]",
+          "parameters": "(\n    node_path: str, param_name: str, value: Any, host: str = \"localhost\", port: int = 18811\n)",
+          "return_type": "Dict[str, Any]",
+          "docstring": "Set a parameter value on a node.\n\n    Args:\n        node_path: Path to the node (e.g., \"/obj/geo1/sphere1\")\n        param_name: Name of the parameter (e.g., \"radx\", \"tx\")\n        value: Value to set\n\n    Returns:\n        Dict with result.",
+          "decorators": [
+            "@handle_connection_errors(\"set_parameter\")"
+          ],
+          "start_line": 20,
+          "end_line": 65,
+          "is_async": false
+        },
+        {
+          "name": "get_parameter_schema",
+          "signature": "def get_parameter_schema(\n    node_path: str,\n    parm_name: Optional[str] = None,\n    max_parms: int = 100,\n    host: str = \"localhost\",\n    port: int = 18811,\n) -> Dict[str, Any]",
+          "parameters": "(\n    node_path: str,\n    parm_name: Optional[str] = None,\n    max_parms: int = 100,\n    host: str = \"localhost\",\n    port: int = 18811,\n)",
+          "return_type": "Dict[str, Any]",
+          "docstring": "Get parameter metadata/schema for intelligent parameter setting.\n\n    Returns detailed parameter information including types, defaults, ranges,\n    menu items, and current values. This helps agents understand what parameters\n    are available and how to set them correctly.\n\n    Args:\n        node_path: Path to the node\n        parm_name: Optional specific parameter name. If provided, returns only that parameter.\n                  If None, returns all parameters (up to max_parms)\n        max_parms: Maximum number of parameters to return when parm_name is None (default: 100)\n\n    Returns:\n        Dict with parameter schema information.\n\n    Example return for single parameter:\n        {\n          \"status\": \"success\",\n          \"node_path\": \"/obj/geo1/sphere1\",\n          \"parameters\": [\n            {\n              \"name\": \"radx\",\n              \"label\": \"Radius X\",\n              \"type\": \"float\",\n              \"default\": 1.0,\n              \"min\": 0.0,\n              \"max\": None,\n              \"current_value\": 2.5,\n              \"is_animatable\": True\n            }\n          ],\n          \"count\": 1\n        }\n\n    Example with menu parameter:\n        {\n          \"name\": \"type\",\n          \"label\": \"Type\",\n          \"type\": \"menu\",\n          \"default\": 0,\n          \"menu_items\": [\n            {\"label\": \"Polygon\", \"value\": 0},\n            {\"label\": \"Mesh\", \"value\": 1}\n          ],\n          \"current_value\": 0,\n          \"is_animatable\": False\n        }\n\n    Example with vector parameter:\n        {\n          \"name\": \"t\",\n          \"label\": \"Translate\",\n          \"type\": \"vector\",\n          \"tuple_size\": 3,\n          \"default\": [0.0, 0.0, 0.0],\n          \"current_value\": [1.0, 2.0, 3.0],\n          \"is_animatable\": True\n        }",
+          "decorators": [
+            "@handle_connection_errors(\"get_parameter_schema\")"
+          ],
+          "start_line": 69,
+          "end_line": 218,
+          "is_async": false
+        }
+      ],
+      "parsedAt": 1769587469203
+    },
+    "houdini_mcp/tools/rendering.py": {
+      "path": "houdini_mcp/tools/rendering.py",
+      "contentHash": "d8f9dc8661b57df194a404422c093d61",
+      "mtime": 1766954746539.724,
+      "functions": [
+        {
+          "name": "render_viewport",
+          "signature": "def render_viewport(\n    camera_position: Optional[List[float]] = None,\n    camera_rotation: Optional[List[float]] = None,\n    look_at: Optional[str] = None,\n    resolution: Optional[List[int]] = None,\n    renderer: str = \"opengl\",\n    output_format: str = \"png\",\n    auto_frame: bool = True,\n    orthographic: bool = False,\n    karma_engine: str = \"cpu\",\n    host: str = \"localhost\",\n    port: int = 18811,\n) -> Dict[str, Any]",
+          "parameters": "(\n    camera_position: Optional[List[float]] = None,\n    camera_rotation: Optional[List[float]] = None,\n    look_at: Optional[str] = None,\n    resolution: Optional[List[int]] = None,\n    renderer: str = \"opengl\",\n    output_format: str = \"png\",\n    auto_frame: bool = True,\n    orthographic: bool = False,\n    karma_engine: str = \"cpu\",\n    host: str = \"localhost\",\n    port: int = 18811,\n)",
+          "return_type": "Dict[str, Any]",
+          "docstring": "Render the viewport and return the image as base64.\n\n    Creates a temporary camera, positions it to frame the scene geometry,\n    renders the scene, and returns the rendered image encoded as base64.\n\n    Args:\n        camera_position: [x, y, z] world position for camera (default: auto-calculated)\n        camera_rotation: [rx, ry, rz] rotation in degrees (default: [-30, 45, 0] isometric)\n        look_at: Node path to look at (centers camera on this node's geometry)\n        resolution: [width, height] in pixels (default: [512, 512])\n        renderer: Render engine - \"opengl\" (fast) or \"karma\" (quality)\n        output_format: Image format - \"png\", \"jpg\", or \"exr\"\n        auto_frame: If True, automatically frame all visible geometry (default: True)\n        orthographic: If True, use orthographic projection (default: False)\n        karma_engine: Karma render engine - \"cpu\" (quality) or \"gpu\" (fast XPU). Only used when renderer=\"karma\"\n\n    Returns:\n        Dict with:\n        - status: \"success\" or \"error\"\n        - image_base64: Base64-encoded image data\n        - format: Image format used\n        - resolution: [width, height]\n        - camera_path: Path to the temporary camera used\n        - bounding_box: Scene bounding box if auto_frame was used\n\n    Example:\n        render_viewport()  # Auto-frame scene with isometric view\n        render_viewport(camera_rotation=[0, 0, 0])  # Front view\n        render_viewport(camera_rotation=[-90, 0, 0])  # Top view\n        render_viewport(look_at=\"/obj/geo1\", orthographic=True)\n        render_viewport(renderer=\"karma\", karma_engine=\"gpu\")  # Fast GPU render",
+          "decorators": [],
+          "start_line": 37,
+          "end_line": 333,
+          "is_async": false
+        },
+        {
+          "name": "render_quad_view",
+          "signature": "def render_quad_view(\n    resolution: Optional[List[int]] = None,\n    renderer: str = \"opengl\",\n    output_format: str = \"png\",\n    orthographic: bool = True,\n    include_perspective: bool = True,\n    karma_engine: str = \"cpu\",\n    host: str = \"localhost\",\n    port: int = 18811,\n) -> Dict[str, Any]",
+          "parameters": "(\n    resolution: Optional[List[int]] = None,\n    renderer: str = \"opengl\",\n    output_format: str = \"png\",\n    orthographic: bool = True,\n    include_perspective: bool = True,\n    karma_engine: str = \"cpu\",\n    host: str = \"localhost\",\n    port: int = 18811,\n)",
+          "return_type": "Dict[str, Any]",
+          "docstring": "Render 4 canonical views (Front, Left, Top, Perspective) in one call.\n\n    Creates a camera rig and renders standardized views for spatial understanding.\n    Returns all 4 images as base64-encoded strings. This is more efficient than\n    calling render_viewport 4 times as it reuses the camera rig and calculates\n    the bounding box only once.\n\n    Args:\n        resolution: [width, height] in pixels (default: [512, 512])\n        renderer: Render engine - \"opengl\" (fast) or \"karma\" (quality)\n        output_format: Image format - \"png\", \"jpg\", or \"exr\"\n        orthographic: If True, use orthographic projection for Front/Left/Top views (default: True)\n        include_perspective: If True, include perspective view; if False, only orthographic views (default: True)\n        karma_engine: Karma render engine - \"cpu\" (quality) or \"gpu\" (fast XPU). Only used when renderer=\"karma\"\n\n    Returns:\n        Dict with:\n        - status: \"success\" or \"error\"\n        - views: List of view results, each containing:\n            - name: View name (front, left, top, perspective)\n            - rotation: [rx, ry, rz] camera rotation used\n            - image_base64: Base64-encoded image data\n            - format: Image format used\n            - resolution: [width, height]\n            - orthographic: Whether orthographic projection was used\n        - bounding_box: Scene bounding box info\n        - renderer: Render engine used\n        - total_render_time_ms: Total time for all renders\n\n    Examples:\n        render_quad_view()  # All 4 views with orthographic projection\n        render_quad_view(orthographic=False)  # All views with perspective\n        render_quad_view(resolution=[1024, 1024], renderer=\"karma\")  # Higher quality\n        render_quad_view(include_perspective=False)  # Only 3 orthographic views\n        render_quad_view(renderer=\"karma\", karma_engine=\"gpu\")  # Fast GPU renders",
+          "decorators": [],
+          "start_line": 336,
+          "end_line": 660,
+          "is_async": false
+        },
+        {
+          "name": "list_render_nodes",
+          "signature": "def list_render_nodes(\n    host: str = \"localhost\",\n    port: int = 18811,\n) -> Dict[str, Any]",
+          "parameters": "(\n    host: str = \"localhost\",\n    port: int = 18811,\n)",
+          "return_type": "Dict[str, Any]",
+          "docstring": "List all render nodes (ROPs) in the /out context.\n\n    Returns information about each render node including type, path,\n    and basic configuration like camera and output path.\n\n    Returns:\n        Dict with:\n        - status: \"success\" or \"error\"\n        - count: Number of render nodes found\n        - render_nodes: List of render node info with:\n            - path: Full node path\n            - name: Node name\n            - type: ROP type (opengl, karma, ifd, etc.)\n            - camera: Camera path if set\n            - output: Output image path if set\n            - enabled: Whether the node is bypassed\n\n    Examples:\n        list_render_nodes()  # List all ROPs in /out",
+          "decorators": [
+            "@handle_connection_errors(\"list_render_nodes\")"
+          ],
+          "start_line": 721,
+          "end_line": 778,
+          "is_async": false
+        },
+        {
+          "name": "get_render_settings",
+          "signature": "def get_render_settings(\n    rop_path: str,\n    host: str = \"localhost\",\n    port: int = 18811,\n) -> Dict[str, Any]",
+          "parameters": "(\n    rop_path: str,\n    host: str = \"localhost\",\n    port: int = 18811,\n)",
+          "return_type": "Dict[str, Any]",
+          "docstring": "Get current render configuration for a ROP node.\n\n    Returns all relevant render settings based on the ROP type (Karma, Mantra, OpenGL).\n\n    Args:\n        rop_path: Full path to the ROP node (e.g., \"/out/karma1\")\n\n    Returns:\n        Dict with:\n        - status: \"success\" or \"error\"\n        - rop_path: Path to the ROP\n        - rop_type: Type of ROP (karma, ifd, opengl)\n        - settings: Dict of parameter names to current values\n        - schema: Dict describing available settings for this ROP type\n\n    Examples:\n        get_render_settings(\"/out/karma1\")\n        get_render_settings(\"/out/mantra1\")",
+          "decorators": [
+            "@handle_connection_errors(\"get_render_settings\")"
+          ],
+          "start_line": 782,
+          "end_line": 844,
+          "is_async": false
+        },
+        {
+          "name": "set_render_settings",
+          "signature": "def set_render_settings(\n    rop_path: str,\n    settings: Dict[str, Any],\n    host: str = \"localhost\",\n    port: int = 18811,\n) -> Dict[str, Any]",
+          "parameters": "(\n    rop_path: str,\n    settings: Dict[str, Any],\n    host: str = \"localhost\",\n    port: int = 18811,\n)",
+          "return_type": "Dict[str, Any]",
+          "docstring": "Modify render settings on a ROP node.\n\n    Args:\n        rop_path: Full path to the ROP node (e.g., \"/out/karma1\")\n        settings: Dict of parameter names to values to set\n\n    Returns:\n        Dict with:\n        - status: \"success\" or \"error\"\n        - rop_path: Path to the ROP\n        - updated: List of parameters that were updated\n        - failed: List of parameters that failed to update\n\n    Examples:\n        set_render_settings(\"/out/karma1\", {\"samplesperpixel\": 64, \"engine\": \"xpu\"})\n        set_render_settings(\"/out/mantra1\", {\"vm_samplesx\": 6, \"vm_samplesy\": 6})",
+          "decorators": [
+            "@handle_connection_errors(\"set_render_settings\")"
+          ],
+          "start_line": 848,
+          "end_line": 898,
+          "is_async": false
+        },
+        {
+          "name": "create_render_node",
+          "signature": "def create_render_node(\n    rop_type: str,\n    name: Optional[str] = None,\n    settings: Optional[Dict[str, Any]] = None,\n    host: str = \"localhost\",\n    port: int = 18811,\n) -> Dict[str, Any]",
+          "parameters": "(\n    rop_type: str,\n    name: Optional[str] = None,\n    settings: Optional[Dict[str, Any]] = None,\n    host: str = \"localhost\",\n    port: int = 18811,\n)",
+          "return_type": "Dict[str, Any]",
+          "docstring": "Create a new render node (ROP) with optional settings.\n\n    Args:\n        rop_type: Type of ROP to create. Common types:\n            - \"opengl\": Fast viewport render (recommended for previews)\n            - \"karma\": Karma renderer (CPU or GPU)\n            - \"ifd\": Mantra renderer\n        name: Optional name for the node (auto-generated if not provided)\n        settings: Optional dict of parameter values to set on creation\n\n    Returns:\n        Dict with:\n        - status: \"success\" or \"error\"\n        - rop_path: Path to the created ROP\n        - rop_type: Type of ROP created\n        - settings_applied: List of settings that were applied\n\n    Examples:\n        create_render_node(\"karma\", \"hero_render\", {\"engine\": \"xpu\", \"samplesperpixel\": 64})\n        create_render_node(\"opengl\", settings={\"antialias\": 8})\n        create_render_node(\"ifd\", \"final_render\")",
+          "decorators": [
+            "@handle_connection_errors(\"create_render_node\")"
+          ],
+          "start_line": 902,
+          "end_line": 969,
+          "is_async": false
+        }
+      ],
+      "parsedAt": 1769587469203
+    },
+    "houdini_mcp/tools/scene.py": {
+      "path": "houdini_mcp/tools/scene.py",
+      "contentHash": "11d2afbcf5f0e61b17ba475dff6d606a",
+      "mtime": 1766950910664.2424,
+      "functions": [
+        {
+          "name": "get_scene_info",
+          "signature": "def get_scene_info(host: str = \"localhost\", port: int = 18811) -> Dict[str, Any]",
+          "parameters": "(host: str = \"localhost\", port: int = 18811)",
+          "return_type": "Dict[str, Any]",
+          "docstring": "Get current Houdini scene information.\n\n    Returns:\n        Dict with scene information including file path, nodes, and Houdini version.",
+          "decorators": [
+            "@handle_connection_errors(\"get_scene_info\")"
+          ],
+          "start_line": 25,
+          "end_line": 48,
+          "is_async": false
+        },
+        {
+          "name": "save_scene",
+          "signature": "def save_scene(\n    file_path: Optional[str] = None, host: str = \"localhost\", port: int = 18811\n) -> Dict[str, Any]",
+          "parameters": "(\n    file_path: Optional[str] = None, host: str = \"localhost\", port: int = 18811\n)",
+          "return_type": "Dict[str, Any]",
+          "docstring": "Save the current Houdini scene.\n\n    Args:\n        file_path: Optional path to save to. If None, saves to current file.\n\n    Returns:\n        Dict with result.",
+          "decorators": [
+            "@handle_connection_errors(\"save_scene\")"
+          ],
+          "start_line": 52,
+          "end_line": 73,
+          "is_async": false
+        },
+        {
+          "name": "load_scene",
+          "signature": "def load_scene(file_path: str, host: str = \"localhost\", port: int = 18811) -> Dict[str, Any]",
+          "parameters": "(file_path: str, host: str = \"localhost\", port: int = 18811)",
+          "return_type": "Dict[str, Any]",
+          "docstring": "Load a Houdini scene file.\n\n    Args:\n        file_path: Path to the .hip file to load\n\n    Returns:\n        Dict with result.",
+          "decorators": [
+            "@handle_connection_errors(\"load_scene\")"
+          ],
+          "start_line": 77,
+          "end_line": 94,
+          "is_async": false
+        },
+        {
+          "name": "new_scene",
+          "signature": "def new_scene(host: str = \"localhost\", port: int = 18811) -> Dict[str, Any]",
+          "parameters": "(host: str = \"localhost\", port: int = 18811)",
+          "return_type": "Dict[str, Any]",
+          "docstring": "Create a new empty Houdini scene.\n\n    Returns:\n        Dict with result.",
+          "decorators": [
+            "@handle_connection_errors(\"new_scene\")"
+          ],
+          "start_line": 98,
+          "end_line": 112,
+          "is_async": false
+        },
+        {
+          "name": "serialize_scene",
+          "signature": "def serialize_scene(\n    root_path: str = \"/obj\",\n    include_params: bool = False,\n    max_depth: int = 10,\n    host: str = \"localhost\",\n    port: int = 18811,\n) -> Dict[str, Any]",
+          "parameters": "(\n    root_path: str = \"/obj\",\n    include_params: bool = False,\n    max_depth: int = 10,\n    host: str = \"localhost\",\n    port: int = 18811,\n)",
+          "return_type": "Dict[str, Any]",
+          "docstring": "Serialize the scene structure to a dictionary (useful for diffs/comparisons).\n\n    This is an enhanced version ported from the OpenWebUI pipeline.\n\n    Args:\n        root_path: Root node path to serialize from\n        include_params: Whether to include parameter values (can be verbose)\n        max_depth: Maximum recursion depth\n\n    Returns:\n        Dict with serialized scene structure.",
+          "decorators": [
+            "@handle_connection_errors(\"serialize_scene\")"
+          ],
+          "start_line": 116,
+          "end_line": 165,
+          "is_async": false
+        }
+      ],
+      "parsedAt": 1769587469204
+    },
+    "houdini_mcp/tools/summarization.py": {
+      "path": "houdini_mcp/tools/summarization.py",
+      "contentHash": "f69775b49d24075752c877e1c8442501",
+      "mtime": 1766918934242.9526,
+      "functions": [
+        {
+          "name": "estimate_tokens",
+          "signature": "def estimate_tokens(data: Any) -> int",
+          "parameters": "(data: Any)",
+          "return_type": "int",
+          "docstring": "Estimate token count for data.\n\n    Rough estimate: ~4 characters per token for JSON.",
+          "decorators": [],
+          "start_line": 30,
+          "end_line": 37,
+          "is_async": false
+        },
+        {
+          "name": "should_summarize",
+          "signature": "def should_summarize(data: Any, force: bool = False) -> bool",
+          "parameters": "(data: Any, force: bool = False)",
+          "return_type": "bool",
+          "docstring": "Determine if data should be summarized.\n\n    Args:\n        data: The data to potentially summarize\n        force: Force summarization regardless of size\n\n    Returns:\n        True if summarization should be applied",
+          "decorators": [],
+          "start_line": 40,
+          "end_line": 56,
+          "is_async": false
+        },
+        {
+          "name": "summarize_geometry",
+          "signature": "def summarize_geometry(geo_data: Dict[str, Any]) -> Dict[str, Any]",
+          "parameters": "(geo_data: Dict[str, Any])",
+          "return_type": "Dict[str, Any]",
+          "docstring": "Summarize geometry data for AI consumption.\n\n    Extracts key insights from geometry statistics:\n    - Topology overview (points, primitives, vertices)\n    - Bounding box analysis\n    - Key attributes\n    - Potential issues or notable characteristics\n\n    Args:\n        geo_data: Raw geometry summary data\n\n    Returns:\n        Original data with 'ai_summary' field added",
+          "decorators": [],
+          "start_line": 59,
+          "end_line": 98,
+          "is_async": true
+        },
+        {
+          "name": "summarize_errors",
+          "signature": "def summarize_errors(error_data: Dict[str, Any]) -> Dict[str, Any]",
+          "parameters": "(error_data: Dict[str, Any])",
+          "return_type": "Dict[str, Any]",
+          "docstring": "Summarize error/warning data with triage and prioritization.\n\n    Analyzes errors and provides:\n    - Error severity ranking\n    - Common patterns/root causes\n    - Suggested fix order\n    - Quick wins vs complex issues\n\n    Args:\n        error_data: Raw find_error_nodes output\n\n    Returns:\n        Original data with 'ai_summary' and 'prioritized_fixes' fields",
+          "decorators": [],
+          "start_line": 101,
+          "end_line": 145,
+          "is_async": true
+        },
+        {
+          "name": "summarize_scene",
+          "signature": "def summarize_scene(scene_data: Dict[str, Any]) -> Dict[str, Any]",
+          "parameters": "(scene_data: Dict[str, Any])",
+          "return_type": "Dict[str, Any]",
+          "docstring": "Summarize scene structure for understanding and optimization.\n\n    Analyzes scene hierarchy and provides:\n    - Network organization overview\n    - Complexity hotspots\n    - Optimization opportunities\n    - Recommended cleanup actions\n\n    Args:\n        scene_data: Raw serialize_scene output\n\n    Returns:\n        Original data with 'ai_summary' field",
+          "decorators": [],
+          "start_line": 148,
+          "end_line": 187,
+          "is_async": true
+        },
+        {
+          "name": "summarize_render_settings",
+          "signature": "def summarize_render_settings(render_data: Dict[str, Any]) -> Dict[str, Any]",
+          "parameters": "(render_data: Dict[str, Any])",
+          "return_type": "Dict[str, Any]",
+          "docstring": "Summarize render configuration for quality/performance analysis.\n\n    Analyzes render settings and provides:\n    - Quality vs performance tradeoffs\n    - Potential bottlenecks\n    - Optimization suggestions\n    - Comparison to common presets\n\n    Args:\n        render_data: Raw render settings output\n\n    Returns:\n        Original data with 'ai_summary' field",
+          "decorators": [],
+          "start_line": 190,
+          "end_line": 228,
+          "is_async": true
+        },
+        {
+          "name": "get_summarization_status",
+          "signature": "def get_summarization_status() -> Dict[str, Any]",
+          "parameters": "()",
+          "return_type": "Dict[str, Any]",
+          "docstring": "Get current summarization configuration status.\n\n    Returns:\n        Dict with configuration and health status",
+          "decorators": [],
+          "start_line": 279,
+          "end_line": 291,
+          "is_async": false
+        }
+      ],
+      "parsedAt": 1769587469204
+    },
+    "houdini_mcp/tools/wiring.py": {
+      "path": "houdini_mcp/tools/wiring.py",
+      "contentHash": "4644a77890891a5dd16828cff51592e9",
+      "mtime": 1766951862191.9653,
+      "functions": [
+        {
+          "name": "connect_nodes",
+          "signature": "def connect_nodes(\n    src_path: str,\n    dst_path: str,\n    dst_input_index: int = 0,\n    src_output_index: int = 0,\n    host: str = \"localhost\",\n    port: int = 18811,\n) -> Dict[str, Any]",
+          "parameters": "(\n    src_path: str,\n    dst_path: str,\n    dst_input_index: int = 0,\n    src_output_index: int = 0,\n    host: str = \"localhost\",\n    port: int = 18811,\n)",
+          "return_type": "Dict[str, Any]",
+          "docstring": "Wire output of source node to input of destination node.\n\n    Validates that node types are compatible (e.g., SOP->SOP, OBJ->OBJ) before connecting.\n    Automatically disconnects existing connection if the destination input is already wired.\n\n    Args:\n        src_path: Path to source node\n        dst_path: Path to destination node\n        dst_input_index: Input index on destination node (default: 0)\n        src_output_index: Output index on source node (default: 0)\n\n    Returns:\n        Dict with connection result.\n\n    Example:\n        connect_nodes(\"/obj/geo1/grid1\", \"/obj/geo1/noise1\")  # Connect grid -> noise\n        connect_nodes(\"/obj/geo1/grid1\", \"/obj/geo1/merge1\", dst_input_index=1)",
+          "decorators": [
+            "@handle_connection_errors(\"connect_nodes\")"
+          ],
+          "start_line": 19,
+          "end_line": 91,
+          "is_async": false
+        },
+        {
+          "name": "disconnect_node_input",
+          "signature": "def disconnect_node_input(\n    node_path: str, input_index: int = 0, host: str = \"localhost\", port: int = 18811\n) -> Dict[str, Any]",
+          "parameters": "(\n    node_path: str, input_index: int = 0, host: str = \"localhost\", port: int = 18811\n)",
+          "return_type": "Dict[str, Any]",
+          "docstring": "Break/disconnect an input connection on a node.\n\n    Args:\n        node_path: Path to the node\n        input_index: Input index to disconnect (default: 0)\n\n    Returns:\n        Dict with disconnection result.\n\n    Example:\n        disconnect_node_input(\"/obj/geo1/noise1\")  # Disconnect first input\n        disconnect_node_input(\"/obj/geo1/merge1\", input_index=1)  # Disconnect second input",
+          "decorators": [
+            "@handle_connection_errors(\"disconnect_node_input\")"
+          ],
+          "start_line": 95,
+          "end_line": 150,
+          "is_async": false
+        },
+        {
+          "name": "set_node_flags",
+          "signature": "def set_node_flags(\n    node_path: str,\n    display: Optional[bool] = None,\n    render: Optional[bool] = None,\n    bypass: Optional[bool] = None,\n    host: str = \"localhost\",\n    port: int = 18811,\n) -> Dict[str, Any]",
+          "parameters": "(\n    node_path: str,\n    display: Optional[bool] = None,\n    render: Optional[bool] = None,\n    bypass: Optional[bool] = None,\n    host: str = \"localhost\",\n    port: int = 18811,\n)",
+          "return_type": "Dict[str, Any]",
+          "docstring": "Set display, render, and bypass flags on a node.\n\n    Only non-None values are set, allowing partial flag updates.\n    Checks for flag availability using hasattr() before setting.\n\n    Args:\n        node_path: Path to the node\n        display: Display flag value (True/False) or None to skip\n        render: Render flag value (True/False) or None to skip\n        bypass: Bypass flag value (True/False) or None to skip\n\n    Returns:\n        Dict with result and flags that were set.\n\n    Example:\n        set_node_flags(\"/obj/geo1/sphere1\", display=True, render=True)\n        set_node_flags(\"/obj/geo1/noise1\", bypass=True)",
+          "decorators": [
+            "@handle_connection_errors(\"set_node_flags\")"
+          ],
+          "start_line": 154,
+          "end_line": 233,
+          "is_async": false
+        },
+        {
+          "name": "reorder_inputs",
+          "signature": "def reorder_inputs(\n    node_path: str, new_order: List[int], host: str = \"localhost\", port: int = 18811\n) -> Dict[str, Any]",
+          "parameters": "(\n    node_path: str, new_order: List[int], host: str = \"localhost\", port: int = 18811\n)",
+          "return_type": "Dict[str, Any]",
+          "docstring": "Reorder inputs on a node (useful for merge nodes).\n\n    Stores existing connections, disconnects all, then reconnects in new order.\n    new_order specifies the new position for each input: [1, 0, 2] swaps first two inputs.\n\n    Args:\n        node_path: Path to the node\n        new_order: List specifying new input order (e.g., [1, 0, 2] to swap first two)\n\n    Returns:\n        Dict with reordering result.\n\n    Example:\n        # Swap first two inputs on a merge node\n        reorder_inputs(\"/obj/geo1/merge1\", [1, 0, 2, 3])\n\n        # Reverse three inputs\n        reorder_inputs(\"/obj/geo1/merge1\", [2, 1, 0])",
+          "decorators": [
+            "@handle_connection_errors(\"reorder_inputs\")"
+          ],
+          "start_line": 237,
+          "end_line": 334,
+          "is_async": false
+        }
+      ],
+      "parsedAt": 1769587469204
+    },
+    "houdini_plugin/python/houdini_mcp_plugin/connection.py": {
+      "path": "houdini_plugin/python/houdini_mcp_plugin/connection.py",
+      "contentHash": "0a78ffab553744c1eb9f576061427f2a",
+      "mtime": 1766918069209.3804,
+      "functions": [
+        {
+          "name": "get_connection",
+          "signature": "def get_connection() -> HoudiniConnectionProtocol",
+          "parameters": "()",
+          "return_type": "HoudiniConnectionProtocol",
+          "docstring": "Get the current Houdini connection.\n\n    Returns the global connection instance, creating it if necessary.\n    In stdio mode, this returns a LocalHoudiniConnection.",
+          "decorators": [],
+          "start_line": 104,
+          "end_line": 113,
+          "is_async": false
+        },
+        {
+          "name": "set_connection",
+          "signature": "def set_connection(conn: HoudiniConnectionProtocol) -> None",
+          "parameters": "(conn: HoudiniConnectionProtocol)",
+          "return_type": "None",
+          "docstring": "Set the global connection instance.\n\n    This allows switching between local and remote connections.",
+          "decorators": [],
+          "start_line": 116,
+          "end_line": 122,
+          "is_async": false
+        },
+        {
+          "name": "reset_connection",
+          "signature": "def reset_connection() -> None",
+          "parameters": "()",
+          "return_type": "None",
+          "docstring": "Reset the global connection.\n\n    Clears the connection so the next get_connection() call\n    will create a fresh connection.",
+          "decorators": [],
+          "start_line": 125,
+          "end_line": 132,
+          "is_async": false
+        }
+      ],
+      "parsedAt": 1769587469204
+    },
+    "houdini_plugin/python/houdini_mcp_plugin/remote.py": {
+      "path": "houdini_plugin/python/houdini_mcp_plugin/remote.py",
+      "contentHash": "3869ef001bf0d845de14d7b9d801bada",
+      "mtime": 1766918340872.155,
+      "functions": [
+        {
+          "name": "start_hrpyc_server",
+          "signature": "def start_hrpyc_server(port: int = 18811) -> dict",
+          "parameters": "(port: int = 18811)",
+          "return_type": "dict",
+          "docstring": "Start the hrpyc server to allow remote connections.\n\n    This enables external MCP servers (like the Docker-based server) to\n    connect to this Houdini instance and execute commands.\n\n    Args:\n        port: Port to listen on (default: 18811)\n\n    Returns:\n        Dict with status and connection info",
+          "decorators": [],
+          "start_line": 17,
+          "end_line": 77,
+          "is_async": false
+        },
+        {
+          "name": "stop_hrpyc_server",
+          "signature": "def stop_hrpyc_server() -> dict",
+          "parameters": "()",
+          "return_type": "dict",
+          "docstring": "Stop the hrpyc server.\n\n    Returns:\n        Dict with status",
+          "decorators": [],
+          "start_line": 80,
+          "end_line": 112,
+          "is_async": false
+        },
+        {
+          "name": "is_hrpyc_running",
+          "signature": "def is_hrpyc_running() -> bool",
+          "parameters": "()",
+          "return_type": "bool",
+          "docstring": "Check if hrpyc server is running.\n\n    Returns:\n        True if running, False otherwise",
+          "decorators": [],
+          "start_line": 115,
+          "end_line": 121,
+          "is_async": false
+        },
+        {
+          "name": "get_hrpyc_status",
+          "signature": "def get_hrpyc_status() -> dict",
+          "parameters": "()",
+          "return_type": "dict",
+          "docstring": "Get hrpyc server status.\n\n    Returns:\n        Dict with status information",
+          "decorators": [],
+          "start_line": 124,
+          "end_line": 152,
+          "is_async": false
+        }
+      ],
+      "parsedAt": 1769587469204
+    },
+    "houdini_plugin/python/houdini_mcp_plugin/server.py": {
+      "path": "houdini_plugin/python/houdini_mcp_plugin/server.py",
+      "contentHash": "6f4230095ebb05c9de3b934e5c3c3364",
+      "mtime": 1766918119402.632,
+      "functions": [
+        {
+          "name": "start_server",
+          "signature": "def start_server(use_thread: bool = True) -> bool",
+          "parameters": "(use_thread: bool = True)",
+          "return_type": "bool",
+          "docstring": "Start the MCP server.\n\n    Args:\n        use_thread: If True, run in a background thread. If False, block.\n\n    Returns:\n        True if server started successfully, False otherwise.",
+          "decorators": [],
+          "start_line": 258,
+          "end_line": 301,
+          "is_async": false
+        },
+        {
+          "name": "stop_server",
+          "signature": "def stop_server() -> bool",
+          "parameters": "()",
+          "return_type": "bool",
+          "docstring": "Stop the MCP server.\n\n    Returns:\n        True if server was stopped, False if it wasn't running.",
+          "decorators": [],
+          "start_line": 304,
+          "end_line": 324,
+          "is_async": false
+        },
+        {
+          "name": "is_server_running",
+          "signature": "def is_server_running() -> bool",
+          "parameters": "()",
+          "return_type": "bool",
+          "docstring": "Check if the MCP server is running.",
+          "decorators": [],
+          "start_line": 327,
+          "end_line": 329,
+          "is_async": false
+        }
+      ],
+      "parsedAt": 1769587469204
+    },
+    "tests/conftest.py": {
+      "path": "tests/conftest.py",
+      "contentHash": "475034d8d8bd0e9ccd8a87a553e50179",
+      "mtime": 1766896881596.007,
+      "functions": [
+        {
+          "name": "mock_hou",
+          "signature": "def mock_hou() -> MockHouModule",
+          "parameters": "()",
+          "return_type": "MockHouModule",
+          "docstring": "Create a mock hou module.",
+          "decorators": [
+            "@pytest.fixture"
+          ],
+          "start_line": 493,
+          "end_line": 495,
+          "is_async": false
+        },
+        {
+          "name": "mock_connection",
+          "signature": "def mock_connection(mock_hou: MockHouModule) -> Generator[MockHouModule, None, None]",
+          "parameters": "(mock_hou: MockHouModule)",
+          "return_type": "Generator[MockHouModule, None, None]",
+          "docstring": "Patch the connection module to use mock hou.",
+          "decorators": [
+            "@pytest.fixture"
+          ],
+          "start_line": 499,
+          "end_line": 506,
+          "is_async": false
+        },
+        {
+          "name": "mock_rpyc",
+          "signature": "def mock_rpyc(mock_hou: MockHouModule) -> Generator[MockHouModule, None, None]",
+          "parameters": "(mock_hou: MockHouModule)",
+          "return_type": "Generator[MockHouModule, None, None]",
+          "docstring": "Patch rpyc.classic.connect to return mock connection.",
+          "decorators": [
+            "@pytest.fixture"
+          ],
+          "start_line": 510,
+          "end_line": 516,
+          "is_async": false
+        },
+        {
+          "name": "reset_connection_state",
+          "signature": "def reset_connection_state() -> Generator[None, None, None]",
+          "parameters": "()",
+          "return_type": "Generator[None, None, None]",
+          "docstring": "Reset global connection state before and after test.",
+          "decorators": [
+            "@pytest.fixture"
+          ],
+          "start_line": 520,
+          "end_line": 530,
+          "is_async": false
+        },
+        {
+          "name": "mock_rpyc_with_reset",
+          "signature": "def mock_rpyc_with_reset(\n    mock_hou: MockHouModule, reset_connection_state: None\n) -> Generator[MockHouModule, None, None]",
+          "parameters": "(\n    mock_hou: MockHouModule, reset_connection_state: None\n)",
+          "return_type": "Generator[MockHouModule, None, None]",
+          "docstring": "Patch rpyc and reset connection state.",
+          "decorators": [
+            "@pytest.fixture"
+          ],
+          "start_line": 534,
+          "end_line": 542,
+          "is_async": false
+        }
+      ],
+      "parsedAt": 1769587469204
+    },
+    "tests/integration/test_live_houdini.py": {
+      "path": "tests/integration/test_live_houdini.py",
+      "contentHash": "36014aef2624651340d972c707646d71",
+      "mtime": 1766123780672.0835,
+      "functions": [
+        {
+          "name": "test_check_connection_round_trip",
+          "signature": "def test_check_connection_round_trip() -> None",
+          "parameters": "()",
+          "return_type": "None",
+          "docstring": null,
+          "decorators": [
+            "@pytest.mark.integration"
+          ],
+          "start_line": 43,
+          "end_line": 48,
+          "is_async": false
+        },
+        {
+          "name": "test_create_and_delete_node",
+          "signature": "def test_create_and_delete_node() -> None",
+          "parameters": "()",
+          "return_type": "None",
+          "docstring": null,
+          "decorators": [
+            "@pytest.mark.integration"
+          ],
+          "start_line": 52,
+          "end_line": 69,
+          "is_async": false
+        },
+        {
+          "name": "test_parameter_schema_recurses_into_folders",
+          "signature": "def test_parameter_schema_recurses_into_folders() -> None",
+          "parameters": "()",
+          "return_type": "None",
+          "docstring": null,
+          "decorators": [
+            "@pytest.mark.integration"
+          ],
+          "start_line": 73,
+          "end_line": 98,
+          "is_async": false
+        },
+        {
+          "name": "test_get_node_info_serializes_ramp_parameter",
+          "signature": "def test_get_node_info_serializes_ramp_parameter() -> None",
+          "parameters": "()",
+          "return_type": "None",
+          "docstring": null,
+          "decorators": [
+            "@pytest.mark.integration"
+          ],
+          "start_line": 102,
+          "end_line": 128,
+          "is_async": false
+        }
+      ],
+      "parsedAt": 1769587469205
+    },
+    "tests/integration/test_workflow_examples.py": {
+      "path": "tests/integration/test_workflow_examples.py",
+      "contentHash": "34a14ae842192e178d75cb19d35801d9",
+      "mtime": 1766123439023.3723,
+      "functions": [
+        {
+          "name": "bled() -> bool:\n    ",
+          "signature": "def bled() -> bool:\n    re ->  os.",
+          "parameters": "re",
+          "return_type": " os.",
+          "docstring": null,
+          "decorators": [],
+          "start_line": 29,
+          "end_line": 30,
+          "is_async": false
+        },
+        {
+          "name": ") -> tuple[str,",
+          "signature": "def ) -> tuple[str, i -> \n    host = os.",
+          "parameters": " i",
+          "return_type": "\n    host = os.",
+          "docstring": null,
+          "decorators": [],
+          "start_line": 33,
+          "end_line": 40,
+          "is_async": false
+        },
+        {
+          "name": "> None:\n    ",
+          "signature": "def > None:\n    ho -> port",
+          "parameters": "ho",
+          "return_type": "port",
+          "docstring": null,
+          "decorators": [],
+          "start_line": 49,
+          "end_line": 52,
+          "is_async": false
+        },
+        {
+          "name": ") -> None:\n    ",
+          "signature": "def ) -> None:\n    co -> tion",
+          "parameters": "co",
+          "return_type": "tion",
+          "docstring": null,
+          "decorators": [],
+          "start_line": 55,
+          "end_line": 56,
+          "is_async": false
+        }
+      ],
+      "parsedAt": 1769587469205
+    },
+    "tests/test_parameter_schema.py": {
+      "path": "tests/test_parameter_schema.py",
+      "contentHash": "3ae330a2ddad8c8a0b502f1f315f9acd",
+      "mtime": 1766116707680.6064,
+      "functions": [
+        {
+          "name": "create_mock_hou_with_parm_types",
+          "signature": "def create_mock_hou_with_parm_types()",
+          "parameters": "()",
+          "return_type": null,
+          "docstring": "Create a mock hou module with parmTemplateType enum.",
+          "decorators": [],
+          "start_line": 68,
+          "end_line": 89,
+          "is_async": false
+        }
+      ],
+      "parsedAt": 1769587469205
+    },
+    "tests/test_parameter_schema_integration.py": {
+      "path": "tests/test_parameter_schema_integration.py",
+      "contentHash": "1c8132be499088792ba975762cdeedac",
+      "mtime": 1766116834595.8708,
+      "functions": [
+        {
+          "name": "test_get_parameter_schema_sphere_real_world",
+          "signature": "def test_get_parameter_schema_sphere_real_world()",
+          "parameters": "()",
+          "return_type": null,
+          "docstring": "Integration test demonstrating get_parameter_schema with a sphere node.\n    \n    This simulates a real-world scenario where an agent wants to understand\n    what parameters are available on a sphere node before modifying them.",
+          "decorators": [],
+          "start_line": 7,
+          "end_line": 177,
+          "is_async": false
+        },
+        {
+          "name": "et_parameter_schema_specific_parameter():\n  ",
+          "signature": "def et_parameter_schema_specific_parameter():\n    ",
+          "parameters": "  ",
+          "return_type": null,
+          "docstring": "t getting schema for a specific parameter only.\"\"\"\n    f",
+          "decorators": [],
+          "start_line": 180,
+          "end_line": 217,
+          "is_async": false
+        }
+      ],
+      "parsedAt": 1769587469205
+    }
+  }
+}
