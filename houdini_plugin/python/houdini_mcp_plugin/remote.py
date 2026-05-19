@@ -5,6 +5,7 @@ to connect to Houdini via RPyC for remote control.
 """
 
 import logging
+import threading
 from typing import Any, Optional
 
 logger = logging.getLogger("houdini_mcp_plugin.remote")
@@ -38,8 +39,16 @@ def start_hrpyc_server(port: int = 18811) -> dict:
     try:
         import hrpyc
 
-        # Start the hrpyc server
-        _hrpyc_server = hrpyc.start_server(port=port)
+        _hrpyc_server = hrpyc.ThreadedServer(
+            hrpyc.SlaveService,
+            hostname="0.0.0.0",
+            port=port,
+            reuse_addr=True,
+            auto_register=False,
+        )
+        _hrpyc_server.logger.quiet = True
+        thread = threading.Thread(target=_hrpyc_server.start, daemon=True)
+        thread.start()
         _hrpyc_port = port
 
         logger.info(f"Started hrpyc server on port {port}")
@@ -92,10 +101,14 @@ def stop_hrpyc_server() -> dict:
         }
 
     try:
-        import hrpyc
+        close = getattr(_hrpyc_server, "close", None)
+        if close is None:
+            return {
+                "status": "error",
+                "message": "hrpyc server object cannot be stopped; restart Houdini to clear this listener.",
+            }
 
-        # hrpyc.stop_server() stops the server
-        hrpyc.stop_server()
+        close()
         _hrpyc_server = None
 
         logger.info("Stopped hrpyc server")
