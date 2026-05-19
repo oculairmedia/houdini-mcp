@@ -97,7 +97,7 @@ Add the server to `%USERPROFILE%\.codex\config.toml`:
 ```toml
 [mcp_servers.houdini]
 command = 'C:\Users\<user>\AppData\Local\Programs\Python\Python314\python.exe'
-args = ['C:\Users\<user>\Documents\Codex\2026-05-19\new-chat\run_houdini_mcp.py']
+args = ['C:\Users\<user>\Documents\Codex\run_houdini_mcp.py']
 ```
 
 Restart Codex Desktop after editing the config.
