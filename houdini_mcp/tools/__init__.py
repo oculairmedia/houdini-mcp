@@ -61,6 +61,7 @@ from ._common import (
     _add_response_metadata,
     _estimate_response_size,
     _detect_dangerous_code,
+    _detect_heavy_geometry_code,
     _truncate_output,
     _node_to_dict,
     _get_scene_diff,
@@ -117,6 +118,7 @@ __all__ = [
     "create_network_box",
     # Code execution
     "execute_code",
+    "_detect_heavy_geometry_code",
     # Help/documentation
     "get_houdini_help",
     # Cache management

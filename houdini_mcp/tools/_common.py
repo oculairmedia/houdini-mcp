@@ -40,7 +40,9 @@ __all__ = [
     "handle_connection_errors",  # Decorator for consistent error handling
     # Code safety
     "DANGEROUS_PATTERNS",
+    "HEAVY_GEOMETRY_PATTERNS",
     "_detect_dangerous_code",
+    "_detect_heavy_geometry_code",
     # Output utilities
     "_truncate_output",
     # Response size utilities
@@ -243,6 +245,34 @@ DANGEROUS_PATTERNS: List[Tuple[str, str]] = [
 ]
 
 
+HEAVY_GEOMETRY_PATTERNS: List[Tuple[str, str]] = [
+    (
+        r"\.geometry\s*\(",
+        "node.geometry() - can force a heavy SOP cook and destabilize Houdini",
+    ),
+    (
+        r"\.points\s*\(",
+        "geo.points() - can materialize/iterate large point arrays",
+    ),
+    (
+        r"\.prims\s*\(",
+        "geo.prims() - can materialize/iterate large primitive arrays",
+    ),
+    (
+        r"\.vertices\s*\(",
+        "geo.vertices() - can materialize/iterate large vertex arrays",
+    ),
+    (
+        r"\.iterPoints\s*\(",
+        "geo.iterPoints() - can iterate large point arrays",
+    ),
+    (
+        r"\.iterPrims\s*\(",
+        "geo.iterPrims() - can iterate large primitive arrays",
+    ),
+]
+
+
 def _detect_dangerous_code(code: str) -> List[str]:
     """
     Scan code for potentially dangerous patterns.
@@ -255,6 +285,21 @@ def _detect_dangerous_code(code: str) -> List[str]:
     """
     detected: List[str] = []
     for pattern, description in DANGEROUS_PATTERNS:
+        if re.search(pattern, code):
+            detected.append(description)
+    return detected
+
+
+def _detect_heavy_geometry_code(code: str) -> List[str]:
+    """
+    Scan code for geometry access patterns that can cook or iterate very large SOP data.
+
+    These are not inherently destructive, but in production Houdini scenes they can
+    block the UI, drop the RPC connection, or crash Houdini. Prefer dedicated
+    summary tools that run bounded analysis on the Houdini side.
+    """
+    detected: List[str] = []
+    for pattern, description in HEAVY_GEOMETRY_PATTERNS:
         if re.search(pattern, code):
             detected.append(description)
     return detected

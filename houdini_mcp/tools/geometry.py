@@ -224,6 +224,7 @@ print(json.dumps(result))
         capture_diff=False,
         max_stdout_size=500000,  # Allow larger output for geo data
         timeout=30,
+        allow_heavy_geometry=True,
         host=host,
         port=port,
     )
