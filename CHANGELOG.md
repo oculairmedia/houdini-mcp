@@ -5,6 +5,33 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- **Heavy geometry guard**: `execute_code` now detects and blocks direct SOP
+  geometry access (`node.geometry()`, `geo.points()`, `geo.prims()`,
+  `geo.vertices()`, `geo.iterPoints()`, `geo.iterPrims()`) which can stall the
+  UI or drop the hrpyc connection on large scenes. Pass `allow_heavy_geometry=True`
+  to opt in, or prefer `get_geo_summary()` for bounded inspection.
+- **Windows/Codex Desktop setup guide**: `docs/codex-windows-setup.md` documents
+  running the stdio MCP server outside Houdini against an `hrpyc` listener.
+
+### Changed
+
+- **BREAKING (default behavior)**: `execute_code` rejects heavy geometry access by
+  default (see above). Existing callers that rely on raw geometry access must now
+  pass `allow_heavy_geometry=True`.
+- **stdio transport**: The stdio server no longer passes `host`/`port` and
+  suppresses the FastMCP startup banner so stdout stays JSON-RPC clean.
+
+### Fixed
+
+- **hrpyc remote stop**: The Houdini plugin now starts the listener via
+  `hrpyc.ThreadedServer` and stops it through the server object's `close()`,
+  replacing the missing `hrpyc.stop_server()` API. The bind host defaults to
+  `127.0.0.1` and is configurable via `HOUDINI_RPC_BIND_HOST`.
+
 ## [1.0.0] - 2025-12-28
 
 ### Added

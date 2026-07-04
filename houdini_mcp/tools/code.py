@@ -37,9 +37,9 @@ def execute_code(
     max_diff_nodes: int = 1000,
     timeout: int = 30,
     allow_dangerous: bool = False,
-    allow_heavy_geometry: bool = False,
     host: str = "localhost",
     port: int = 18811,
+    allow_heavy_geometry: bool = False,
 ) -> Dict[str, Any]:
     """
     Execute Python code in Houdini with optional scene diff tracking and safety rails.

@@ -204,17 +204,28 @@ class TestExecuteCode:
         assert "get_geo_summary" in result["hint"]
 
     def test_execute_heavy_geometry_allowed(self, mock_connection):
-        """Test direct SOP geometry access can be explicitly allowed."""
+        """Test direct SOP geometry access can be explicitly allowed and actually runs.
+
+        The geometry() call is reachable (not guarded behind a dead branch) so this
+        confirms the override lets the heavy-geometry code path execute, not just
+        that the pre-scan is bypassed.
+        """
         from houdini_mcp.tools import execute_code
 
+        code = (
+            "class _FakeSop:\n"
+            "    def geometry(self):\n"
+            "        return 'geo-data'\n"
+            "print(_FakeSop().geometry())\n"
+        )
         result = execute_code(
-            "if False:\n    hou.node('/obj/geo1/out').geometry()\nprint('geometry override ok')",
+            code,
             allow_heavy_geometry=True,
             host="localhost",
             port=18811,
         )
         assert result["status"] == "success"
-        assert "geometry override ok" in result["stdout"]
+        assert "geo-data" in result["stdout"]
 
     def test_execute_simple_print(self, mock_connection):
         """Test executing simple print statement."""
