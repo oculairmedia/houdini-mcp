@@ -6,11 +6,11 @@ including point/primitive counts, attributes, groups, and sampling.
 
 import json
 import logging
-from typing import Any, Dict
+from typing import Any
 
 from ._common import (
-    handle_connection_errors,
     _add_response_metadata,
+    handle_connection_errors,
 )
 
 logger = logging.getLogger("houdini_mcp.tools.geometry")
@@ -24,7 +24,7 @@ def get_geo_summary(
     include_groups: bool = True,
     host: str = "localhost",
     port: int = 18811,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Get geometry statistics and metadata for verification.
 
@@ -132,7 +132,7 @@ else:
         # Attributes
         if include_attributes:
             attributes = {{"point": [], "primitive": [], "vertex": [], "detail": []}}
-            
+
             for attrib in geo.pointAttribs():
                 try:
                     dt = attrib.dataType()
@@ -140,7 +140,7 @@ else:
                     attributes["point"].append({{"name": attrib.name(), "type": dt_name.lower(), "size": attrib.size()}})
                 except:
                     pass
-                    
+
             for attrib in geo.primAttribs():
                 try:
                     dt = attrib.dataType()
@@ -148,7 +148,7 @@ else:
                     attributes["primitive"].append({{"name": attrib.name(), "type": dt_name.lower(), "size": attrib.size()}})
                 except:
                     pass
-                    
+
             for attrib in geo.vertexAttribs():
                 try:
                     dt = attrib.dataType()
@@ -156,7 +156,7 @@ else:
                     attributes["vertex"].append({{"name": attrib.name(), "type": dt_name.lower(), "size": attrib.size()}})
                 except:
                     pass
-                    
+
             for attrib in geo.globalAttribs():
                 try:
                     dt = attrib.dataType()
@@ -164,7 +164,7 @@ else:
                     attributes["detail"].append({{"name": attrib.name(), "type": dt_name.lower(), "size": attrib.size()}})
                 except:
                     pass
-                    
+
             result["attributes"] = attributes
 
         # Groups
@@ -187,13 +187,13 @@ else:
         if max_sample_points > 0 and point_count > 0:
             if point_count > 1000000:
                 result["warning"] = f"Geometry has {{point_count}} points (>1M). Sampling limited."
-            
+
             sample_count = min(max_sample_points, point_count)
             sample_points = []
-            
+
             # Get point attribute names
             point_attrib_names = [a.name() for a in geo.pointAttribs()]
-            
+
             # Sample using efficient access
             for i in range(sample_count):
                 pt = geo.point(i)
@@ -211,7 +211,7 @@ else:
                     except:
                         pass
                 sample_points.append(point_data)
-            
+
             result["sample_points"] = sample_points
 
 # Return JSON string

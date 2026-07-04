@@ -5,12 +5,12 @@ materials and shaders in Houdini.
 """
 
 import logging
-from typing import Any, Dict, Optional
+from typing import Any
 
 from ._common import (
+    _add_response_metadata,
     ensure_connected,
     handle_connection_errors,
-    _add_response_metadata,
 )
 
 logger = logging.getLogger("houdini_mcp.tools.materials")
@@ -19,12 +19,12 @@ logger = logging.getLogger("houdini_mcp.tools.materials")
 @handle_connection_errors("create_material")
 def create_material(
     material_type: str = "principledshader",
-    name: Optional[str] = None,
+    name: str | None = None,
     parent_path: str = "/mat",
-    parameters: Optional[Dict[str, Any]] = None,
+    parameters: dict[str, Any] | None = None,
     host: str = "localhost",
     port: int = 18811,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Create a new material/shader node.
 
@@ -133,7 +133,7 @@ def assign_material(
     group: str = "",
     host: str = "localhost",
     port: int = 18811,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Assign a material to geometry.
 
@@ -251,7 +251,7 @@ def get_material_info(
     material_path: str,
     host: str = "localhost",
     port: int = 18811,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Get detailed information about a material node.
 
@@ -280,7 +280,7 @@ def get_material_info(
         return {"status": "error", "message": f"Material not found: {material_path}"}
 
     # Get basic info
-    result: Dict[str, Any] = {
+    result: dict[str, Any] = {
         "status": "success",
         "material_path": mat_node.path(),
         "material_name": mat_node.name(),
@@ -344,12 +344,15 @@ def get_material_info(
                 value = parm.eval()
                 result["parameters"][parm_name] = value
                 # Check if it's a texture path
-                if isinstance(value, str) and value:
-                    if any(
+                if (
+                    isinstance(value, str)
+                    and value
+                    and any(
                         ext in value.lower()
                         for ext in [".jpg", ".png", ".exr", ".hdr", ".tif", ".tex"]
-                    ):
-                        textures.append({"parameter": parm_name, "path": value})
+                    )
+                ):
+                    textures.append({"parameter": parm_name, "path": value})
             else:
                 # Try as tuple
                 parm_tuple = mat_node.parmTuple(parm_name)

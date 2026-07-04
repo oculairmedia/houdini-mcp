@@ -8,16 +8,16 @@ import base64
 import logging
 import math
 import traceback
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from ._common import (
-    ensure_connected,
-    HoudiniConnectionError,
     CONNECTION_ERRORS,
+    HoudiniConnectionError,
     _handle_connection_error,
+    ensure_connected,
     get_connection,
-    validate_resolution,
     handle_connection_errors,
+    validate_resolution,
 )
 
 logger = logging.getLogger("houdini_mcp.tools.rendering")
@@ -35,10 +35,10 @@ def _get_remote_modules():
 
 
 def render_viewport(
-    camera_position: Optional[List[float]] = None,
-    camera_rotation: Optional[List[float]] = None,
-    look_at: Optional[str] = None,
-    resolution: Optional[List[int]] = None,
+    camera_position: list[float] | None = None,
+    camera_rotation: list[float] | None = None,
+    look_at: str | None = None,
+    resolution: list[int] | None = None,
     renderer: str = "opengl",
     output_format: str = "png",
     auto_frame: bool = True,
@@ -46,7 +46,7 @@ def render_viewport(
     karma_engine: str = "cpu",
     host: str = "localhost",
     port: int = 18811,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Render the viewport and return the image as base64.
 
@@ -334,7 +334,7 @@ def render_viewport(
 
 
 def render_quad_view(
-    resolution: Optional[List[int]] = None,
+    resolution: list[int] | None = None,
     renderer: str = "opengl",
     output_format: str = "png",
     orthographic: bool = True,
@@ -342,7 +342,7 @@ def render_quad_view(
     karma_engine: str = "cpu",
     host: str = "localhost",
     port: int = 18811,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Render 4 canonical views (Front, Left, Top, Perspective) in one call.
 
@@ -721,7 +721,7 @@ RENDER_SETTINGS_SCHEMA = {
 def list_render_nodes(
     host: str = "localhost",
     port: int = 18811,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     List all render nodes (ROPs) in the /out context.
 
@@ -783,7 +783,7 @@ def get_render_settings(
     rop_path: str,
     host: str = "localhost",
     port: int = 18811,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Get current render configuration for a ROP node.
 
@@ -847,10 +847,10 @@ def get_render_settings(
 @handle_connection_errors("set_render_settings")
 def set_render_settings(
     rop_path: str,
-    settings: Dict[str, Any],
+    settings: dict[str, Any],
     host: str = "localhost",
     port: int = 18811,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Modify render settings on a ROP node.
 
@@ -901,11 +901,11 @@ def set_render_settings(
 @handle_connection_errors("create_render_node")
 def create_render_node(
     rop_type: str,
-    name: Optional[str] = None,
-    settings: Optional[Dict[str, Any]] = None,
+    name: str | None = None,
+    settings: dict[str, Any] | None = None,
     host: str = "localhost",
     port: int = 18811,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Create a new render node (ROP) with optional settings.
 
@@ -936,10 +936,7 @@ def create_render_node(
         return {"status": "error", "message": "Cannot find /out context"}
 
     # Create the node
-    if name:
-        node = out_context.createNode(rop_type, name)
-    else:
-        node = out_context.createNode(rop_type)
+    node = out_context.createNode(rop_type, name) if name else out_context.createNode(rop_type)
 
     if node is None:
         return {

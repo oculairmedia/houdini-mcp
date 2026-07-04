@@ -5,12 +5,12 @@ including parameter schema introspection.
 """
 
 import logging
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from ._common import (
+    _add_response_metadata,
     ensure_connected,
     handle_connection_errors,
-    _add_response_metadata,
 )
 
 logger = logging.getLogger("houdini_mcp.tools.parameters")
@@ -19,7 +19,7 @@ logger = logging.getLogger("houdini_mcp.tools.parameters")
 @handle_connection_errors("set_parameter")
 def set_parameter(
     node_path: str, param_name: str, value: Any, host: str = "localhost", port: int = 18811
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Set a parameter value on a node.
 
@@ -68,11 +68,11 @@ def set_parameter(
 @handle_connection_errors("get_parameter_schema")
 def get_parameter_schema(
     node_path: str,
-    parm_name: Optional[str] = None,
+    parm_name: str | None = None,
     max_parms: int = 100,
     host: str = "localhost",
     port: int = 18811,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Get parameter metadata/schema for intelligent parameter setting.
 
@@ -142,7 +142,7 @@ def get_parameter_schema(
     if node is None:
         return {"status": "error", "message": f"Node not found: {node_path}"}
 
-    parameters: List[Dict[str, Any]] = []
+    parameters: list[dict[str, Any]] = []
 
     # Get parameter templates - either specific one or all
     if parm_name is not None:
@@ -220,7 +220,7 @@ def get_parameter_schema(
 
 def _extract_parameter_info(
     hou: Any, node: Any, parm_template: Any, json_safe_fn: Any
-) -> Optional[Dict[str, Any]]:
+) -> dict[str, Any] | None:
     """
     Extract parameter information from a parameter template.
 
@@ -254,7 +254,7 @@ def _extract_parameter_info(
     param_label = parm_template.label()
 
     # Initialize param info dict
-    param_info: Dict[str, Any] = {"name": param_name, "label": param_label}
+    param_info: dict[str, Any] = {"name": param_name, "label": param_label}
 
     # Determine if this is a tuple/vector parameter
     num_components = 1

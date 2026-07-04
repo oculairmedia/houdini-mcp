@@ -9,12 +9,12 @@ import os
 import socket
 import threading
 import time
-from typing import Any, Optional
+from typing import Any
 
 logger = logging.getLogger("houdini_mcp_plugin.remote")
 
 # Global state for remote mode
-_hrpyc_server: Optional[Any] = None
+_hrpyc_server: Any | None = None
 _hrpyc_port: int = 18811
 _hrpyc_host: str = "127.0.0.1"
 

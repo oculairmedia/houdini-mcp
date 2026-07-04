@@ -6,16 +6,15 @@ Note: We use rpyc.classic directly instead of hrpyc because:
 3. IMPORTANT: rpyc must be version 5.x (6.x has protocol incompatibility)
 """
 
+import concurrent.futures
 import logging
 import random
 import time
-import threading
-import concurrent.futures
-from typing import Optional, Any, Tuple, Dict, Callable, TypeVar, Type
+from collections.abc import Callable
 from functools import wraps
+from typing import Any, TypeVar
 
 import rpyc
-from rpyc.utils.classic import DEFAULT_SERVER_PORT
 
 logger = logging.getLogger("houdini_mcp.connection")
 
@@ -23,11 +22,11 @@ logger = logging.getLogger("houdini_mcp.connection")
 F = TypeVar("F", bound=Callable[..., Any])
 
 # Global connection state
-_connection: Optional[Any] = None
-_hou: Optional[Any] = None
+_connection: Any | None = None
+_hou: Any | None = None
 
 # Thread pool for controlled execution with timeouts
-_executor: Optional[concurrent.futures.ThreadPoolExecutor] = None
+_executor: concurrent.futures.ThreadPoolExecutor | None = None
 
 # Connection configuration
 DEFAULT_MAX_RETRIES = 3
@@ -67,7 +66,7 @@ def retry_with_backoff(
     max_delay: float = DEFAULT_MAX_DELAY,
     exponential_base: float = 2.0,
     jitter: bool = True,
-    retryable_exceptions: Tuple[Type[Exception], ...] = RETRYABLE_EXCEPTIONS,
+    retryable_exceptions: tuple[type[Exception], ...] = RETRYABLE_EXCEPTIONS,
 ) -> Callable[[F], F]:
     """
     Decorator that retries a function with exponential backoff and optional jitter.
@@ -95,7 +94,7 @@ def retry_with_backoff(
     def decorator(func: F) -> F:
         @wraps(func)
         def wrapper(*args: Any, **kwargs: Any) -> Any:
-            last_exception: Optional[Exception] = None
+            last_exception: Exception | None = None
             current_delay = base_delay
 
             for attempt in range(max_retries):
@@ -136,7 +135,7 @@ def _do_connect(
     host: str,
     port: int,
     sync_timeout: float,
-) -> Tuple[Any, Any]:
+) -> tuple[Any, Any]:
     """
     Internal function to establish a single connection attempt.
 
@@ -176,7 +175,7 @@ def connect(
     retry_delay: float = DEFAULT_RETRY_DELAY,
     sync_timeout: float = DEFAULT_SYNC_TIMEOUT,
     jitter: bool = True,
-) -> Tuple[Any, Any]:
+) -> tuple[Any, Any]:
     """
     Connect to Houdini RPC server using rpyc with retry logic.
 
@@ -197,7 +196,7 @@ def connect(
     Raises:
         HoudiniConnectionError: If connection fails after all retries
     """
-    last_error: Optional[Exception] = None
+    last_error: Exception | None = None
     current_delay = retry_delay
 
     for attempt in range(max_retries):
@@ -256,7 +255,7 @@ def get_hou(host: str = "localhost", port: int = 18811) -> Any:
     return _hou
 
 
-def get_connection() -> Optional[Any]:
+def get_connection() -> Any | None:
     """Get the current connection object."""
     return _connection
 
@@ -340,14 +339,14 @@ def ensure_connected(host: str = "localhost", port: int = 18811) -> Any:
     return _hou
 
 
-def get_connection_info(host: str = "localhost", port: int = 18811) -> Dict[str, Any]:
+def get_connection_info(host: str = "localhost", port: int = 18811) -> dict[str, Any]:
     """
     Get detailed information about the current connection state.
 
     Returns:
         Dict with connection status, host, port, and Houdini info if connected.
     """
-    info: Dict[str, Any] = {
+    info: dict[str, Any] = {
         "host": host,
         "port": port,
         "connected": False,
@@ -412,8 +411,8 @@ class SafeExecutionResult:
         self,
         success: bool,
         result: Any = None,
-        error: Optional[str] = None,
-        error_type: Optional[str] = None,
+        error: str | None = None,
+        error_type: str | None = None,
         timed_out: bool = False,
         connection_lost: bool = False,
     ):
@@ -424,7 +423,7 @@ class SafeExecutionResult:
         self.timed_out = timed_out
         self.connection_lost = connection_lost
 
-    def to_error_dict(self, operation: str) -> Dict[str, Any]:
+    def to_error_dict(self, operation: str) -> dict[str, Any]:
         """Convert to standardized error response dict."""
         if self.timed_out:
             message = (
@@ -581,9 +580,9 @@ def execute_with_timeout(
     try:
         future = executor.submit(func, *args, **kwargs)
         return future.result(timeout=timeout)
-    except concurrent.futures.TimeoutError:
+    except concurrent.futures.TimeoutError as exc:
         future.cancel()
-        raise HoudiniOperationTimeout(f"Operation timed out after {timeout} seconds")
+        raise HoudiniOperationTimeout(f"Operation timed out after {timeout} seconds") from exc
 
 
 def quick_health_check(host: str = "localhost", port: int = 18811, timeout: float = 5.0) -> bool:

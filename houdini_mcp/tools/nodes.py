@@ -10,18 +10,13 @@ This module provides tools for managing Houdini nodes:
 """
 
 import logging
-import traceback
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from ._common import (
-    ensure_connected,
-    HoudiniConnectionError,
-    CONNECTION_ERRORS,
-    _handle_connection_error,
     _add_response_metadata,
     _json_safe_hou_value,
+    ensure_connected,
     handle_connection_errors,
-    logger as common_logger,
 )
 from .cache import node_type_cache
 
@@ -32,10 +27,10 @@ logger = logging.getLogger("houdini_mcp.tools.nodes")
 def create_node(
     node_type: str,
     parent_path: str = "/obj",
-    name: Optional[str] = None,
+    name: str | None = None,
     host: str = "localhost",
     port: int = 18811,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Create a new node in the Houdini scene.
 
@@ -53,10 +48,7 @@ def create_node(
     if parent is None:
         return {"status": "error", "message": f"Parent node not found: {parent_path}"}
 
-    if name:
-        node = parent.createNode(node_type, name)
-    else:
-        node = parent.createNode(node_type)
+    node = parent.createNode(node_type, name) if name else parent.createNode(node_type)
 
     return {
         "status": "success",
@@ -77,7 +69,7 @@ def get_node_info(
     compact: bool = False,
     host: str = "localhost",
     port: int = 18811,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Get detailed information about a node.
 
@@ -103,7 +95,7 @@ def get_node_info(
 
     # Compact mode: minimal response with just essential info
     if compact:
-        info: Dict[str, Any] = {
+        info: dict[str, Any] = {
             "status": "success",
             "path": node.path(),
             "type": node.type().name(),
@@ -135,7 +127,7 @@ def get_node_info(
 
     # Add detailed input connection information if requested
     if include_input_details:
-        input_connections: List[Dict[str, Any]] = []
+        input_connections: list[dict[str, Any]] = []
         node_inputs = node.inputs()
 
         # Cache inputConnectors call OUTSIDE the loop to avoid
@@ -164,7 +156,7 @@ def get_node_info(
         info["input_connections"] = input_connections
 
     if include_params:
-        params: Dict[str, Any] = {}
+        params: dict[str, Any] = {}
         for i, parm in enumerate(node.parms()):
             if i >= max_params:
                 params["_truncated"] = True
@@ -209,8 +201,8 @@ def get_node_info(
                 cook_state = "unknown"
 
             # Get errors and warnings
-            errors_list: List[Dict[str, str]] = []
-            warnings_list: List[Dict[str, str]] = []
+            errors_list: list[dict[str, str]] = []
+            warnings_list: list[dict[str, str]] = []
 
             # Get errors
             try:
@@ -237,7 +229,7 @@ def get_node_info(
                 pass
 
             # Build cook info dict
-            cook_info: Dict[str, Any] = {
+            cook_info: dict[str, Any] = {
                 "cook_state": cook_state,
                 "errors": errors_list,
                 "warnings": warnings_list,
@@ -269,7 +261,7 @@ def get_node_info(
 
 
 @handle_connection_errors("delete_node")
-def delete_node(node_path: str, host: str = "localhost", port: int = 18811) -> Dict[str, Any]:
+def delete_node(node_path: str, host: str = "localhost", port: int = 18811) -> dict[str, Any]:
     """
     Delete a node from the scene.
 
@@ -297,13 +289,13 @@ def delete_node(node_path: str, host: str = "localhost", port: int = 18811) -> D
 
 @handle_connection_errors("list_node_types")
 def list_node_types(
-    category: Optional[str] = None,
+    category: str | None = None,
     max_results: int = 100,
-    name_filter: Optional[str] = None,
+    name_filter: str | None = None,
     offset: int = 0,
     host: str = "localhost",
     port: int = 18811,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     List available node types, optionally filtered by category.
 
@@ -353,7 +345,7 @@ def list_node_types(
     )
 
     # Build result
-    result: Dict[str, Any] = {
+    result: dict[str, Any] = {
         "status": "success",
         "count": len(node_types),
         "node_types": node_types,
@@ -402,7 +394,7 @@ def list_children(
     compact: bool = False,
     host: str = "localhost",
     port: int = 18811,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     List child nodes with paths, types, and current input connections.
 
@@ -426,7 +418,7 @@ def list_children(
     if parent is None:
         return {"status": "error", "message": f"Node not found: {node_path}"}
 
-    children_list: List[Dict[str, Any]] = []
+    children_list: list[dict[str, Any]] = []
     nodes_collected = 0
 
     def collect_children(node: Any, depth: int = 0) -> None:
@@ -447,7 +439,7 @@ def list_children(
 
                 # Compact mode: only path, name, type
                 if compact:
-                    child_info: Dict[str, Any] = {
+                    child_info: dict[str, Any] = {
                         "path": child.path(),
                         "name": child.name(),
                         "type": child.type().name(),
@@ -455,7 +447,7 @@ def list_children(
                 else:
                     # Full mode: include input/output connection details
                     # Build input connection details
-                    input_connections: List[Dict[str, Any]] = []
+                    input_connections: list[dict[str, Any]] = []
                     child_inputs = child.inputs()
 
                     # Cache inputConnectors call OUTSIDE the loop to avoid
@@ -505,7 +497,7 @@ def list_children(
 
     collect_children(parent)
 
-    result: Dict[str, Any] = {
+    result: dict[str, Any] = {
         "status": "success",
         "node_path": node_path,
         "children": children_list,
@@ -523,12 +515,12 @@ def list_children(
 def find_nodes(
     root_path: str = "/obj",
     pattern: str = "*",
-    node_type: Optional[str] = None,
+    node_type: str | None = None,
     max_results: int = 100,
     offset: int = 0,
     host: str = "localhost",
     port: int = 18811,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Find nodes by name pattern or type using glob/substring matching.
 
@@ -579,33 +571,33 @@ if root is not None:
         child_name = child.name()
         child_name_lower = child_name.lower()
         pattern_lower = pattern.lower()
-        
+
         # Check name pattern match
         if has_wildcards:
             name_match = fnmatch.fnmatch(child_name_lower, pattern_lower)
         else:
             # Exact match or substring match
             name_match = fnmatch.fnmatch(child_name_lower, pattern_lower) or pattern_lower in child_name_lower
-        
+
         # Check type filter
         type_match = True
         child_type = child.type().name()
         if node_type_filter is not None:
             type_match = child_type.lower() == node_type_filter.lower()
-        
+
         if name_match and type_match:
             total_matched += 1
-            
+
             # Skip items before offset
             if total_matched <= offset:
                 continue
-            
+
             matches.append({{
                 "path": child.path(),
                 "name": child_name,
                 "type": child_type,
             }})
-            
+
             # Stop if we have enough results
             if len(matches) >= max_results:
                 break
@@ -620,7 +612,7 @@ _result = {{"matches": matches, "total_matched": total_matched}}
     )
 
     try:
-        exec_globals: Dict[str, Any] = {
+        exec_globals: dict[str, Any] = {
             "hou": hou,
             "_result": {"matches": [], "total_matched": 0},
         }
@@ -672,7 +664,7 @@ _result = {{"matches": matches, "total_matched": total_matched}}
 
         search_recursive(root)
 
-    result: Dict[str, Any] = {
+    result: dict[str, Any] = {
         "status": "success",
         "root_path": root_path,
         "pattern": pattern,

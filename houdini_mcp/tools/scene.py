@@ -9,12 +9,12 @@ This module provides tools for managing Houdini scenes:
 """
 
 import logging
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from ._common import (
+    _json_safe_hou_value,
     ensure_connected,
     handle_connection_errors,
-    _json_safe_hou_value,
 )
 from .cache import invalidate_all_caches
 
@@ -22,7 +22,7 @@ logger = logging.getLogger("houdini_mcp.tools.scene")
 
 
 @handle_connection_errors("get_scene_info")
-def get_scene_info(host: str = "localhost", port: int = 18811) -> Dict[str, Any]:
+def get_scene_info(host: str = "localhost", port: int = 18811) -> dict[str, Any]:
     """
     Get current Houdini scene information.
 
@@ -34,7 +34,7 @@ def get_scene_info(host: str = "localhost", port: int = 18811) -> Dict[str, Any]
     hip_file = hou.hipFile.path()
     obj_node = hou.node("/obj")
 
-    nodes: List[Dict[str, Any]] = []
+    nodes: list[dict[str, Any]] = []
     if obj_node:
         for child in obj_node.children():
             nodes.append({"path": child.path(), "type": child.type().name(), "name": child.name()})
@@ -50,8 +50,8 @@ def get_scene_info(host: str = "localhost", port: int = 18811) -> Dict[str, Any]
 
 @handle_connection_errors("save_scene")
 def save_scene(
-    file_path: Optional[str] = None, host: str = "localhost", port: int = 18811
-) -> Dict[str, Any]:
+    file_path: str | None = None, host: str = "localhost", port: int = 18811
+) -> dict[str, Any]:
     """
     Save the current Houdini scene.
 
@@ -74,7 +74,7 @@ def save_scene(
 
 
 @handle_connection_errors("load_scene")
-def load_scene(file_path: str, host: str = "localhost", port: int = 18811) -> Dict[str, Any]:
+def load_scene(file_path: str, host: str = "localhost", port: int = 18811) -> dict[str, Any]:
     """
     Load a Houdini scene file.
 
@@ -95,7 +95,7 @@ def load_scene(file_path: str, host: str = "localhost", port: int = 18811) -> Di
 
 
 @handle_connection_errors("new_scene")
-def new_scene(host: str = "localhost", port: int = 18811) -> Dict[str, Any]:
+def new_scene(host: str = "localhost", port: int = 18811) -> dict[str, Any]:
     """
     Create a new empty Houdini scene.
 
@@ -119,7 +119,7 @@ def serialize_scene(
     max_depth: int = 10,
     host: str = "localhost",
     port: int = 18811,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Serialize the scene structure to a dictionary (useful for diffs/comparisons).
 
@@ -135,18 +135,18 @@ def serialize_scene(
     """
     hou = ensure_connected(host, port)
 
-    def node_to_dict_recursive(node: Any, depth: int = 0) -> Dict[str, Any]:
+    def node_to_dict_recursive(node: Any, depth: int = 0) -> dict[str, Any]:
         if depth > max_depth:
             return {"path": node.path(), "truncated": True}
 
-        result: Dict[str, Any] = {
+        result: dict[str, Any] = {
             "path": node.path(),
             "type": node.type().name(),
             "name": node.name(),
         }
 
         if include_params:
-            params: Dict[str, Any] = {}
+            params: dict[str, Any] = {}
             for parm in node.parms():
                 try:
                     params[parm.name()] = _json_safe_hou_value(hou, parm.eval())

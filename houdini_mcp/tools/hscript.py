@@ -20,7 +20,7 @@ Usage:
 """
 
 import logging
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any
 
 logger = logging.getLogger("houdini_mcp.tools.hscript")
 
@@ -33,7 +33,7 @@ class HscriptBatch:
     that minimize RPC round-trips.
     """
 
-    def __init__(self, hou: Any, conn: Optional[Any] = None):
+    def __init__(self, hou: Any, conn: Any | None = None):
         """
         Initialize with the hou module.
 
@@ -67,7 +67,7 @@ class HscriptBatch:
         """Check if remote Python execution is available."""
         return self._conn is not None
 
-    def run(self, command: str) -> Tuple[str, str]:
+    def run(self, command: str) -> tuple[str, str]:
         """
         Execute an hscript command.
 
@@ -88,7 +88,7 @@ class HscriptBatch:
     # Node Enumeration
     # =========================================================================
 
-    def list_all_paths(self, root_path: str = "/obj") -> List[str]:
+    def list_all_paths(self, root_path: str = "/obj") -> list[str]:
         """
         Get all node paths under a root in a single RPC call.
 
@@ -120,7 +120,7 @@ class HscriptBatch:
 
         return paths
 
-    def list_children(self, parent_path: str) -> List[str]:
+    def list_children(self, parent_path: str) -> list[str]:
         """
         Get immediate children of a node.
 
@@ -143,7 +143,7 @@ class HscriptBatch:
     # Node Types
     # =========================================================================
 
-    def get_node_types(self, paths: List[str]) -> Dict[str, str]:
+    def get_node_types(self, paths: list[str]) -> dict[str, str]:
         """
         Get node types for multiple paths in batch.
 
@@ -160,14 +160,14 @@ class HscriptBatch:
 
         # For efficiency, we use optype on the parent with wildcard
         # Group paths by parent directory
-        by_parent: Dict[str, List[str]] = {}
+        by_parent: dict[str, list[str]] = {}
         for path in paths:
             parent = "/".join(path.split("/")[:-1]) or "/"
             if parent not in by_parent:
                 by_parent[parent] = []
             by_parent[parent].append(path)
 
-        result_types: Dict[str, str] = {}
+        result_types: dict[str, str] = {}
 
         for parent, child_paths in by_parent.items():
             # Use wildcard to get all children types at once
@@ -190,7 +190,7 @@ class HscriptBatch:
 
         return result_types
 
-    def get_node_type(self, path: str) -> Optional[str]:
+    def get_node_type(self, path: str) -> str | None:
         """
         Get the type of a single node.
 
@@ -218,7 +218,7 @@ class HscriptBatch:
 
     def get_nodes_info(
         self, root_path: str = "/obj", include_types: bool = True
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """
         Get info for all nodes under a root in minimal RPC calls.
 
@@ -248,7 +248,7 @@ class HscriptBatch:
 
         return nodes
 
-    def get_scene_tree(self, root_path: str = "/obj") -> List[Dict[str, Any]]:
+    def get_scene_tree(self, root_path: str = "/obj") -> list[dict[str, Any]]:
         """
         Get hierarchical scene tree for all nodes under root.
 
@@ -268,8 +268,8 @@ class HscriptBatch:
             return []
 
         # Parse into flat dict and build parent-child relationships
-        nodes_by_path: Dict[str, Dict[str, Any]] = {}
-        children_by_parent: Dict[str, List[str]] = {}
+        nodes_by_path: dict[str, dict[str, Any]] = {}
+        children_by_parent: dict[str, list[str]] = {}
         current_parent = root_path
 
         for line in result.strip().split("\n"):
@@ -301,7 +301,7 @@ class HscriptBatch:
                         nodes_by_path[path]["type"] = line[9:]
 
         # Build tree recursively
-        def build_tree(node_path: str) -> Dict[str, Any]:
+        def build_tree(node_path: str) -> dict[str, Any]:
             node = nodes_by_path.get(node_path)
             if node is None:
                 return {
@@ -321,7 +321,7 @@ class HscriptBatch:
     # Parameters (Batch)
     # =========================================================================
 
-    def get_parameter_values(self, node_path: str, parm_names: List[str]) -> Dict[str, Any]:
+    def get_parameter_values(self, node_path: str, parm_names: list[str]) -> dict[str, Any]:
         """
         Get multiple parameter values in a single RPC call.
 
@@ -369,7 +369,7 @@ print(json.dumps(result))
 
         return {}
 
-    def get_all_parameters(self, node_path: str) -> Dict[str, Any]:
+    def get_all_parameters(self, node_path: str) -> dict[str, Any]:
         """
         Get all parameter values for a node in a single RPC call.
 
@@ -413,7 +413,7 @@ print(json.dumps(result))
     # Connections/Wiring
     # =========================================================================
 
-    def get_input_connections(self, node_path: str) -> List[Dict[str, Any]]:
+    def get_input_connections(self, node_path: str) -> list[dict[str, Any]]:
         """
         Get all input connections for a node.
 
@@ -447,7 +447,7 @@ print(json.dumps(result))
 
         return []
 
-    def get_output_connections(self, node_path: str) -> List[Dict[str, Any]]:
+    def get_output_connections(self, node_path: str) -> list[dict[str, Any]]:
         """
         Get all output connections for a node.
 
@@ -485,7 +485,7 @@ print(json.dumps(result))
     # Geometry Info
     # =========================================================================
 
-    def get_geo_counts(self, node_path: str) -> Dict[str, int]:
+    def get_geo_counts(self, node_path: str) -> dict[str, int]:
         """
         Get geometry point/prim/vertex counts in a single call.
 
@@ -521,7 +521,7 @@ print(json.dumps(result))
 
         return {"point_count": 0, "prim_count": 0, "vertex_count": 0}
 
-    def get_bounding_box(self, node_path: str) -> Optional[Dict[str, List[float]]]:
+    def get_bounding_box(self, node_path: str) -> dict[str, list[float]] | None:
         """
         Get geometry bounding box.
 
@@ -569,7 +569,7 @@ print(json.dumps(result))
     # Value Conversion (Type Introspection)
     # =========================================================================
 
-    def convert_hou_values(self, values: Dict[str, Any]) -> Dict[str, Any]:
+    def convert_hou_values(self, values: dict[str, Any]) -> dict[str, Any]:
         """
         Convert hou values to JSON-safe types on Houdini side.
 
@@ -700,7 +700,7 @@ def get_batch(hou: Any) -> HscriptBatch:
     return HscriptBatch(hou)
 
 
-def fast_list_paths(hou: Any, root_path: str = "/obj") -> List[str]:
+def fast_list_paths(hou: Any, root_path: str = "/obj") -> list[str]:
     """
     Convenience function to list all paths under a root.
 
@@ -714,7 +714,7 @@ def fast_list_paths(hou: Any, root_path: str = "/obj") -> List[str]:
     return HscriptBatch(hou).list_all_paths(root_path)
 
 
-def fast_get_scene_tree(hou: Any, root_path: str = "/obj") -> List[Dict[str, Any]]:
+def fast_get_scene_tree(hou: Any, root_path: str = "/obj") -> list[dict[str, Any]]:
     """
     Convenience function to get scene tree.
 

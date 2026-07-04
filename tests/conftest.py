@@ -1,8 +1,10 @@
 """Pytest configuration and fixtures for Houdini MCP tests."""
 
-import pytest
+from collections.abc import Generator
+from typing import Any, Optional
 from unittest.mock import MagicMock, patch
-from typing import Any, Dict, List, Optional, Generator
+
+import pytest
 
 
 class MockHouNode:
@@ -14,38 +16,38 @@ class MockHouNode:
         name: str = "geo1",
         node_type: str = "geo",
         type_description: str = "Geometry",
-        children: Optional[List["MockHouNode"]] = None,
-        params: Optional[Dict[str, Any]] = None,
+        children: list["MockHouNode"] | None = None,
+        params: dict[str, Any] | None = None,
     ):
         self._path = path
         self._name = name
         self._node_type = node_type
         self._type_description = type_description
-        self._children: List["MockHouNode"] = children if children is not None else []
-        self._params: Dict[str, Any] = (
+        self._children: list[MockHouNode] = children if children is not None else []
+        self._params: dict[str, Any] = (
             params if params is not None else {"tx": 0.0, "ty": 0.0, "tz": 0.0}
         )
-        self._inputs: List[Any] = []
-        self._outputs: List[Any] = []
+        self._inputs: list[Any] = []
+        self._outputs: list[Any] = []
         self._display_flag = True
         self._render_flag = True
         self._bypass = False
         self._destroyed = False
         # Cook state tracking
         self._cook_state = "Cooked"  # Cooked, CookFailed, Dirty, Uncooked
-        self._errors: List[str] = []
-        self._warnings: List[str] = []
-        self._last_cook_time: Optional[float] = None
+        self._errors: list[str] = []
+        self._warnings: list[str] = []
+        self._last_cook_time: float | None = None
         # Geometry
-        self._geometry: Optional["MockGeometry"] = None
+        self._geometry: MockGeometry | None = None
         # Parent node (set during createNode)
-        self._parent: Optional["MockHouNode"] = None
+        self._parent: MockHouNode | None = None
         # Network position
         self._position: tuple = (0.0, 0.0)
         # Node color
-        self._color: Optional["MockColor"] = None
+        self._color: MockColor | None = None
         # Network boxes
-        self._network_boxes: List["MockNetworkBox"] = []
+        self._network_boxes: list[MockNetworkBox] = []
         self._network_box_counter = 0
 
     def path(self) -> str:
@@ -85,16 +87,16 @@ class MockHouNode:
         mock_type.category.return_value = mock_category
         return mock_type
 
-    def children(self) -> List["MockHouNode"]:
+    def children(self) -> list["MockHouNode"]:
         return self._children
 
-    def inputs(self) -> List[Any]:
+    def inputs(self) -> list[Any]:
         return self._inputs
 
-    def outputs(self) -> List[Any]:
+    def outputs(self) -> list[Any]:
         return self._outputs
 
-    def inputConnectors(self) -> List[tuple]:
+    def inputConnectors(self) -> list[tuple]:
         """Return list of (input_index, output_index) tuples for each input."""
         connectors = []
         for idx, inp in enumerate(self._inputs):
@@ -105,15 +107,15 @@ class MockHouNode:
                 connectors.append((idx, -1))
         return connectors
 
-    def parms(self) -> List[MagicMock]:
+    def parms(self) -> list[MagicMock]:
         mock_parms = []
-        for name in self._params.keys():
+        for name in self._params:
             parm = self.parm(name)
             if parm is not None:
                 mock_parms.append(parm)
         return mock_parms
 
-    def parm(self, name: str) -> Optional[MagicMock]:
+    def parm(self, name: str) -> MagicMock | None:
         if name not in self._params:
             return None
 
@@ -138,7 +140,7 @@ class MockHouNode:
         self._parm_objects[name] = mock_parm
         return mock_parm
 
-    def parmTuple(self, name: str) -> Optional[MagicMock]:
+    def parmTuple(self, name: str) -> MagicMock | None:
         if name not in self._params or not isinstance(self._params[name], (list, tuple)):
             return None
 
@@ -160,12 +162,12 @@ class MockHouNode:
         self._parm_tuple_objects[name] = mock_parm
         return mock_parm
 
-    def createNode(self, node_type: str, name: Optional[str] = None) -> "MockHouNode":
+    def createNode(self, node_type: str, name: str | None = None) -> "MockHouNode":
         new_name = name if name else f"{node_type}1"
         new_path = f"{self._path}/{new_name}"
 
         # Create node with type-specific default parameters
-        params: Dict[str, Any] = {"tx": 0.0, "ty": 0.0, "tz": 0.0}
+        params: dict[str, Any] = {"tx": 0.0, "ty": 0.0, "tz": 0.0}
 
         # Add type-specific parameters
         if node_type == "material":
@@ -227,9 +229,8 @@ class MockHouNode:
         self._inputs[input_index] = source_node
 
         # Update source node's outputs
-        if source_node is not None:
-            if self not in source_node._outputs:
-                source_node._outputs.append(self)
+        if source_node is not None and self not in source_node._outputs:
+            source_node._outputs.append(self)
 
     def cookState(self) -> MagicMock:
         """Return cook state enum."""
@@ -237,11 +238,11 @@ class MockHouNode:
         mock_state.name.return_value = self._cook_state
         return mock_state
 
-    def errors(self) -> List[str]:
+    def errors(self) -> list[str]:
         """Return list of error messages."""
         return self._errors.copy()
 
-    def warnings(self) -> List[str]:
+    def warnings(self) -> list[str]:
         """Return list of warning messages."""
         return self._warnings.copy()
 
@@ -268,9 +269,9 @@ class MockHouNode:
         """Helper to set geometry on this node."""
         self._geometry = geo
 
-    def allSubChildren(self) -> List["MockHouNode"]:
+    def allSubChildren(self) -> list["MockHouNode"]:
         """Return all descendant nodes recursively."""
-        all_descendants: List["MockHouNode"] = []
+        all_descendants: list[MockHouNode] = []
 
         def collect(node: "MockHouNode") -> None:
             for child in node._children:
@@ -317,7 +318,7 @@ class MockHouNode:
         """Get the node's display color."""
         return self._color
 
-    def createNetworkBox(self, name: Optional[str] = None) -> "MockNetworkBox":
+    def createNetworkBox(self, name: str | None = None) -> "MockNetworkBox":
         """Create a network box in this node's network."""
         self._network_box_counter += 1
         box_name = name if name else f"netbox{self._network_box_counter}"
@@ -346,7 +347,7 @@ class MockHouModule:
     """Mock hou module for testing."""
 
     def __init__(self) -> None:
-        self._nodes: Dict[str, MockHouNode] = {}
+        self._nodes: dict[str, MockHouNode] = {}
         self._hip_file = "/path/to/test.hip"
         self._version = "20.5.123"
         self._version_tuple = (20, 5, 123)
@@ -383,10 +384,10 @@ class MockHouModule:
     def applicationVersion(self) -> tuple:
         return self._version_tuple
 
-    def node(self, path: str) -> Optional[MockHouNode]:
+    def node(self, path: str) -> MockHouNode | None:
         return self._nodes.get(path)
 
-    def nodeTypeCategories(self) -> Dict[str, Any]:
+    def nodeTypeCategories(self) -> dict[str, Any]:
         """Return mock node type categories with sufficient types for testing limits."""
         # Object-level node types
         object_types = {
@@ -582,8 +583,8 @@ class MockNetworkBox:
     def __init__(self, name: str = "netbox1"):
         self._name = name
         self._label = ""
-        self._color: Optional[MockColor] = None
-        self._nodes: List["MockHouNode"] = []
+        self._color: MockColor | None = None
+        self._nodes: list[MockHouNode] = []
 
     def name(self) -> str:
         return self._name
@@ -606,7 +607,7 @@ class MockNetworkBox:
 class MockGeoPoint:
     """Mock geometry point."""
 
-    def __init__(self, index: int, position: tuple, attribs: Optional[Dict[str, Any]] = None):
+    def __init__(self, index: int, position: tuple, attribs: dict[str, Any] | None = None):
         self._index = index
         self._position = list(position)
         self._attribs = attribs if attribs is not None else {}
@@ -627,7 +628,7 @@ class MockGeoPoint:
 class MockGeoPrim:
     """Mock geometry primitive."""
 
-    def __init__(self, index: int, num_vertices: int = 4, attribs: Optional[Dict[str, Any]] = None):
+    def __init__(self, index: int, num_vertices: int = 4, attribs: dict[str, Any] | None = None):
         self._index = index
         self._num_vertices = num_vertices
         self._attribs = attribs if attribs is not None else {}
@@ -697,17 +698,17 @@ class MockGeometry:
     """Mock hou.Geometry object."""
 
     def __init__(self):
-        self._points: List[MockGeoPoint] = []
-        self._prims: List[MockGeoPrim] = []
-        self._point_attribs: List[MockGeoAttrib] = []
-        self._prim_attribs: List[MockGeoAttrib] = []
-        self._vertex_attribs: List[MockGeoAttrib] = []
-        self._detail_attribs: List[MockGeoAttrib] = []
-        self._point_groups: List[MockGeoGroup] = []
-        self._prim_groups: List[MockGeoGroup] = []
-        self._bbox: Optional[MockBoundingBox] = None
+        self._points: list[MockGeoPoint] = []
+        self._prims: list[MockGeoPrim] = []
+        self._point_attribs: list[MockGeoAttrib] = []
+        self._prim_attribs: list[MockGeoAttrib] = []
+        self._vertex_attribs: list[MockGeoAttrib] = []
+        self._detail_attribs: list[MockGeoAttrib] = []
+        self._point_groups: list[MockGeoGroup] = []
+        self._prim_groups: list[MockGeoGroup] = []
+        self._bbox: MockBoundingBox | None = None
 
-    def points(self) -> List[MockGeoPoint]:
+    def points(self) -> list[MockGeoPoint]:
         """Return list of points."""
         return self._points
 
@@ -715,7 +716,7 @@ class MockGeometry:
         """Iterate over points."""
         return iter(self._points)
 
-    def prims(self) -> List[MockGeoPrim]:
+    def prims(self) -> list[MockGeoPrim]:
         """Return list of primitives."""
         return self._prims
 
@@ -723,36 +724,34 @@ class MockGeometry:
         """Iterate over primitives."""
         return iter(self._prims)
 
-    def pointAttribs(self) -> List[MockGeoAttrib]:
+    def pointAttribs(self) -> list[MockGeoAttrib]:
         return self._point_attribs
 
-    def primAttribs(self) -> List[MockGeoAttrib]:
+    def primAttribs(self) -> list[MockGeoAttrib]:
         return self._prim_attribs
 
-    def vertexAttribs(self) -> List[MockGeoAttrib]:
+    def vertexAttribs(self) -> list[MockGeoAttrib]:
         return self._vertex_attribs
 
-    def globalAttribs(self) -> List[MockGeoAttrib]:
+    def globalAttribs(self) -> list[MockGeoAttrib]:
         return self._detail_attribs
 
-    def pointGroups(self) -> List[MockGeoGroup]:
+    def pointGroups(self) -> list[MockGeoGroup]:
         return self._point_groups
 
-    def primGroups(self) -> List[MockGeoGroup]:
+    def primGroups(self) -> list[MockGeoGroup]:
         return self._prim_groups
 
-    def boundingBox(self) -> Optional[MockBoundingBox]:
+    def boundingBox(self) -> MockBoundingBox | None:
         return self._bbox
 
-    def addPoint(self, position: tuple, attribs: Optional[Dict[str, Any]] = None) -> MockGeoPoint:
+    def addPoint(self, position: tuple, attribs: dict[str, Any] | None = None) -> MockGeoPoint:
         """Helper to add a point."""
         pt = MockGeoPoint(len(self._points), position, attribs)
         self._points.append(pt)
         return pt
 
-    def addPrim(
-        self, num_vertices: int = 4, attribs: Optional[Dict[str, Any]] = None
-    ) -> MockGeoPrim:
+    def addPrim(self, num_vertices: int = 4, attribs: dict[str, Any] | None = None) -> MockGeoPrim:
         """Helper to add a primitive."""
         prim = MockGeoPrim(len(self._prims), num_vertices, attribs)
         self._prims.append(prim)

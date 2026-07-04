@@ -10,7 +10,7 @@ Uses the Claude API proxy at localhost:8082 for efficient small-model inference.
 import json
 import logging
 import os
-from typing import Any, Dict, Optional
+from typing import Any
 
 import httpx
 
@@ -56,7 +56,7 @@ def should_summarize(data: Any, force: bool = False) -> bool:
     return estimate_tokens(data) > AUTO_SUMMARIZE_THRESHOLD
 
 
-async def summarize_geometry(geo_data: Dict[str, Any]) -> Dict[str, Any]:
+async def summarize_geometry(geo_data: dict[str, Any]) -> dict[str, Any]:
     """Summarize geometry data for AI consumption.
 
     Extracts key insights from geometry statistics:
@@ -98,7 +98,7 @@ Summary:"""
     return geo_data
 
 
-async def summarize_errors(error_data: Dict[str, Any]) -> Dict[str, Any]:
+async def summarize_errors(error_data: dict[str, Any]) -> dict[str, Any]:
     """Summarize error/warning data with triage and prioritization.
 
     Analyzes errors and provides:
@@ -145,7 +145,7 @@ Summary:"""
     return error_data
 
 
-async def summarize_scene(scene_data: Dict[str, Any]) -> Dict[str, Any]:
+async def summarize_scene(scene_data: dict[str, Any]) -> dict[str, Any]:
     """Summarize scene structure for understanding and optimization.
 
     Analyzes scene hierarchy and provides:
@@ -187,7 +187,7 @@ Summary:"""
     return scene_data
 
 
-async def summarize_render_settings(render_data: Dict[str, Any]) -> Dict[str, Any]:
+async def summarize_render_settings(render_data: dict[str, Any]) -> dict[str, Any]:
     """Summarize render configuration for quality/performance analysis.
 
     Analyzes render settings and provides:
@@ -228,7 +228,7 @@ Summary:"""
     return render_data
 
 
-async def _call_claude(prompt: str) -> Optional[str]:
+async def _call_claude(prompt: str) -> str | None:
     """Call Claude API via proxy for summarization.
 
     Args:
@@ -276,7 +276,7 @@ async def _call_claude(prompt: str) -> Optional[str]:
         return None
 
 
-def get_summarization_status() -> Dict[str, Any]:
+def get_summarization_status() -> dict[str, Any]:
     """Get current summarization configuration status.
 
     Returns:

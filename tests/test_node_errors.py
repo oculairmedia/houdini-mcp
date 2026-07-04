@@ -1,10 +1,8 @@
 """Tests for node error/warning introspection (HDMCP-8)."""
 
-import pytest
-from unittest.mock import MagicMock, patch
-import time
+from unittest.mock import patch
 
-from tests.conftest import MockHouNode, MockHouModule
+from tests.conftest import MockHouNode
 
 
 class TestGetNodeInfoWithErrors:

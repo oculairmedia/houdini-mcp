@@ -1,6 +1,7 @@
 """Allow running as: python -m houdini_mcp"""
 
 import os
+
 from .server import run_server
 
 if __name__ == "__main__":

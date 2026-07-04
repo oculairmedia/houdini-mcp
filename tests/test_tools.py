@@ -1,10 +1,11 @@
 """Tests for the Houdini MCP tools."""
 
 import asyncio
-import pytest
 from unittest.mock import MagicMock, patch
 
-from tests.conftest import MockHouNode, MockHouModule
+import pytest
+
+from tests.conftest import MockHouNode
 
 
 class TestGetSceneInfo:
@@ -420,20 +421,10 @@ x = 1 + 2
     def test_diff_truncation(self, mock_connection):
         """Test that scene diff is truncated when exceeding max_diff_nodes."""
         from houdini_mcp.tools import execute_code
-        from tests.conftest import MockHouNode
 
         # Start with empty /obj
         obj_node = mock_connection.node("/obj")
         obj_node._children = []
-
-        # The code will "create" nodes by modifying the mock during execution
-        # We'll add nodes after the "before" snapshot is taken
-        code_that_adds_nodes = """
-# This code simulates adding many nodes
-# In real Houdini, this would create actual nodes
-# In our mock, we'll inject nodes via the test
-pass
-"""
 
         # Instead, let's directly test the truncation logic in the result building
         # by patching _serialize_scene_state to return different before/after states
@@ -468,8 +459,8 @@ pass
 
     def test_no_diff_truncation_within_limits(self, mock_connection):
         """Test that scene diff is not truncated when within limits."""
-        from houdini_mcp.tools import execute_code
         import houdini_mcp.tools as tools_module
+        from houdini_mcp.tools import execute_code
 
         # Small diff that shouldn't trigger truncation
         tools_module._before_scene = []
@@ -497,9 +488,8 @@ pass
 
     def test_timeout_error_message(self, mock_connection):
         """Test timeout error message format (using mock to simulate)."""
+
         from houdini_mcp.tools import execute_code
-        import time
-        from unittest.mock import patch
 
         # We can't easily test actual timeout with mock, but we can verify
         # the code structure handles it. For a real timeout test, we'd need
@@ -1034,12 +1024,12 @@ class TestSceneDiff:
 
     def test_get_last_scene_diff_no_diff(self):
         """Test getting scene diff when none available."""
+        import houdini_mcp.tools.code as code_module
         from houdini_mcp.tools import get_last_scene_diff
-        import houdini_mcp.tools as tools_module
 
-        # Reset scene state
-        tools_module._before_scene = []
-        tools_module._after_scene = []
+        # Reset scene state (these globals live in code.py, not the re-export namespace)
+        code_module._before_scene = []
+        code_module._after_scene = []
 
         result = get_last_scene_diff()
 
@@ -1048,8 +1038,8 @@ class TestSceneDiff:
 
     def test_get_last_scene_diff_with_changes(self):
         """Test getting scene diff with actual changes."""
-        from houdini_mcp.tools import get_last_scene_diff
         import houdini_mcp.tools.code as code_module
+        from houdini_mcp.tools import get_last_scene_diff
 
         # Simulate before/after state (these globals live in code.py)
         code_module._before_scene = []
@@ -2235,8 +2225,9 @@ class TestGetHoudiniHelp:
     @patch("requests.get")
     def test_get_houdini_help_network_error(self, mock_get):
         """Test handling of network connection errors."""
-        from houdini_mcp.tools import get_houdini_help
         import requests
+
+        from houdini_mcp.tools import get_houdini_help
 
         mock_get.side_effect = requests.exceptions.ConnectionError("Network unreachable")
 
@@ -2277,8 +2268,9 @@ class TestGetHoudiniHelp:
     @patch("requests.get")
     def test_get_houdini_help_timeout(self, mock_get):
         """Test handling of request timeout."""
-        from houdini_mcp.tools import get_houdini_help
         import requests
+
+        from houdini_mcp.tools import get_houdini_help
 
         mock_get.side_effect = requests.exceptions.Timeout("Connection timed out")
 
@@ -2822,7 +2814,7 @@ class TestResponseSizeMetadata:
 
     def test_add_response_metadata_large_response(self):
         """Test that large responses get warning metadata."""
-        from houdini_mcp.tools import _add_response_metadata, RESPONSE_SIZE_LARGE_THRESHOLD
+        from houdini_mcp.tools import RESPONSE_SIZE_LARGE_THRESHOLD, _add_response_metadata
 
         # Create a response larger than the threshold
         large_data = "x" * (RESPONSE_SIZE_LARGE_THRESHOLD + 1000)
@@ -2836,9 +2828,9 @@ class TestResponseSizeMetadata:
     def test_add_response_metadata_medium_response(self):
         """Test that medium responses get a note but not a warning."""
         from houdini_mcp.tools import (
-            _add_response_metadata,
-            RESPONSE_SIZE_WARNING_THRESHOLD,
             RESPONSE_SIZE_LARGE_THRESHOLD,
+            RESPONSE_SIZE_WARNING_THRESHOLD,
+            _add_response_metadata,
         )
 
         # Create a response between warning and large thresholds
@@ -2996,8 +2988,8 @@ class TestParallelExecution:
     @pytest.mark.asyncio
     async def test_semaphore_gather_limits_concurrency(self):
         """Test that semaphore limits concurrent executions."""
+
         from houdini_mcp.tools._common import semaphore_gather
-        import time
 
         concurrent_count = 0
         max_concurrent_seen = 0
@@ -3062,8 +3054,9 @@ class TestParallelExecution:
     @pytest.mark.asyncio
     async def test_run_in_executor(self):
         """Test run_in_executor wraps sync functions."""
-        from houdini_mcp.tools._common import run_in_executor
         import time
+
+        from houdini_mcp.tools._common import run_in_executor
 
         def slow_sync_function(x: int, y: int) -> int:
             time.sleep(0.01)
@@ -3090,7 +3083,7 @@ class TestHandleConnectionErrorsDecorator:
 
     def test_decorator_handles_houdini_connection_error(self):
         """Test decorator handles HoudiniConnectionError."""
-        from houdini_mcp.tools._common import handle_connection_errors, HoudiniConnectionError
+        from houdini_mcp.tools._common import HoudiniConnectionError, handle_connection_errors
 
         @handle_connection_errors("test_operation")
         def failing_function():

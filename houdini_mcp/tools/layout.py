@@ -5,7 +5,7 @@ including auto-layout, positioning, coloring, and network box creation.
 """
 
 import logging
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from ._common import (
     ensure_connected,
@@ -22,7 +22,7 @@ def layout_children(
     vertical_spacing: float = 1.0,
     host: str = "localhost",
     port: int = 18811,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Auto-layout child nodes in a network.
 
@@ -81,10 +81,10 @@ def layout_children(
 @handle_connection_errors("set_node_color")
 def set_node_color(
     node_path: str,
-    color: List[float],
+    color: list[float],
     host: str = "localhost",
     port: int = 18811,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Set the display color of a node in the network editor.
 
@@ -142,7 +142,7 @@ def set_node_position(
     y: float,
     host: str = "localhost",
     port: int = 18811,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Set the position of a node in the network editor.
 
@@ -183,12 +183,12 @@ def set_node_position(
 @handle_connection_errors("create_network_box")
 def create_network_box(
     parent_path: str,
-    node_paths: List[str],
+    node_paths: list[str],
     label: str = "",
-    color: Optional[List[float]] = None,
+    color: list[float] | None = None,
     host: str = "localhost",
     port: int = 18811,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Create a network box around a group of nodes.
 

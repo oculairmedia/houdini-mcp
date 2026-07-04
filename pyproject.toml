@@ -36,6 +36,7 @@ dependencies = [
 dev = [
     "pytest>=7.0.0",
     "pytest-cov>=4.0.0",
+    "pytest-asyncio>=0.23.0",
     "ruff>=0.8.0",
     "mypy>=1.0.0",
     "pre-commit>=3.0.0",
@@ -82,7 +83,14 @@ ignore = [
     "E501",   # line too long (handled by formatter)
     "B008",   # do not perform function calls in argument defaults
     "ARG001", # unused function argument (common in interfaces)
+    "ARG002", # unused method argument (common in interface methods and pytest fixtures)
+    "SIM105", # intentional try/except/pass defensive guards around optional Houdini APIs (see bandit B110)
 ]
+
+[tool.ruff.lint.per-file-ignores]
+# _common.py deliberately groups imports under section headers (e.g. parallel
+# execution utilities) rather than at the top of the module.
+"houdini_mcp/tools/_common.py" = ["E402"]  # module-import-not-at-top-of-file
 
 [tool.ruff.lint.isort]
 known-first-party = ["houdini_mcp"]
@@ -94,6 +102,7 @@ indent-style = "space"
 # Pytest configuration
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+asyncio_mode = "auto"
 python_files = ["test_*.py"]
 python_classes = ["Test*"]
 python_functions = ["test_*"]
@@ -140,4 +149,11 @@ exclude = ["tests/", "build/"]
 # Bandit security configuration
 [tool.bandit]
 exclude_dirs = ["tests", "build", "dist"]
-skips = ["B101"]  # assert statements are fine in tests
+# Each skip below is an intentional, non-actionable pattern in this codebase:
+#   B101 - assert statements are fine in tests
+#   B102 - exec: executing Houdini Python is the core purpose of the execute_code tool
+#   B104 - hardcoded_bind_all_interfaces: the 0.0.0.0 HTTP bind in server.py is intentional
+#   B110 - try_except_pass: defensive guards around optional Houdini (hou) APIs
+#   B112 - try_except_continue: defensive guards that skip failed items in render loops
+#   B311 - non-crypto random: used for jitter/ids, never for security
+skips = ["B101", "B102", "B104", "B110", "B112", "B311"]

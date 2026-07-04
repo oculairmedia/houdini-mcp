@@ -40,7 +40,7 @@ class LocalHoudiniConnection:
 
     def __init__(self):
         """Initialize local connection."""
-        self._hou: Optional[Any] = None
+        self._hou: Any | None = None
 
     @property
     def hou(self) -> Any:
@@ -79,9 +79,9 @@ class LocalHoudiniConnection:
         For local connections, these are just the standard library modules
         since we're running on the same machine as Houdini.
         """
+        import base64
         import os
         import tempfile
-        import base64
 
         return os, tempfile, base64
 

@@ -1,12 +1,6 @@
 """Tests for the render_viewport function."""
 
-import pytest
-from unittest.mock import MagicMock, patch, mock_open
-import base64
-import tempfile
-import os
-
-from tests.conftest import MockHouNode, MockHouModule, MockGeometry, MockBoundingBox
+from unittest.mock import patch
 
 
 class TestRenderViewportValidation:
@@ -701,8 +695,9 @@ class TestKarmaEngineParameter:
 
     def test_karma_engine_default_is_cpu(self, mock_connection):
         """Test karma_engine defaults to 'cpu'."""
-        from houdini_mcp.tools import render_viewport
         import inspect
+
+        from houdini_mcp.tools import render_viewport
 
         sig = inspect.signature(render_viewport)
         default_value = sig.parameters["karma_engine"].default

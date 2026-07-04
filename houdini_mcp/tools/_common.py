@@ -10,17 +10,17 @@ This module contains common utilities used across all tool modules:
 
 import logging
 import re
-from typing import Any, Dict, List, Optional, Set, Tuple
+from typing import Any
 
 from ..connection import (
-    ensure_connected,
-    is_connected,
-    get_connection,
+    DEFAULT_OPERATION_TIMEOUT,
     HoudiniConnectionError,
     disconnect,
-    safe_execute,
+    ensure_connected,
+    get_connection,
+    is_connected,
     quick_health_check,
-    DEFAULT_OPERATION_TIMEOUT,
+    safe_execute,
 )
 
 # Re-export connection utilities for convenience
@@ -78,7 +78,7 @@ logger = logging.getLogger("houdini_mcp.tools")
 
 import functools
 import traceback
-from typing import Callable
+from collections.abc import Callable
 
 
 def handle_connection_errors(operation_name: str) -> Callable:
@@ -106,7 +106,7 @@ def handle_connection_errors(operation_name: str) -> Callable:
 
     def decorator(func: Callable) -> Callable:
         @functools.wraps(func)
-        def wrapper(*args, **kwargs) -> Dict[str, Any]:
+        def wrapper(*args, **kwargs) -> dict[str, Any]:
             try:
                 return func(*args, **kwargs)
             except HoudiniConnectionError as e:
@@ -139,7 +139,7 @@ CONNECTION_ERRORS = (
 )
 
 
-def _handle_connection_error(e: Exception, operation: str) -> Dict[str, Any]:
+def _handle_connection_error(e: Exception, operation: str) -> dict[str, Any]:
     """
     Handle connection-related errors gracefully.
 
@@ -202,10 +202,10 @@ def _handle_connection_error(e: Exception, operation: str) -> Dict[str, Any]:
 
 
 def validate_resolution(
-    resolution: List[int],
+    resolution: list[int],
     min_size: int = 64,
     max_size: int = 4096,
-) -> Optional[Dict[str, Any]]:
+) -> dict[str, Any] | None:
     """
     Validate render resolution dimensions.
 
@@ -233,7 +233,7 @@ def validate_resolution(
 
 
 # Dangerous code patterns for safety scanning
-DANGEROUS_PATTERNS: List[Tuple[str, str]] = [
+DANGEROUS_PATTERNS: list[tuple[str, str]] = [
     (r"\bhou\.exit\s*\(", "hou.exit() - will close Houdini"),
     (r"\bos\.remove\s*\(", "os.remove() - file deletion"),
     (r"\bos\.unlink\s*\(", "os.unlink() - file deletion"),
@@ -245,7 +245,7 @@ DANGEROUS_PATTERNS: List[Tuple[str, str]] = [
 ]
 
 
-HEAVY_GEOMETRY_PATTERNS: List[Tuple[str, str]] = [
+HEAVY_GEOMETRY_PATTERNS: list[tuple[str, str]] = [
     (
         r"\.geometry\s*\(",
         "node.geometry() - can force a heavy SOP cook and destabilize Houdini",
@@ -273,7 +273,7 @@ HEAVY_GEOMETRY_PATTERNS: List[Tuple[str, str]] = [
 ]
 
 
-def _detect_dangerous_code(code: str) -> List[str]:
+def _detect_dangerous_code(code: str) -> list[str]:
     """
     Scan code for potentially dangerous patterns.
 
@@ -283,14 +283,14 @@ def _detect_dangerous_code(code: str) -> List[str]:
     Returns:
         List of detected dangerous pattern descriptions
     """
-    detected: List[str] = []
+    detected: list[str] = []
     for pattern, description in DANGEROUS_PATTERNS:
         if re.search(pattern, code):
             detected.append(description)
     return detected
 
 
-def _detect_heavy_geometry_code(code: str) -> List[str]:
+def _detect_heavy_geometry_code(code: str) -> list[str]:
     """
     Scan code for geometry access patterns that can cook or iterate very large SOP data.
 
@@ -298,14 +298,14 @@ def _detect_heavy_geometry_code(code: str) -> List[str]:
     block the UI, drop the RPC connection, or crash Houdini. Prefer dedicated
     summary tools that run bounded analysis on the Houdini side.
     """
-    detected: List[str] = []
+    detected: list[str] = []
     for pattern, description in HEAVY_GEOMETRY_PATTERNS:
         if re.search(pattern, code):
             detected.append(description)
     return detected
 
 
-def _truncate_output(output: str, max_size: int) -> Tuple[str, bool]:
+def _truncate_output(output: str, max_size: int) -> tuple[str, bool]:
     """
     Truncate output if it exceeds max_size.
 
@@ -376,7 +376,7 @@ def _estimate_response_size(data: Any, _depth: int = 0) -> int:
     return len(str(data)) + 2
 
 
-def _add_response_metadata(result: Dict[str, Any], include_size: bool = True) -> Dict[str, Any]:
+def _add_response_metadata(result: dict[str, Any], include_size: bool = True) -> dict[str, Any]:
     """
     Add response metadata including size information.
 
@@ -405,7 +405,7 @@ def _add_response_metadata(result: Dict[str, Any], include_size: bool = True) ->
 
 
 def _json_safe_hou_value(
-    hou: Any, value: Any, *, max_depth: int = 10, _seen: Optional[Set[int]] = None
+    hou: Any, value: Any, *, max_depth: int = 10, _seen: set[int] | None = None
 ) -> Any:
     """Convert Houdini (hou) values into JSON-serializable structures."""
     if max_depth <= 0:
@@ -522,7 +522,7 @@ class ExecutionTimeoutError(Exception):
 
 def _node_to_dict(
     node: Any, include_params: bool = True, max_params: int = 100, hou: Any = None
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Serialize a node to a dictionary.
 
@@ -535,7 +535,7 @@ def _node_to_dict(
     Returns:
         Dict representation of the node
     """
-    result: Dict[str, Any] = {
+    result: dict[str, Any] = {
         "path": node.path(),
         "type": node.type().name(),
         "name": node.name(),
@@ -545,7 +545,7 @@ def _node_to_dict(
         hou = type("_HouSentinel", (), {})()
 
     if include_params:
-        params: Dict[str, Any] = {}
+        params: dict[str, Any] = {}
         for i, parm in enumerate(node.parms()):
             if i >= max_params:
                 break
@@ -566,7 +566,7 @@ def _node_to_dict(
     return result
 
 
-def _serialize_scene_state(hou: Any, root_path: str = "/obj") -> List[Dict[str, Any]]:
+def _serialize_scene_state(hou: Any, root_path: str = "/obj") -> list[dict[str, Any]]:
     """
     Serialize the scene state for comparison.
 
@@ -594,7 +594,7 @@ def _serialize_scene_state(hou: Any, root_path: str = "/obj") -> List[Dict[str, 
     return [_node_to_dict(child, hou=hou) for child in obj.children()]
 
 
-def _serialize_scene_state_fast(hou: Any, root_path: str = "/obj") -> List[Dict[str, Any]]:
+def _serialize_scene_state_fast(hou: Any, root_path: str = "/obj") -> list[dict[str, Any]]:
     """
     Fast scene serialization using hscript commands.
 
@@ -615,7 +615,7 @@ def _serialize_scene_state_fast(hou: Any, root_path: str = "/obj") -> List[Dict[
     return batch.get_scene_tree(root_path)
 
 
-def _get_scene_diff(before: List[Dict[str, Any]], after: List[Dict[str, Any]]) -> Dict[str, Any]:
+def _get_scene_diff(before: list[dict[str, Any]], after: list[dict[str, Any]]) -> dict[str, Any]:
     """
     Compare scene states and return the differences.
 
@@ -626,14 +626,14 @@ def _get_scene_diff(before: List[Dict[str, Any]], after: List[Dict[str, Any]]) -
     Returns:
         Dict with added, removed, and modified nodes
     """
-    before_paths: Set[str] = {node["path"] for node in before}
-    after_paths: Set[str] = {node["path"] for node in after}
+    before_paths: set[str] = {node["path"] for node in before}
+    after_paths: set[str] = {node["path"] for node in after}
 
     added = after_paths - before_paths
     removed = before_paths - after_paths
 
     # Find modified nodes (same path but different content)
-    modified: List[str] = []
+    modified: list[str] = []
     before_by_path = {node["path"]: node for node in before}
     after_by_path = {node["path"]: node for node in after}
 
@@ -650,7 +650,7 @@ def _get_scene_diff(before: List[Dict[str, Any]], after: List[Dict[str, Any]]) -
     }
 
 
-def _flatten_parm_templates(hou: Any, parm_templates: List[Any], max_depth: int = 20) -> List[Any]:
+def _flatten_parm_templates(hou: Any, parm_templates: list[Any], max_depth: int = 20) -> list[Any]:
     """
     Flatten nested parameter templates into a single list.
 
@@ -662,9 +662,9 @@ def _flatten_parm_templates(hou: Any, parm_templates: List[Any], max_depth: int 
     Returns:
         Flattened list of parameter templates
     """
-    flattened: List[Any] = []
+    flattened: list[Any] = []
 
-    def walk(templates: List[Any], depth: int) -> None:
+    def walk(templates: list[Any], depth: int) -> None:
         if depth > max_depth:
             return
 
@@ -704,8 +704,8 @@ def _flatten_parm_templates(hou: Any, parm_templates: List[Any], max_depth: int 
     walk(parm_templates, 0)
 
     # De-dup while preserving order (folders can appear in multiple lists)
-    seen_ids: Set[int] = set()
-    unique: List[Any] = []
+    seen_ids: set[int] = set()
+    unique: list[Any] = []
     for template in flattened:
         template_id = id(template)
         if template_id in seen_ids:
@@ -722,7 +722,8 @@ def _flatten_parm_templates(hou: Any, parm_templates: List[Any], max_depth: int 
 
 import asyncio
 import os
-from typing import Awaitable, TypeVar, Coroutine
+from collections.abc import Coroutine
+from typing import TypeVar
 
 T = TypeVar("T")
 
@@ -733,9 +734,9 @@ SEMAPHORE_LIMIT = int(os.getenv("HOUDINI_MCP_SEMAPHORE_LIMIT", "10"))
 
 async def semaphore_gather(
     *coroutines: Coroutine[Any, Any, T],
-    max_concurrent: Optional[int] = None,
+    max_concurrent: int | None = None,
     return_exceptions: bool = False,
-) -> List[Any]:
+) -> list[Any]:
     """
     Execute coroutines with bounded concurrency using a semaphore.
 
@@ -771,7 +772,7 @@ async def semaphore_gather(
     return list(results)
 
 
-def batch_items(items: List[Any], batch_size: int) -> List[List[Any]]:
+def batch_items(items: list[Any], batch_size: int) -> list[list[Any]]:
     """
     Split a list into batches of specified size.
 

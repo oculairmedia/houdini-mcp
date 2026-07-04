@@ -25,8 +25,8 @@ Usage:
 import logging
 import threading
 import time
-from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional, Tuple
+from dataclasses import dataclass
+from typing import Any
 
 logger = logging.getLogger("houdini_mcp.tools.cache")
 
@@ -125,16 +125,16 @@ class NodeTypeCache(BaseCache):
                  Node types are truly static during a session.
         """
         super().__init__("node_types", ttl)
-        self._all_types: List[Dict[str, str]] = []
-        self._by_category: Dict[str, List[Dict[str, str]]] = {}
-        self._categories: List[str] = []
+        self._all_types: list[dict[str, str]] = []
+        self._by_category: dict[str, list[dict[str, str]]] = {}
+        self._categories: list[str] = []
 
     def get_all_types(
         self,
         hou: Any,
         host: str = "localhost",
         port: int = 18811,
-    ) -> List[Dict[str, str]]:
+    ) -> list[dict[str, str]]:
         """
         Get all node types, populating cache if needed.
 
@@ -161,11 +161,11 @@ class NodeTypeCache(BaseCache):
 
     def filter_types(
         self,
-        category: Optional[str] = None,
-        name_filter: Optional[str] = None,
+        category: str | None = None,
+        name_filter: str | None = None,
         max_results: int = 100,
         offset: int = 0,
-    ) -> Tuple[List[Dict[str, str]], int, bool]:
+    ) -> tuple[list[dict[str, str]], int, bool]:
         """
         Filter cached node types.
 
@@ -208,7 +208,7 @@ class NodeTypeCache(BaseCache):
 
             return result, total_matched, has_more
 
-    def get_categories(self, hou: Any) -> List[str]:
+    def get_categories(self, hou: Any) -> list[str]:
         """
         Get list of available node type categories.
 
@@ -231,11 +231,11 @@ class NodeTypeCache(BaseCache):
         Uses batch fetching for performance.
         """
         start_time = time.time()
-        logger.info(f"Populating node type cache...")
+        logger.info("Populating node type cache...")
 
-        all_types: List[Dict[str, str]] = []
-        by_category: Dict[str, List[Dict[str, str]]] = {}
-        categories: List[str] = []
+        all_types: list[dict[str, str]] = []
+        by_category: dict[str, list[dict[str, str]]] = {}
+        categories: list[str] = []
 
         try:
             # Try fast batch approach first (using remote exec)
@@ -264,7 +264,7 @@ class NodeTypeCache(BaseCache):
 
     def _populate_fast(
         self, hou: Any
-    ) -> Tuple[List[Dict[str, str]], Dict[str, List[Dict[str, str]]], List[str]]:
+    ) -> tuple[list[dict[str, str]], dict[str, list[dict[str, str]]], list[str]]:
         """
         Fast population using remote Python execution.
 
@@ -320,20 +320,20 @@ print(json.dumps(result))
 
     def _populate_standard(
         self, hou: Any
-    ) -> Tuple[List[Dict[str, str]], Dict[str, List[Dict[str, str]]], List[str]]:
+    ) -> tuple[list[dict[str, str]], dict[str, list[dict[str, str]]], list[str]]:
         """
         Standard population using RPyC proxy calls.
 
         Slower but works in all environments.
         """
-        all_types: List[Dict[str, str]] = []
-        by_category: Dict[str, List[Dict[str, str]]] = {}
-        categories: List[str] = []
+        all_types: list[dict[str, str]] = []
+        by_category: dict[str, list[dict[str, str]]] = {}
+        categories: list[str] = []
 
         try:
             for cat_name, cat in hou.nodeTypeCategories().items():
                 categories.append(cat_name)
-                cat_types: List[Dict[str, str]] = []
+                cat_types: list[dict[str, str]] = []
 
                 for type_name, type_obj in cat.nodeTypes().items():
                     try:
@@ -371,14 +371,14 @@ class ParameterSchemaCache(BaseCache):
         """
         super().__init__("parameter_schemas", ttl)
         # Key: (category, type_name) -> schema dict
-        self._schemas: Dict[Tuple[str, str], Dict[str, Any]] = {}
+        self._schemas: dict[tuple[str, str], dict[str, Any]] = {}
 
     def get_schema(
         self,
         hou: Any,
         node_type_category: str,
         node_type_name: str,
-    ) -> Optional[Dict[str, Any]]:
+    ) -> dict[str, Any] | None:
         """
         Get parameter schema for a node type.
 
@@ -409,7 +409,7 @@ class ParameterSchemaCache(BaseCache):
         hou: Any,
         node_type_category: str,
         node_type_name: str,
-    ) -> Optional[Dict[str, Any]]:
+    ) -> dict[str, Any] | None:
         """
         Fetch parameter schema from Houdini.
 
@@ -446,7 +446,7 @@ def invalidate_all_caches() -> None:
     logger.info("All caches invalidated")
 
 
-def get_cache_stats() -> Dict[str, Any]:
+def get_cache_stats() -> dict[str, Any]:
     """
     Get statistics for all caches.
 

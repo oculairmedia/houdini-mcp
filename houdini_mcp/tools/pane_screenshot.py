@@ -42,14 +42,11 @@ Note: Panes on inactive desktops may report -1x-1 geometry and cannot be capture
 import base64
 import logging
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any
 
 from ._common import (
-    ensure_connected,
-    get_connection,
     HoudiniConnectionError,
-    CONNECTION_ERRORS,
-    _handle_connection_error,
+    ensure_connected,
     handle_connection_errors,
 )
 
@@ -57,7 +54,7 @@ logger = logging.getLogger("houdini_mcp.tools.pane_screenshot")
 
 
 # All valid pane type names from hou.paneTabType
-VALID_PANE_TYPES: List[str] = [
+VALID_PANE_TYPES: list[str] = [
     "ApexEditor",
     "AssetBrowser",
     "BundleList",
@@ -91,7 +88,7 @@ VALID_PANE_TYPES: List[str] = [
 ]
 
 
-def _get_qt_modules(hou: Any) -> Tuple[Any, Any, Any]:
+def _get_qt_modules(hou: Any) -> tuple[Any, Any, Any]:
     """
     Get PySide2 Qt modules from the RPyC connection.
 
@@ -115,7 +112,7 @@ def _get_qt_modules(hou: Any) -> Tuple[Any, Any, Any]:
     return QtWidgets, QtCore, QtGui
 
 
-def _get_available_pane_types(hou: Any) -> List[str]:
+def _get_available_pane_types(hou: Any) -> list[str]:
     """
     Get list of available pane type names from hou.paneTabType enum.
 
@@ -131,7 +128,7 @@ def _get_available_pane_types(hou: Any) -> List[str]:
         return VALID_PANE_TYPES
 
 
-def _fit_pane_contents(pane: Any, pane_type_name: str) -> Optional[str]:
+def _fit_pane_contents(pane: Any, pane_type_name: str) -> str | None:
     """
     Fit/frame the contents of a pane to show all items.
 
@@ -156,12 +153,10 @@ def _fit_pane_contents(pane: Any, pane_type_name: str) -> Optional[str]:
                 pane.homeAll()
             elif hasattr(pane, "homeSelected"):
                 pane.homeSelected()
-        elif pane_type_name == "CompositorViewer":
-            if hasattr(pane, "homeAll"):
-                pane.homeAll()
-        elif pane_type_name == "ChannelEditor":
-            if hasattr(pane, "homeAll"):
-                pane.homeAll()
+        elif (
+            pane_type_name == "CompositorViewer" or pane_type_name == "ChannelEditor"
+        ) and hasattr(pane, "homeAll"):
+            pane.homeAll()
         # Other pane types may not support fitting
         return None
     except Exception as e:
@@ -174,7 +169,7 @@ def _capture_pane_to_bytes(
     QtWidgets: Any,
     QtCore: Any,
     fit_contents: bool = False,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Internal function to capture a pane screenshot and return raw bytes.
 
@@ -274,11 +269,11 @@ def _capture_pane_to_bytes(
 @handle_connection_errors("capture_pane_screenshot")
 def capture_pane_screenshot(
     pane_type_name: str = "NetworkEditor",
-    save_path: Optional[str] = None,
+    save_path: str | None = None,
     fit_contents: bool = False,
     host: str = "localhost",
     port: int = 18811,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Capture a screenshot of a Houdini pane tab using Qt screen grab.
 
@@ -373,7 +368,7 @@ def capture_pane_screenshot(
 def list_visible_panes(
     host: str = "localhost",
     port: int = 18811,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     List all visible pane tabs in the current Houdini layout.
 
@@ -402,8 +397,8 @@ def list_visible_panes(
     """
     hou = ensure_connected(host, port)
 
-    panes_info: List[Dict[str, Any]] = []
-    current_desktop_name: Optional[str] = None
+    panes_info: list[dict[str, Any]] = []
+    current_desktop_name: str | None = None
 
     # Get current desktop name
     try:
@@ -470,7 +465,7 @@ def render_node_network(
     fit_contents: bool = True,
     host: str = "localhost",
     port: int = 18811,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Capture a screenshot of a node's network showing its children.
 
@@ -580,11 +575,11 @@ def render_node_network(
 
 @handle_connection_errors("capture_multiple_panes")
 def capture_multiple_panes(
-    pane_types: List[str],
-    save_dir: Optional[str] = None,
+    pane_types: list[str],
+    save_dir: str | None = None,
     host: str = "localhost",
     port: int = 18811,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Capture screenshots of multiple pane types in one call.
 
@@ -633,7 +628,7 @@ def capture_multiple_panes(
             "Ensure Houdini has PySide2 available.",
         }
 
-    results: Dict[str, Dict[str, Any]] = {}
+    results: dict[str, dict[str, Any]] = {}
     success_count = 0
 
     for pane_type_name in pane_types:

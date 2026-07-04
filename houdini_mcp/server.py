@@ -1,15 +1,15 @@
 """Houdini MCP Server - Main server entry point."""
 
-import os
 import logging
-from typing import Any, Dict, List, Optional, Literal, Union
+import os
+from typing import Any, Literal
 
 from fastmcp import FastMCP
 from starlette.requests import Request
 from starlette.responses import JSONResponse
 
-from .connection import ensure_connected, is_connected, disconnect, get_connection_info, ping
 from . import tools
+from .connection import ensure_connected, get_connection_info, is_connected, ping
 
 # Configure logging
 log_level = os.getenv("LOG_LEVEL", "INFO").upper()
@@ -35,7 +35,7 @@ async def health_check(request: Request) -> JSONResponse:
 
 
 @mcp.tool()
-def get_scene_info() -> Dict[str, Any]:
+def get_scene_info() -> dict[str, Any]:
     """
     Get current Houdini scene information.
 
@@ -49,8 +49,8 @@ def get_scene_info() -> Dict[str, Any]:
 
 @mcp.tool()
 def create_node(
-    node_type: str, parent_path: str = "/obj", name: Optional[str] = None
-) -> Dict[str, Any]:
+    node_type: str, parent_path: str = "/obj", name: str | None = None
+) -> dict[str, Any]:
     """
     Create a new node in the Houdini scene.
 
@@ -77,7 +77,7 @@ def execute_code(
     timeout: int = 30,
     allow_dangerous: bool = False,
     allow_heavy_geometry: bool = False,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Execute Python code in Houdini with scene change tracking and safety rails.
 
@@ -144,8 +144,8 @@ def execute_code(
 def set_parameter(
     node_path: str,
     param_name: str,
-    value: Union[float, int, str, bool, List[float], List[int], List[str]],
-) -> Dict[str, Any]:
+    value: float | int | str | bool | list[float] | list[int] | list[str],
+) -> dict[str, Any]:
     """
     Set a parameter value on a node.
 
@@ -174,7 +174,7 @@ def get_node_info(
     include_errors: bool = False,
     force_cook: bool = False,
     compact: bool = False,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Get detailed information about a node.
 
@@ -218,7 +218,7 @@ def get_node_info(
 
 
 @mcp.tool()
-def delete_node(node_path: str) -> Dict[str, Any]:
+def delete_node(node_path: str) -> dict[str, Any]:
     """
     Delete a node from the scene.
 
@@ -231,7 +231,7 @@ def delete_node(node_path: str) -> Dict[str, Any]:
 
 
 @mcp.tool()
-def save_scene(file_path: Optional[str] = None) -> Dict[str, Any]:
+def save_scene(file_path: str | None = None) -> dict[str, Any]:
     """
     Save the current Houdini scene.
 
@@ -246,7 +246,7 @@ def save_scene(file_path: Optional[str] = None) -> Dict[str, Any]:
 
 
 @mcp.tool()
-def load_scene(file_path: str) -> Dict[str, Any]:
+def load_scene(file_path: str) -> dict[str, Any]:
     """
     Load a Houdini scene file.
 
@@ -257,7 +257,7 @@ def load_scene(file_path: str) -> Dict[str, Any]:
 
 
 @mcp.tool()
-def new_scene() -> Dict[str, Any]:
+def new_scene() -> dict[str, Any]:
     """
     Create a new empty Houdini scene.
 
@@ -271,7 +271,7 @@ async def serialize_scene(
     root_path: str = "/obj",
     include_params: bool = False,
     summarize: bool = False,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Serialize the scene structure to a dictionary.
 
@@ -298,7 +298,7 @@ async def serialize_scene(
 
 
 @mcp.tool()
-def get_last_scene_diff() -> Dict[str, Any]:
+def get_last_scene_diff() -> dict[str, Any]:
     """
     Get the scene diff from the last execute_code call.
 
@@ -310,11 +310,11 @@ def get_last_scene_diff() -> Dict[str, Any]:
 
 @mcp.tool()
 def list_node_types(
-    category: Optional[str] = None,
+    category: str | None = None,
     max_results: int = 100,
-    name_filter: Optional[str] = None,
+    name_filter: str | None = None,
     offset: int = 0,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     List available Houdini node types.
 
@@ -350,7 +350,7 @@ def list_children(
     max_depth: int = 10,
     max_nodes: int = 1000,
     compact: bool = False,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     List child nodes with paths, types, and current input connections.
 
@@ -387,10 +387,10 @@ def list_children(
 def find_nodes(
     root_path: str = "/obj",
     pattern: str = "*",
-    node_type: Optional[str] = None,
+    node_type: str | None = None,
     max_results: int = 100,
     offset: int = 0,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Find nodes by name pattern or type using glob/substring matching.
 
@@ -422,16 +422,16 @@ def find_nodes(
 
 @mcp.tool()
 def render_viewport(
-    camera_position: Optional[List[float]] = None,
-    camera_rotation: Optional[List[float]] = None,
-    look_at: Optional[str] = None,
-    resolution: Optional[List[int]] = None,
+    camera_position: list[float] | None = None,
+    camera_rotation: list[float] | None = None,
+    look_at: str | None = None,
+    resolution: list[int] | None = None,
     renderer: str = "opengl",
     output_format: str = "png",
     auto_frame: bool = True,
     orthographic: bool = False,
     karma_engine: str = "cpu",
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Render the viewport and return the image as base64.
 
@@ -482,13 +482,13 @@ def render_viewport(
 
 @mcp.tool()
 def render_quad_view(
-    resolution: Optional[List[int]] = None,
+    resolution: list[int] | None = None,
     renderer: str = "opengl",
     output_format: str = "png",
     orthographic: bool = True,
     include_perspective: bool = True,
     karma_engine: str = "cpu",
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Render 4 canonical views (Front, Left, Top, Perspective) in one call.
 
@@ -539,7 +539,7 @@ def render_quad_view(
 
 
 @mcp.tool()
-def list_render_nodes() -> Dict[str, Any]:
+def list_render_nodes() -> dict[str, Any]:
     """
     List all render nodes (ROPs) in the /out context.
 
@@ -565,7 +565,7 @@ def list_render_nodes() -> Dict[str, Any]:
 
 
 @mcp.tool()
-def get_render_settings(rop_path: str) -> Dict[str, Any]:
+def get_render_settings(rop_path: str) -> dict[str, Any]:
     """
     Get current render configuration for a ROP node.
 
@@ -592,8 +592,8 @@ def get_render_settings(rop_path: str) -> Dict[str, Any]:
 @mcp.tool()
 def set_render_settings(
     rop_path: str,
-    settings: Dict[str, Any],
-) -> Dict[str, Any]:
+    settings: dict[str, Any],
+) -> dict[str, Any]:
     """
     Modify render settings on a ROP node.
 
@@ -618,9 +618,9 @@ def set_render_settings(
 @mcp.tool()
 def create_render_node(
     rop_type: str,
-    name: Optional[str] = None,
-    settings: Optional[Dict[str, Any]] = None,
-) -> Dict[str, Any]:
+    name: str | None = None,
+    settings: dict[str, Any] | None = None,
+) -> dict[str, Any]:
     """
     Create a new render node (ROP) with optional settings.
 
@@ -653,7 +653,7 @@ async def find_error_nodes(
     include_warnings: bool = True,
     max_results: int = 100,
     summarize: bool = False,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Find all nodes with cook errors or warnings in the scene.
 
@@ -695,7 +695,7 @@ async def find_error_nodes(
 
 
 @mcp.tool()
-def check_connection() -> Dict[str, Any]:
+def check_connection() -> dict[str, Any]:
     """
     Check Houdini connection status with detailed info.
 
@@ -723,7 +723,7 @@ def check_connection() -> Dict[str, Any]:
 
 
 @mcp.tool()
-def ping_houdini() -> Dict[str, Any]:
+def ping_houdini() -> dict[str, Any]:
     """
     Quick connectivity test to Houdini.
 
@@ -742,7 +742,7 @@ def ping_houdini() -> Dict[str, Any]:
 @mcp.tool()
 def connect_nodes(
     src_path: str, dst_path: str, dst_input_index: int = 0, src_output_index: int = 0
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Wire output of source node to input of destination node.
 
@@ -768,7 +768,7 @@ def connect_nodes(
 
 
 @mcp.tool()
-def disconnect_node_input(node_path: str, input_index: int = 0) -> Dict[str, Any]:
+def disconnect_node_input(node_path: str, input_index: int = 0) -> dict[str, Any]:
     """
     Break/disconnect an input connection on a node.
 
@@ -789,10 +789,10 @@ def disconnect_node_input(node_path: str, input_index: int = 0) -> Dict[str, Any
 @mcp.tool()
 def set_node_flags(
     node_path: str,
-    display: Optional[bool] = None,
-    render: Optional[bool] = None,
-    bypass: Optional[bool] = None,
-) -> Dict[str, Any]:
+    display: bool | None = None,
+    render: bool | None = None,
+    bypass: bool | None = None,
+) -> dict[str, Any]:
     """
     Set display, render, and bypass flags on a node.
 
@@ -817,7 +817,7 @@ def set_node_flags(
 
 
 @mcp.tool()
-def reorder_inputs(node_path: str, new_order: List[int]) -> Dict[str, Any]:
+def reorder_inputs(node_path: str, new_order: list[int]) -> dict[str, Any]:
     """
     Reorder inputs on a node (useful for merge nodes).
 
@@ -840,8 +840,8 @@ def reorder_inputs(node_path: str, new_order: List[int]) -> Dict[str, Any]:
 
 @mcp.tool()
 def get_parameter_schema(
-    node_path: str, parm_name: Optional[str] = None, max_parms: int = 100
-) -> Dict[str, Any]:
+    node_path: str, parm_name: str | None = None, max_parms: int = 100
+) -> dict[str, Any]:
     """
     Get parameter metadata/schema for intelligent parameter setting.
 
@@ -889,7 +889,7 @@ async def get_geo_summary(
     include_attributes: bool = True,
     include_groups: bool = True,
     summarize: bool = False,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Get geometry statistics and metadata for verification.
 
@@ -949,7 +949,7 @@ def get_houdini_help(
     help_type: str,
     item_name: str,
     timeout: int = 10,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Fetch Houdini documentation from SideFX website.
 
@@ -1000,10 +1000,10 @@ def get_houdini_help(
 @mcp.tool()
 def create_material(
     material_type: str = "principledshader",
-    name: Optional[str] = None,
+    name: str | None = None,
     parent_path: str = "/mat",
-    parameters: Optional[Dict[str, Any]] = None,
-) -> Dict[str, Any]:
+    parameters: dict[str, Any] | None = None,
+) -> dict[str, Any]:
     """
     Create a new material/shader node.
 
@@ -1041,7 +1041,7 @@ def assign_material(
     geometry_path: str,
     material_path: str,
     group: str = "",
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Assign a material to geometry.
 
@@ -1064,7 +1064,7 @@ def assign_material(
 
 
 @mcp.tool()
-def get_material_info(material_path: str) -> Dict[str, Any]:
+def get_material_info(material_path: str) -> dict[str, Any]:
     """
     Get detailed information about a material node.
 
@@ -1092,7 +1092,7 @@ def layout_children(
     node_path: str,
     horizontal_spacing: float = 2.0,
     vertical_spacing: float = 1.0,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Auto-layout child nodes in a network.
 
@@ -1117,7 +1117,7 @@ def layout_children(
 
 
 @mcp.tool()
-def set_node_color(node_path: str, color: List[float]) -> Dict[str, Any]:
+def set_node_color(node_path: str, color: list[float]) -> dict[str, Any]:
     """
     Set the display color of a node in the network editor.
 
@@ -1136,7 +1136,7 @@ def set_node_color(node_path: str, color: List[float]) -> Dict[str, Any]:
 
 
 @mcp.tool()
-def set_node_position(node_path: str, x: float, y: float) -> Dict[str, Any]:
+def set_node_position(node_path: str, x: float, y: float) -> dict[str, Any]:
     """
     Set the position of a node in the network editor.
 
@@ -1158,10 +1158,10 @@ def set_node_position(node_path: str, x: float, y: float) -> Dict[str, Any]:
 @mcp.tool()
 def create_network_box(
     parent_path: str,
-    node_paths: List[str],
+    node_paths: list[str],
     label: str = "",
-    color: Optional[List[float]] = None,
-) -> Dict[str, Any]:
+    color: list[float] | None = None,
+) -> dict[str, Any]:
     """
     Create a network box around a group of nodes.
 
@@ -1185,7 +1185,7 @@ def create_network_box(
 
 
 @mcp.tool()
-def manage_cache(action: str = "stats") -> Dict[str, Any]:
+def manage_cache(action: str = "stats") -> dict[str, Any]:
     """
     Manage the Houdini MCP cache system.
 
@@ -1259,7 +1259,7 @@ def manage_cache(action: str = "stats") -> Dict[str, Any]:
 
 
 @mcp.tool()
-def get_summarization_status() -> Dict[str, Any]:
+def get_summarization_status() -> dict[str, Any]:
     """
     Get AI summarization configuration and status.
 
@@ -1286,9 +1286,9 @@ def get_summarization_status() -> Dict[str, Any]:
 @mcp.tool()
 def capture_pane_screenshot(
     pane_type_name: str = "NetworkEditor",
-    save_path: Optional[str] = None,
+    save_path: str | None = None,
     fit_contents: bool = False,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Capture a screenshot of a Houdini pane tab.
 
@@ -1317,7 +1317,7 @@ def capture_pane_screenshot(
 
 
 @mcp.tool()
-def list_visible_panes() -> Dict[str, Any]:
+def list_visible_panes() -> dict[str, Any]:
     """
     List all visible pane tabs in the current Houdini layout.
 
@@ -1337,9 +1337,9 @@ def list_visible_panes() -> Dict[str, Any]:
 
 @mcp.tool()
 def capture_multiple_panes(
-    pane_types: List[str],
-    save_dir: Optional[str] = None,
-) -> Dict[str, Any]:
+    pane_types: list[str],
+    save_dir: str | None = None,
+) -> dict[str, Any]:
     """
     Capture screenshots of multiple pane types in one call.
 
@@ -1365,7 +1365,7 @@ def capture_multiple_panes(
 def render_node_network(
     node_path: str = "/obj",
     fit_contents: bool = True,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Capture a screenshot of a node's network showing its children.
 

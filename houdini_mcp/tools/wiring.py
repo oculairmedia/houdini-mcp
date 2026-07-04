@@ -5,7 +5,7 @@ node connections in Houdini networks.
 """
 
 import logging
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any
 
 from ._common import (
     ensure_connected,
@@ -23,7 +23,7 @@ def connect_nodes(
     src_output_index: int = 0,
     host: str = "localhost",
     port: int = 18811,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Wire output of source node to input of destination node.
 
@@ -94,7 +94,7 @@ def connect_nodes(
 @handle_connection_errors("disconnect_node_input")
 def disconnect_node_input(
     node_path: str, input_index: int = 0, host: str = "localhost", port: int = 18811
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Break/disconnect an input connection on a node.
 
@@ -132,7 +132,7 @@ def disconnect_node_input(
     # Disconnect the input
     node.setInput(input_index, None)
 
-    result: Dict[str, Any] = {
+    result: dict[str, Any] = {
         "status": "success",
         "node_path": node_path,
         "input_index": input_index,
@@ -153,12 +153,12 @@ def disconnect_node_input(
 @handle_connection_errors("set_node_flags")
 def set_node_flags(
     node_path: str,
-    display: Optional[bool] = None,
-    render: Optional[bool] = None,
-    bypass: Optional[bool] = None,
+    display: bool | None = None,
+    render: bool | None = None,
+    bypass: bool | None = None,
     host: str = "localhost",
     port: int = 18811,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Set display, render, and bypass flags on a node.
 
@@ -184,8 +184,8 @@ def set_node_flags(
     if node is None:
         return {"status": "error", "message": f"Node not found: {node_path}"}
 
-    flags_set: Dict[str, bool] = {}
-    flags_unavailable: List[str] = []
+    flags_set: dict[str, bool] = {}
+    flags_unavailable: list[str] = []
 
     # Set display flag
     if display is not None:
@@ -211,7 +211,7 @@ def set_node_flags(
         else:
             flags_unavailable.append("bypass")
 
-    result: Dict[str, Any] = {
+    result: dict[str, Any] = {
         "status": "success",
         "node_path": node_path,
         "flags_set": flags_set,
@@ -235,8 +235,8 @@ def set_node_flags(
 
 @handle_connection_errors("reorder_inputs")
 def reorder_inputs(
-    node_path: str, new_order: List[int], host: str = "localhost", port: int = 18811
-) -> Dict[str, Any]:
+    node_path: str, new_order: list[int], host: str = "localhost", port: int = 18811
+) -> dict[str, Any]:
     """
     Reorder inputs on a node (useful for merge nodes).
 
@@ -283,7 +283,7 @@ def reorder_inputs(
         }
 
     # Store connection information (input_node, output_index)
-    stored_connections: List[Optional[Tuple[Any, int]]] = []
+    stored_connections: list[tuple[Any, int] | None] = []
     for idx, input_node in enumerate(current_inputs):
         if input_node is not None:
             # Try to get output index from inputConnectors
@@ -304,7 +304,7 @@ def reorder_inputs(
         node.setInput(i, None)
 
     # Reconnect in new order
-    reconnection_info: List[Dict[str, Any]] = []
+    reconnection_info: list[dict[str, Any]] = []
     for new_idx, old_idx in enumerate(new_order):
         if old_idx >= len(stored_connections):
             continue

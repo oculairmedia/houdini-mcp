@@ -7,25 +7,25 @@ with safety rails, timeout handling, and scene diff tracking.
 import logging
 import threading
 import traceback
-from contextlib import redirect_stdout, redirect_stderr
+from contextlib import redirect_stderr, redirect_stdout
 from io import StringIO
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from ._common import (
-    ensure_connected,
-    handle_connection_errors,
     _detect_dangerous_code,
     _detect_heavy_geometry_code,
-    _truncate_output,
-    _serialize_scene_state,
     _get_scene_diff,
+    _serialize_scene_state,
+    _truncate_output,
+    ensure_connected,
+    handle_connection_errors,
 )
 
 logger = logging.getLogger("houdini_mcp.tools.code")
 
 # Module-level storage for scene diff tracking
-_before_scene: List[Dict[str, Any]] = []
-_after_scene: List[Dict[str, Any]] = []
+_before_scene: list[dict[str, Any]] = []
+_after_scene: list[dict[str, Any]] = []
 
 
 @handle_connection_errors("execute_code")
@@ -40,7 +40,7 @@ def execute_code(
     host: str = "localhost",
     port: int = 18811,
     allow_heavy_geometry: bool = False,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Execute Python code in Houdini with optional scene diff tracking and safety rails.
 
@@ -112,9 +112,8 @@ def execute_code(
     stderr_capture = StringIO()
 
     # Storage for execution result from thread
-    exec_result: Dict[str, Any] = {}
-    exec_exception: List[Optional[Exception]] = [None]
-    exec_traceback: List[str] = [""]
+    exec_exception: list[Exception | None] = [None]
+    exec_traceback: list[str] = [""]
 
     def run_code() -> None:
         """Execute code in a separate thread for timeout support."""
@@ -159,7 +158,7 @@ def execute_code(
         stdout_val, stdout_truncated = _truncate_output(stdout_val, max_stdout_size)
         stderr_val, stderr_truncated = _truncate_output(stderr_val, max_stderr_size)
 
-        error_result: Dict[str, Any] = {
+        error_result: dict[str, Any] = {
             "status": "error",
             "message": str(exec_exception[0]),
             "traceback": exec_traceback[0],
@@ -179,7 +178,7 @@ def execute_code(
     stdout_val, stdout_truncated = _truncate_output(stdout_val, max_stdout_size)
     stderr_val, stderr_truncated = _truncate_output(stderr_val, max_stderr_size)
 
-    result: Dict[str, Any] = {"status": "success", "stdout": stdout_val, "stderr": stderr_val}
+    result: dict[str, Any] = {"status": "success", "stdout": stdout_val, "stderr": stderr_val}
 
     # Add truncation flags if applicable
     if stdout_truncated:
@@ -216,7 +215,7 @@ def execute_code(
     return result
 
 
-def get_last_scene_diff() -> Dict[str, Any]:
+def get_last_scene_diff() -> dict[str, Any]:
     """
     Get the scene diff from the last execute_code call.
 

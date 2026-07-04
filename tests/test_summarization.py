@@ -1,8 +1,8 @@
 """Tests for AI summarization module."""
 
-import json
+from unittest.mock import AsyncMock, MagicMock, patch
+
 import pytest
-from unittest.mock import AsyncMock, patch, MagicMock
 
 from houdini_mcp.tools import summarization
 

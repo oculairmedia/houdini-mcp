@@ -5,12 +5,12 @@ and warnings in the Houdini scene.
 """
 
 import logging
-from typing import Any, Dict, List
+from typing import Any
 
 from ._common import (
+    _add_response_metadata,
     ensure_connected,
     handle_connection_errors,
-    _add_response_metadata,
 )
 
 logger = logging.getLogger("houdini_mcp.tools.errors")
@@ -23,7 +23,7 @@ def find_error_nodes(
     max_results: int = 100,
     host: str = "localhost",
     port: int = 18811,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Find all nodes with cook errors or warnings in the scene.
 
@@ -55,8 +55,8 @@ def find_error_nodes(
     if root is None:
         return {"status": "error", "message": f"Root node not found: {root_path}"}
 
-    error_nodes: List[Dict[str, Any]] = []
-    warning_nodes: List[Dict[str, Any]] = []
+    error_nodes: list[dict[str, Any]] = []
+    warning_nodes: list[dict[str, Any]] = []
     total_scanned = 0
 
     def scan_recursive(node: Any) -> None:
@@ -141,7 +141,7 @@ def find_error_nodes(
 
     scan_recursive(root)
 
-    result: Dict[str, Any] = {
+    result: dict[str, Any] = {
         "status": "success",
         "root_path": root_path,
         "error_nodes": error_nodes,

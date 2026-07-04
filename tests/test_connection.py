@@ -1,19 +1,20 @@
 """Tests for the Houdini connection manager."""
 
-import pytest
 from unittest.mock import MagicMock, patch
+
+import pytest
 
 from houdini_mcp.connection import (
     HoudiniConnectionError,
     HoudiniOperationError,
     connect,
     disconnect,
-    is_connected,
     ensure_connected,
-    get_connection_info,
-    ping,
-    get_hou,
     get_connection,
+    get_connection_info,
+    get_hou,
+    is_connected,
+    ping,
 )
 
 
@@ -69,8 +70,9 @@ class TestConnect:
 
     def test_connect_exponential_backoff(self, reset_connection_state, mock_hou):
         """Test that retry delay doubles each attempt (exponential backoff)."""
-        from tests.conftest import MockRpycConnection
         import time
+
+        from tests.conftest import MockRpycConnection
 
         mock_conn = MockRpycConnection(mock_hou)
         call_times = []
@@ -93,8 +95,9 @@ class TestConnect:
 
     def test_connect_with_jitter(self, reset_connection_state, mock_hou):
         """Test that jitter adds randomness to retry delays."""
-        from tests.conftest import MockRpycConnection
         import time
+
+        from tests.conftest import MockRpycConnection
 
         mock_conn = MockRpycConnection(mock_hou)
         delays = []
@@ -125,7 +128,7 @@ class TestConnect:
     def test_connect_custom_host_port(self, mock_rpyc_with_reset):
         """Test connect with custom host and port."""
         with patch("houdini_mcp.connection.rpyc") as mock_rpyc:
-            from tests.conftest import MockRpycConnection, MockHouModule
+            from tests.conftest import MockHouModule, MockRpycConnection
 
             mock_hou = MockHouModule()
             mock_conn = MockRpycConnection(mock_hou)
@@ -265,7 +268,7 @@ class TestEnsureConnected:
     def test_ensure_connected_uses_provided_host_port(self, reset_connection_state):
         """Test ensure_connected uses provided host and port."""
         with patch("houdini_mcp.connection.rpyc") as mock_rpyc:
-            from tests.conftest import MockRpycConnection, MockHouModule
+            from tests.conftest import MockHouModule, MockRpycConnection
 
             mock_hou = MockHouModule()
             mock_conn = MockRpycConnection(mock_hou)

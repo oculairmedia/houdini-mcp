@@ -16,13 +16,13 @@ Provides two modes of operation:
 __version__ = "0.1.0"
 
 from .connection import LocalHoudiniConnection, get_connection
-from .server import start_server, stop_server, is_server_running
 from .remote import (
+    get_hrpyc_status,
+    is_hrpyc_running,
     start_hrpyc_server,
     stop_hrpyc_server,
-    is_hrpyc_running,
-    get_hrpyc_status,
 )
+from .server import is_server_running, start_server, stop_server
 
 __all__ = [
     # Connection

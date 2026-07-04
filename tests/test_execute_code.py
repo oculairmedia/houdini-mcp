@@ -1,9 +1,6 @@
 """Tests for the execute_code function and related helpers."""
 
-import pytest
-from unittest.mock import MagicMock, patch
-
-from tests.conftest import MockHouNode, MockHouModule
+from unittest.mock import patch
 
 
 class TestDetectDangerousCode:
@@ -197,7 +194,9 @@ class TestExecuteCode:
         """Test direct SOP geometry access is blocked by default."""
         from houdini_mcp.tools import execute_code
 
-        result = execute_code("geo = hou.node('/obj/geo1/out').geometry()", host="localhost", port=18811)
+        result = execute_code(
+            "geo = hou.node('/obj/geo1/out').geometry()", host="localhost", port=18811
+        )
         assert result["status"] == "error"
         assert "Heavy geometry access detected" in result["message"]
         assert "heavy_geometry_patterns" in result
@@ -378,8 +377,8 @@ class TestExecuteCodeTimeout:
 
     def test_timeout_returns_error(self, mock_connection):
         """Test that timeout returns appropriate error."""
+
         from houdini_mcp.tools import execute_code
-        import time
 
         # Use a very short timeout with blocking code
         # Note: With mocks, we can't truly test timeout, but we can verify the parameter

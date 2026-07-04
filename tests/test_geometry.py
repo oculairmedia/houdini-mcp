@@ -4,9 +4,10 @@ The get_geo_summary function now executes geometry analysis code on the Houdini 
 via execute_code() and parses JSON from stdout. These tests mock execute_code directly.
 """
 
-import pytest
 import json
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
+
+import pytest
 
 
 class TestGetGeoSummary:

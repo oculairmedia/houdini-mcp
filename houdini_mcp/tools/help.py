@@ -6,7 +6,7 @@ the SideFX website. It does NOT require a Houdini connection.
 
 import logging
 import traceback
-from typing import Any, Dict, List
+from typing import Any
 
 from ._common import _add_response_metadata
 
@@ -17,7 +17,7 @@ def get_houdini_help(
     help_type: str,
     item_name: str,
     timeout: int = 10,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Fetch Houdini documentation from SideFX website.
 
@@ -157,7 +157,7 @@ def get_houdini_help(
                             option_desc = desc.get_text(strip=True) if desc else ""
                             options.append({"name": option_name, "description": option_desc})
 
-            param_info: Dict[str, Any] = {
+            param_info: dict[str, Any] = {
                 "name": param_name,
                 "description": param_desc,
             }
@@ -167,7 +167,7 @@ def get_houdini_help(
             parameters.append(param_info)
 
         # Helper to extract inputs/outputs sections
-        def extract_section(section_id: str) -> List[Dict[str, str]]:
+        def extract_section(section_id: str) -> list[dict[str, str]]:
             items = []
             section_body = soup.find("div", id=f"{section_id}-body")
             if section_body:
@@ -187,7 +187,7 @@ def get_houdini_help(
         outputs = extract_section("outputs")
 
         # For VEX functions, also extract signature and return type
-        vex_info: Dict[str, Any] = {}
+        vex_info: dict[str, Any] = {}
         if help_type == "vex_function":
             # Look for function signature
             sig_div = soup.find("div", class_="signature")
@@ -200,7 +200,7 @@ def get_houdini_help(
                 vex_info["returns"] = returns_section.get_text(strip=True)
 
         # For Python hou module, extract methods
-        methods: List[Dict[str, str]] = []
+        methods: list[dict[str, str]] = []
         if help_type == "python_hou":
             for method_div in soup.find_all("div", class_="method"):
                 method_name_tag = method_div.find("p", class_="label")
@@ -220,7 +220,7 @@ def get_houdini_help(
                         }
                     )
 
-        result: Dict[str, Any] = {
+        result: dict[str, Any] = {
             "status": "success",
             "title": title,
             "url": full_url,

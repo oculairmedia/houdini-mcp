@@ -5,16 +5,15 @@ using stdio transport for communication with MCP clients.
 """
 
 import logging
-import sys
 import threading
-from typing import Any, Dict, Optional
+from typing import Any
 
 logger = logging.getLogger("houdini_mcp_plugin.server")
 
 # Global server state
-_server_thread: Optional[threading.Thread] = None
+_server_thread: threading.Thread | None = None
 _server_running = False
-_mcp_instance: Optional[Any] = None
+_mcp_instance: Any | None = None
 
 
 def _create_mcp_server():
@@ -24,6 +23,7 @@ def _create_mcp_server():
     with tools that use the local Houdini connection.
     """
     from fastmcp import FastMCP
+
     from .connection import get_connection
 
     mcp = FastMCP("Houdini MCP (Local)")
@@ -33,7 +33,7 @@ def _create_mcp_server():
     # These are simplified versions that don't need host/port parameters
 
     @mcp.tool()
-    def get_scene_info() -> Dict[str, Any]:
+    def get_scene_info() -> dict[str, Any]:
         """Get current Houdini scene information."""
         hou = conn.hou
         try:
@@ -58,8 +58,8 @@ def _create_mcp_server():
 
     @mcp.tool()
     def create_node(
-        node_type: str, parent_path: str = "/obj", name: Optional[str] = None
-    ) -> Dict[str, Any]:
+        node_type: str, parent_path: str = "/obj", name: str | None = None
+    ) -> dict[str, Any]:
         """Create a new node in the Houdini scene."""
         hou = conn.hou
         try:
@@ -78,7 +78,7 @@ def _create_mcp_server():
             return {"status": "error", "message": str(e)}
 
     @mcp.tool()
-    def get_node_info(node_path: str, include_params: bool = True) -> Dict[str, Any]:
+    def get_node_info(node_path: str, include_params: bool = True) -> dict[str, Any]:
         """Get detailed information about a node."""
         hou = conn.hou
         try:
@@ -111,7 +111,7 @@ def _create_mcp_server():
             return {"status": "error", "message": str(e)}
 
     @mcp.tool()
-    def set_parameter(node_path: str, param_name: str, value: Any) -> Dict[str, Any]:
+    def set_parameter(node_path: str, param_name: str, value: Any) -> dict[str, Any]:
         """Set a parameter value on a node."""
         hou = conn.hou
         try:
@@ -144,7 +144,7 @@ def _create_mcp_server():
             return {"status": "error", "message": str(e)}
 
     @mcp.tool()
-    def delete_node(node_path: str) -> Dict[str, Any]:
+    def delete_node(node_path: str) -> dict[str, Any]:
         """Delete a node from the scene."""
         hou = conn.hou
         try:
@@ -163,11 +163,11 @@ def _create_mcp_server():
             return {"status": "error", "message": str(e)}
 
     @mcp.tool()
-    def execute_code(code: str, capture_diff: bool = False) -> Dict[str, Any]:
+    def execute_code(code: str, capture_diff: bool = False) -> dict[str, Any]:
         """Execute Python code in Houdini."""
         hou = conn.hou
-        import io
         import contextlib
+        import io
 
         stdout_capture = io.StringIO()
         stderr_capture = io.StringIO()
@@ -196,7 +196,7 @@ def _create_mcp_server():
             }
 
     @mcp.tool()
-    def list_children(node_path: str, recursive: bool = False) -> Dict[str, Any]:
+    def list_children(node_path: str, recursive: bool = False) -> dict[str, Any]:
         """List child nodes."""
         hou = conn.hou
         try:
@@ -231,7 +231,7 @@ def _create_mcp_server():
             return {"status": "error", "message": str(e)}
 
     @mcp.tool()
-    def save_scene(file_path: Optional[str] = None) -> Dict[str, Any]:
+    def save_scene(file_path: str | None = None) -> dict[str, Any]:
         """Save the current Houdini scene."""
         hou = conn.hou
         try:
@@ -248,7 +248,7 @@ def _create_mcp_server():
             return {"status": "error", "message": str(e)}
 
     @mcp.tool()
-    def check_connection() -> Dict[str, Any]:
+    def check_connection() -> dict[str, Any]:
         """Check connection status."""
         return conn.get_info()
 
