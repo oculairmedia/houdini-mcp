@@ -80,6 +80,36 @@ subprocess.call(['rm', '-rf', '/'])
         assert len(result) >= 3
 
 
+class TestDetectHeavyGeometryCode:
+    """Tests for the _detect_heavy_geometry_code helper."""
+
+    def test_detect_node_geometry(self):
+        from houdini_mcp.tools import _detect_heavy_geometry_code
+
+        result = _detect_heavy_geometry_code("geo = hou.node('/obj/geo1/out').geometry()")
+        assert len(result) == 1
+        assert "node.geometry" in result[0]
+
+    def test_detect_geometry_iteration(self):
+        from houdini_mcp.tools import _detect_heavy_geometry_code
+
+        code = """
+geo = node.geometry()
+for prim in geo.prims():
+    pass
+for point in geo.points():
+    pass
+"""
+        result = _detect_heavy_geometry_code(code)
+        assert len(result) >= 3
+
+    def test_safe_parameter_code_no_detection(self):
+        from houdini_mcp.tools import _detect_heavy_geometry_code
+
+        result = _detect_heavy_geometry_code("hou.node('/obj/geo1').parm('tx').set(1)")
+        assert result == []
+
+
 class TestTruncateOutput:
     """Tests for the _truncate_output helper."""
 
@@ -162,6 +192,40 @@ class TestExecuteCode:
         )
         # The code itself is safe, but contains the pattern
         assert result["status"] == "success"
+
+    def test_execute_heavy_geometry_blocked(self, mock_connection):
+        """Test direct SOP geometry access is blocked by default."""
+        from houdini_mcp.tools import execute_code
+
+        result = execute_code("geo = hou.node('/obj/geo1/out').geometry()", host="localhost", port=18811)
+        assert result["status"] == "error"
+        assert "Heavy geometry access detected" in result["message"]
+        assert "heavy_geometry_patterns" in result
+        assert "get_geo_summary" in result["hint"]
+
+    def test_execute_heavy_geometry_allowed(self, mock_connection):
+        """Test direct SOP geometry access can be explicitly allowed and actually runs.
+
+        The geometry() call is reachable (not guarded behind a dead branch) so this
+        confirms the override lets the heavy-geometry code path execute, not just
+        that the pre-scan is bypassed.
+        """
+        from houdini_mcp.tools import execute_code
+
+        code = (
+            "class _FakeSop:\n"
+            "    def geometry(self):\n"
+            "        return 'geo-data'\n"
+            "print(_FakeSop().geometry())\n"
+        )
+        result = execute_code(
+            code,
+            allow_heavy_geometry=True,
+            host="localhost",
+            port=18811,
+        )
+        assert result["status"] == "success"
+        assert "geo-data" in result["stdout"]
 
     def test_execute_simple_print(self, mock_connection):
         """Test executing simple print statement."""

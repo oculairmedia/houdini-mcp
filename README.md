@@ -39,6 +39,9 @@ An MCP (Model Context Protocol) server for controlling SideFX Houdini via `hrpyc
 
 ## Installation
 
+For Codex Desktop on Windows, see the dedicated setup notes in
+[`docs/codex-windows-setup.md`](docs/codex-windows-setup.md).
+
 ### Option 1: Houdini Plugin (stdio mode)
 
 The Houdini plugin runs the MCP server directly inside Houdini, using stdio transport. This is the simplest setup with no network configuration required.

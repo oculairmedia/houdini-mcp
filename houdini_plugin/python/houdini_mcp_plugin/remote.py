@@ -5,6 +5,10 @@ to connect to Houdini via RPyC for remote control.
 """
 
 import logging
+import os
+import socket
+import threading
+import time
 from typing import Any, Optional
 
 logger = logging.getLogger("houdini_mcp_plugin.remote")
@@ -12,6 +16,20 @@ logger = logging.getLogger("houdini_mcp_plugin.remote")
 # Global state for remote mode
 _hrpyc_server: Optional[Any] = None
 _hrpyc_port: int = 18811
+_hrpyc_host: str = "127.0.0.1"
+
+
+def _wait_for_port(host: str, port: int, timeout: float = 2.0) -> bool:
+    """Return True when a TCP listener accepts connections."""
+    connect_host = "127.0.0.1" if host in ("0.0.0.0", "::") else host
+    deadline = time.monotonic() + timeout
+    while time.monotonic() < deadline:
+        try:
+            with socket.create_connection((connect_host, port), timeout=0.2):
+                return True
+        except OSError:
+            time.sleep(0.05)
+    return False
 
 
 def start_hrpyc_server(port: int = 18811) -> dict:
@@ -26,27 +44,47 @@ def start_hrpyc_server(port: int = 18811) -> dict:
     Returns:
         Dict with status and connection info
     """
-    global _hrpyc_server, _hrpyc_port
+    global _hrpyc_server, _hrpyc_port, _hrpyc_host
 
     if _hrpyc_server is not None:
         return {
             "status": "already_running",
             "port": _hrpyc_port,
-            "message": f"hrpyc server is already running on port {_hrpyc_port}",
+            "host": _hrpyc_host,
+            "message": f"hrpyc server is already running on {_hrpyc_host}:{_hrpyc_port}",
         }
 
     try:
         import hrpyc
 
-        # Start the hrpyc server
-        _hrpyc_server = hrpyc.start_server(port=port)
-        _hrpyc_port = port
+        bind_host = os.getenv("HOUDINI_RPC_BIND_HOST", "127.0.0.1")
+        _hrpyc_server = hrpyc.ThreadedServer(
+            hrpyc.SlaveService,
+            hostname=bind_host,
+            port=port,
+            reuse_addr=True,
+            auto_register=False,
+        )
+        _hrpyc_server.logger.quiet = True
+        thread = threading.Thread(target=_hrpyc_server.start, daemon=True)
+        thread.start()
 
-        logger.info(f"Started hrpyc server on port {port}")
+        if not _wait_for_port(bind_host, port):
+            close = getattr(_hrpyc_server, "close", None)
+            if close is not None:
+                close()
+            _hrpyc_server = None
+            return {
+                "status": "error",
+                "message": f"Failed to start hrpyc server on {bind_host}:{port} (port may be in use).",
+            }
+
+        _hrpyc_port = port
+        _hrpyc_host = bind_host
+
+        logger.info(f"Started hrpyc server on {bind_host}:{port}")
 
         # Get local IP for connection info
-        import socket
-
         try:
             # Get the machine's IP address
             s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -58,9 +96,10 @@ def start_hrpyc_server(port: int = 18811) -> dict:
 
         return {
             "status": "success",
+            "host": bind_host,
             "port": port,
             "local_ip": local_ip,
-            "message": f"hrpyc server started. Connect with: HOUDINI_HOST={local_ip} HOUDINI_PORT={port}",
+            "message": f"hrpyc server started. Connect with: HOUDINI_HOST={bind_host} HOUDINI_PORT={port}",
         }
 
     except ImportError as e:
@@ -92,10 +131,14 @@ def stop_hrpyc_server() -> dict:
         }
 
     try:
-        import hrpyc
+        close = getattr(_hrpyc_server, "close", None)
+        if close is None:
+            return {
+                "status": "error",
+                "message": "hrpyc server object cannot be stopped; restart Houdini to clear this listener.",
+            }
 
-        # hrpyc.stop_server() stops the server
-        hrpyc.stop_server()
+        close()
         _hrpyc_server = None
 
         logger.info("Stopped hrpyc server")
@@ -145,8 +188,9 @@ def get_hrpyc_status() -> dict:
 
     return {
         "running": True,
+        "host": _hrpyc_host,
         "port": _hrpyc_port,
         "local_ip": local_ip,
-        "connection_string": f"HOUDINI_HOST={local_ip} HOUDINI_PORT={_hrpyc_port}",
+        "connection_string": f"HOUDINI_HOST={_hrpyc_host} HOUDINI_PORT={_hrpyc_port}",
         "message": "hrpyc server is running and accepting remote connections.",
     }

@@ -15,6 +15,7 @@ from ._common import (
     ensure_connected,
     handle_connection_errors,
     _detect_dangerous_code,
+    _detect_heavy_geometry_code,
     _truncate_output,
     _serialize_scene_state,
     _get_scene_diff,
@@ -38,6 +39,7 @@ def execute_code(
     allow_dangerous: bool = False,
     host: str = "localhost",
     port: int = 18811,
+    allow_heavy_geometry: bool = False,
 ) -> Dict[str, Any]:
     """
     Execute Python code in Houdini with optional scene diff tracking and safety rails.
@@ -50,6 +52,9 @@ def execute_code(
         max_diff_nodes: Maximum number of nodes in scene diff added_nodes (default: 1000)
         timeout: Execution timeout in seconds (default: 30). Note: May be limited by RPyC.
         allow_dangerous: If True, allows execution of code with dangerous patterns (default: False)
+        allow_heavy_geometry: If True, allows direct geometry access patterns such as
+            node.geometry(), geo.points(), and geo.prims(). Prefer get_geo_summary() for
+            bounded inspection of SOP data.
 
     Returns:
         Dict with execution result including stdout/stderr and scene changes.
@@ -78,6 +83,22 @@ def execute_code(
             "message": "Dangerous operations detected in code",
             "dangerous_patterns": dangerous_patterns,
             "hint": "Set allow_dangerous=True to proceed with execution",
+        }
+
+    # 2. Block direct heavy SOP geometry access unless explicitly requested.
+    # These calls are common sources of UI stalls and dropped hrpyc connections on
+    # large production scenes. They are separated from destructive operations so
+    # callers can opt in when they really need raw geometry access.
+    heavy_geometry_patterns = _detect_heavy_geometry_code(code)
+    if heavy_geometry_patterns and not (allow_heavy_geometry or allow_dangerous):
+        return {
+            "status": "error",
+            "message": "Heavy geometry access detected in code",
+            "heavy_geometry_patterns": heavy_geometry_patterns,
+            "hint": (
+                "Use get_geo_summary() for bounded geometry inspection, or set "
+                "allow_heavy_geometry=True if you intentionally need raw SOP geometry access."
+            ),
         }
 
     hou = ensure_connected(host, port)

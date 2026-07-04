@@ -76,6 +76,7 @@ def execute_code(
     max_diff_nodes: int = 1000,
     timeout: int = 30,
     allow_dangerous: bool = False,
+    allow_heavy_geometry: bool = False,
 ) -> Dict[str, Any]:
     """
     Execute Python code in Houdini with scene change tracking and safety rails.
@@ -85,6 +86,7 @@ def execute_code(
 
     SAFETY FEATURES:
     - Dangerous operation detection: Scans for patterns like hou.exit(), os.remove(), subprocess, etc.
+    - Heavy geometry guard: Blocks direct node.geometry()/geo.points()/geo.prims() access by default
     - Output size caps: Prevents massive output from overwhelming the response
     - Execution timeout: Prevents runaway code from blocking indefinitely
     - Scene diff limits: Caps the number of nodes returned in scene changes
@@ -97,6 +99,8 @@ def execute_code(
         max_diff_nodes: Maximum nodes in scene diff added_nodes list (default: 1000)
         timeout: Execution timeout in seconds (default: 30)
         allow_dangerous: If True, allows code with dangerous patterns to execute (default: False)
+        allow_heavy_geometry: If True, allows direct SOP geometry access. Prefer get_geo_summary()
+            for bounded geometry inspection.
 
     Dangerous patterns detected:
         - hou.exit() - closes Houdini
@@ -130,6 +134,7 @@ def execute_code(
         max_diff_nodes=max_diff_nodes,
         timeout=timeout,
         allow_dangerous=allow_dangerous,
+        allow_heavy_geometry=allow_heavy_geometry,
         host=HOUDINI_HOST,
         port=HOUDINI_PORT,
     )
@@ -1401,7 +1406,10 @@ def run_server(transport: str = "http", port: int = 3055) -> None:
     if transport in ("stdio", "http", "sse", "streamable-http"):
         transport_literal = transport  # type: ignore
 
-    mcp.run(transport=transport_literal, host="0.0.0.0", port=port)
+    if transport_literal == "stdio":
+        mcp.run(transport=transport_literal, show_banner=False)
+    else:
+        mcp.run(transport=transport_literal, host="0.0.0.0", port=port)
 
 
 if __name__ == "__main__":
