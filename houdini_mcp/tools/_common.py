@@ -8,6 +8,7 @@ This module contains common utilities used across all tool modules:
 - Node serialization
 """
 
+import ast
 import logging
 import re
 from typing import Any
@@ -307,20 +308,47 @@ HEAVY_GEOMETRY_PATTERNS: list[tuple[str, str]] = [
 
 
 def _detect_dangerous_code(code: str) -> list[str]:
-    """
-    Scan code for potentially dangerous patterns.
-
-    Args:
-        code: Python code to scan
-
-    Returns:
-        List of detected dangerous pattern descriptions
-    """
+    """Scan code for dangerous operations, including imported aliases."""
     detected: list[str] = []
     for pattern, description in DANGEROUS_PATTERNS:
         if re.search(pattern, code):
             detected.append(description)
-    return detected
+
+    # Regexes are useful for malformed/dynamic source, while AST inspection
+    # closes ordinary alias forms such as `from os import remove; remove(...)`.
+    try:
+        tree = ast.parse(code)
+    except SyntaxError:
+        return list(dict.fromkeys(detected))
+
+    dangerous_from_imports = {
+        "os": {"remove", "unlink", "rmdir", "system", "popen", "kill"},
+        "shutil": {"rmtree", "move"},
+        "subprocess": {"run", "call", "Popen", "check_call", "check_output"},
+        "requests": {"get", "post", "put", "delete", "request"},
+        "urllib.request": {"urlopen", "Request"},
+        "socket": {"socket", "create_connection"},
+        "ftplib": {"FTP", "FTP_TLS"},
+    }
+    imported_aliases: dict[str, str] = {}
+    for node in ast.walk(tree):
+        if isinstance(node, ast.ImportFrom) and node.module in dangerous_from_imports:
+            for alias in node.names:
+                if alias.name in dangerous_from_imports[node.module]:
+                    imported_aliases[alias.asname or alias.name] = f"{node.module}.{alias.name}"
+        elif isinstance(node, ast.Call):
+            if isinstance(node.func, ast.Name) and node.func.id in imported_aliases:
+                detected.append(
+                    f"{imported_aliases[node.func.id]}() - imported dangerous operation"
+                )
+            elif (
+                isinstance(node.func, ast.Attribute)
+                and isinstance(node.func.value, ast.Name)
+                and node.func.value.id == "builtins"
+                and node.func.attr in {"eval", "exec", "compile", "__import__"}
+            ):
+                detected.append(f"builtins.{node.func.attr}() - dynamic code execution")
+    return list(dict.fromkeys(detected))
 
 
 def _detect_heavy_geometry_code(code: str) -> list[str]:
@@ -389,21 +417,55 @@ MUTATION_PATTERNS: list[tuple[str, str]] = [
 
 
 def _detect_mutation_code(code: str) -> list[str]:
-    """
-    Scan code for patterns that mutate the Houdini scene or write to disk.
-
-    Used exclusively by the ``read-only`` policy profile to fail closed before
-    any interpreter execution when the caller promised not to mutate the scene.
-    """
+    """Scan scene mutations using regex fallback plus AST call semantics."""
     detected: list[str] = []
     for pattern, description in MUTATION_PATTERNS:
         if re.search(pattern, code):
             detected.append(description)
-    # Any dangerous op is also a mutation for read-only purposes.
-    for pattern, description in DANGEROUS_PATTERNS:
-        if re.search(pattern, code):
-            detected.append(description)
-    return detected
+    detected.extend(_detect_dangerous_code(code))
+
+    # Method names are semantic regardless of whitespace or aliases (`p.set`).
+    mutation_methods = {
+        "createNode",
+        "createOutputNode",
+        "copyTo",
+        "destroy",
+        "deleteItems",
+        "setInput",
+        "setFirstInput",
+        "setNamedInput",
+        "set",
+        "setParms",
+        "setName",
+        "setColor",
+        "setDisplayFlag",
+        "setRenderFlag",
+        "setBypass",
+        "setPosition",
+        "layoutChildren",
+        "createNetworkBox",
+        "addNode",
+        "save",
+    }
+    try:
+        tree = ast.parse(code)
+    except SyntaxError:
+        return list(dict.fromkeys(detected))
+
+    for node in ast.walk(tree):
+        if not isinstance(node, ast.Call) or not isinstance(node.func, ast.Attribute):
+            continue
+        if node.func.attr in mutation_methods:
+            detected.append(f"{node.func.attr}() - scene mutation")
+        if (
+            node.func.attr == "hscript"
+            and isinstance(node.func.value, ast.Name)
+            and node.func.value.id == "hou"
+        ):
+            # HScript is a command language; read-only fails closed instead of
+            # attempting an incomplete allowlist of non-mutating commands.
+            detected.append("hou.hscript() - command may mutate scene")
+    return list(dict.fromkeys(detected))
 
 
 def _truncate_output(output: str, max_size: int) -> tuple[str, bool]:

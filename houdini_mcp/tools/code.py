@@ -317,7 +317,7 @@ def execute_code(
     # exposed by the MCP wrapper. Public bypass flags still require BOTH request
     # opt-in and the server configuration gate.
     heavy_bypass = _trusted_internal_heavy_geometry or (
-        (allow_heavy_geometry or allow_dangerous) and bypass_config
+        policy != "read-only" and (allow_heavy_geometry or allow_dangerous) and bypass_config
     )
 
     # --- Dangerous-pattern gate ---------------------------------------------
@@ -395,6 +395,17 @@ def execute_code(
             ),
         }
 
+    # Emit the durable bypass audit BEFORE execution so a later exception
+    # cannot skip the server-side trail. Source code and secrets are excluded.
+    if dangerous_bypass or (heavy_geometry_patterns and heavy_bypass):
+        logger.warning(
+            "execute_code approved bypass policy=%s dangerous=%s heavy=%s code_sha256=%s",
+            policy,
+            dangerous_patterns if dangerous_bypass else [],
+            heavy_geometry_patterns if heavy_bypass else [],
+            hashlib.sha256(code.encode("utf-8", "replace")).hexdigest(),
+        )
+
     # --- Connect and prepare execution --------------------------------------
     hou = ensure_connected(host, port)
     undos = _resolve_undo_primitive(hou)
@@ -408,7 +419,9 @@ def execute_code(
     exec_traceback: list[str] = [""]
 
     def run_code() -> None:
-        # Wrap execution in a named undo group so a timeout can roll it back.
+        # Never retry user code if the undo context fails: __exit__ may raise
+        # after the body already mutated the scene, so fallback would execute it
+        # twice. Fail closed and surface the context error instead.
         if undos is not None:
             try:
                 with undos.group(_UNDO_GROUP_LABEL):
@@ -420,9 +433,11 @@ def execute_code(
                         exec_exception,
                         exec_traceback,
                     )
-                return
-            except Exception:  # noqa: BLE001 - undo group unusable; fall back
-                logger.debug("undo group unavailable at runtime; running ungrouped")
+            except Exception as error:  # noqa: BLE001
+                if exec_exception[0] is None:
+                    exec_exception[0] = error
+                    exec_traceback[0] = traceback.format_exc()
+            return
         _run_code_thread(
             code,
             hou,
@@ -552,16 +567,6 @@ def execute_code(
             result["diff_truncated"] = True
             result["diff_warning"] = f"added_nodes truncated to {max_diff_nodes} nodes"
 
-    if dangerous_patterns or (heavy_geometry_patterns and heavy_bypass):
-        # Server-side audit survives callers discarding the response. Never log
-        # source code or request secrets—only classifications and code digest.
-        logger.warning(
-            "execute_code approved bypass policy=%s dangerous=%s heavy=%s code_sha256=%s",
-            policy,
-            dangerous_patterns,
-            heavy_geometry_patterns if heavy_bypass else [],
-            audit["code_sha256"],
-        )
     if dangerous_patterns:
         result["dangerous_patterns_executed"] = dangerous_patterns
         result["safety_warning"] = (

@@ -34,15 +34,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `http`), dynamic execution (`eval`/`exec`/`compile`/`__import__`), and trivial
   whitespace obfuscation. Every call returns a structured `audit` block (policy,
   requested bypasses, detected patterns, code hash, timeout/rollback state) and
-  blocked/executed bypass attempts are logged. On timeout the run's undo group is
-  reverted via `hou.undos.performUndo()` when a usable undo primitive exists;
-  if none exists the call fails closed and reports that partial mutations may be
-  untracked. Note: the timed-out code runs in a daemon thread that Python cannot
-  forcibly kill, so `performUndo()` is a best-effort revert of what was recorded
-  up to that point, not a guarantee the scene stays consistent — the thread may
-  still be running and mutating the scene concurrently, and the response
-  explicitly reports that risk (`rollback.thread_still_running`) instead of
-  claiming a hard rollback guarantee.
+  blocked/executed bypass attempts are logged. On timeout the daemon worker and
+  its undo group may still be active; the tool deliberately does NOT call
+  `hou.undos.performUndo()` because that could undo a previous human action.
+  The response reports `rollback.thread_still_running=true` and
+  `scene_consistency=unknown`; callers must verify state or restart Houdini and
+  must not assume restoration.
 - **Heavy geometry guard**: `execute_code` now detects and blocks direct SOP
   geometry access (`node.geometry()`, `geo.points()`, `geo.prims()`,
   `geo.vertices()`, `geo.iterPoints()`, `geo.iterPrims()`) which can stall the

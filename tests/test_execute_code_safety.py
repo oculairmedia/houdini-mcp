@@ -56,6 +56,9 @@ class TestNetworkPatternDetection:
             "from socket import socket; socket()",
             "from ftplib import FTP; FTP('example.com')",
             "from http.client import HTTPConnection",
+            "from os import remove; remove('/tmp/x')",
+            "from os import system; system('echo x')",
+            "import builtins; builtins.eval('1+1')",
             "eval('1+1')",
             "exec('x=1')",
             "__import__('os').system('ls')",
@@ -157,6 +160,12 @@ class TestPolicyProfiles:
             "hou.node('/obj') . createNode('geo')",
             "hou.node('/obj/geo1') . parm('tx') . set(1)",
             "hou.node('/obj/geo1') . parmTuple('t') . set((1, 2, 3))",
+            "hou.node('/obj/geo1') . destroy()",
+            "hou.node('/obj/geo1') . setInput(0, None)",
+            "p = hou.node('/obj/geo1').parm('tx'); p.set(1)",
+            "hou.node('/obj').layoutChildren()",
+            "hou.node('/obj').createNetworkBox()",
+            "hou.hscript('opadd geo /obj')",
         ],
     )
     def test_read_only_blocks_whitespace_mutation_variants(self, mock_connection, code):
@@ -185,6 +194,16 @@ class TestPolicyProfiles:
         )
         assert result["status"] == "error"
         assert result["policy"] == "read-only"
+
+        heavy = execute_code(
+            "hou.node('/obj').geometry()",
+            policy="read-only",
+            allow_heavy_geometry=True,
+            host="localhost",
+            port=18811,
+        )
+        assert heavy["status"] == "error"
+        assert heavy["audit"]["blocked_reason"] == "heavy_geometry"
 
     def test_normal_is_default_profile(self, mock_connection):
         from houdini_mcp.tools import execute_code
@@ -403,6 +422,31 @@ class TestTimeoutRollback:
             "scene_consistency": "unknown",
         }
         assert "previous human action" in result["warning"].lower()
+
+    def test_undo_context_error_does_not_execute_code_twice(self, mock_connection, monkeypatch):
+        from contextlib import contextmanager
+
+        import houdini_mcp.tools.code as code_mod
+
+        calls = []
+        real_exec = code_mod.exec
+
+        def counting_exec(source, globals_dict):
+            calls.append(source)
+            return real_exec(source, globals_dict)
+
+        @contextmanager
+        def broken_group(_label):
+            yield
+            raise RuntimeError("undo exit failed")
+
+        monkeypatch.setattr(code_mod, "exec", counting_exec)
+        monkeypatch.setattr(mock_connection.undos, "group", broken_group)
+
+        result = code_mod.execute_code("print('once')", host="localhost", port=18811)
+        assert result["status"] == "error"
+        assert len(calls) == 1
+        assert "undo exit failed" in result["message"]
 
     def test_undo_group_opened_around_execution(self, mock_connection):
         """Successful runs must be wrapped in a named undo group for later rollback."""
