@@ -161,6 +161,18 @@ This project's PM agent has a `codebase_ast` memory block with live structural d
 Ask the PM agent for architectural guidance before making significant changes.
 <!-- VIBESYNC:codebase-context:END -->
 
+## Architecture Decisions (ADRs)
+
+Architecture Decision Records live in [`docs/adr/`](docs/adr/). Read them before
+proposing structural or language changes:
+
+- [ADR 0001: Language and Process Boundaries](docs/adr/0001-language-and-process-boundaries.md)
+  — the server stays Python for `hou` semantics and the FastMCP gateway. A
+  non-Python sidecar is authorized **only** when a measured threshold in that ADR
+  is crossed and only behind a versioned, language-neutral protocol; a sidecar
+  must never duplicate `hou`/node/geometry semantics. No rewrite is authorized
+  without a follow-up bead backed by profiling.
+
 # Agent Instructions
 
 This project uses **bd** (beads) for issue tracking. Run `bd onboard` to get started.

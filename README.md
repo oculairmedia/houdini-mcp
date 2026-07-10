@@ -11,6 +11,15 @@ An MCP (Model Context Protocol) server for controlling SideFX Houdini via `hrpyc
 +-----------------+                      +------------------+                      +-------------+
 ```
 
+## Architecture Decisions
+
+Architecture Decision Records (ADRs) live in [`docs/adr/`](docs/adr/):
+
+- [ADR 0001: Language and Process Boundaries](docs/adr/0001-language-and-process-boundaries.md)
+  — why the server stays Python for `hou` semantics and the FastMCP gateway, the
+  module boundaries and allowed dependency direction, and the measured thresholds
+  that would justify a future non-Python sidecar.
+
 ## Features
 
 - **43 MCP tools** across 15 modular categories
