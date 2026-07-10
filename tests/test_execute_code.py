@@ -176,9 +176,16 @@ class TestExecuteCode:
         assert "dangerous_patterns" in result
         assert "hint" in result
 
-    def test_execute_dangerous_code_allowed(self, mock_connection):
-        """Test dangerous code can be allowed with flag."""
+    def test_execute_dangerous_code_allowed(self, mock_connection, monkeypatch):
+        """Test dangerous code can be allowed with request flag + server config.
+
+        Bypass now requires BOTH the request flag and the server-side config gate
+        (HOUDINI_MCP_ALLOW_BYPASS) per the config+request opt-in safety model.
+        """
+        import houdini_mcp.tools.code as code_mod
         from houdini_mcp.tools import execute_code
+
+        monkeypatch.setattr(code_mod, "_bypass_config_enabled", lambda: True)
 
         # This won't actually call hou.exit() since hou is mocked
         result = execute_code(
@@ -202,14 +209,17 @@ class TestExecuteCode:
         assert "heavy_geometry_patterns" in result
         assert "get_geo_summary" in result["hint"]
 
-    def test_execute_heavy_geometry_allowed(self, mock_connection):
+    def test_execute_heavy_geometry_allowed(self, mock_connection, monkeypatch):
         """Test direct SOP geometry access can be explicitly allowed and actually runs.
 
         The geometry() call is reachable (not guarded behind a dead branch) so this
         confirms the override lets the heavy-geometry code path execute, not just
-        that the pre-scan is bypassed.
+        that the pre-scan is bypassed. Bypass requires the server config gate too.
         """
+        import houdini_mcp.tools.code as code_mod
         from houdini_mcp.tools import execute_code
+
+        monkeypatch.setattr(code_mod, "_bypass_config_enabled", lambda: True)
 
         code = (
             "class _FakeSop:\n"

@@ -329,9 +329,12 @@ x = 1 + 2
 
         assert result["status"] == "success"
 
-    def test_allow_dangerous_flag(self, mock_connection):
-        """Test that allow_dangerous=True allows dangerous code to execute."""
+    def test_allow_dangerous_flag(self, mock_connection, monkeypatch):
+        """Test that allow_dangerous=True + config gate allows dangerous code to execute."""
+        import houdini_mcp.tools.code as code_mod
         from houdini_mcp.tools import execute_code
+
+        monkeypatch.setattr(code_mod, "_bypass_config_enabled", lambda: True)
 
         # Use a pattern that would be detected but won't actually cause harm in mock
         result = execute_code(
@@ -345,9 +348,12 @@ x = 1 + 2
         # Should succeed since code is actually safe (just contains pattern in string)
         assert result["status"] == "success"
 
-    def test_allow_dangerous_includes_warnings(self, mock_connection):
-        """Test that allow_dangerous=True includes safety warnings in response."""
+    def test_allow_dangerous_includes_warnings(self, mock_connection, monkeypatch):
+        """Test that an approved bypass includes safety warnings in response."""
+        import houdini_mcp.tools.code as code_mod
         from houdini_mcp.tools import execute_code
+
+        monkeypatch.setattr(code_mod, "_bypass_config_enabled", lambda: True)
 
         # This code contains a pattern but we allow it
         result = execute_code(

@@ -10,5 +10,6 @@ beautifulsoup4>=4.11.0
 # Development dependencies
 pytest>=7.0.0
 pytest-cov>=4.0.0
-# Property-based / stateful tests for the outbound WSS state-machine core
-hypothesis>=6.0.0
+# Property-based / stateful tests (outbound WSS state-machine core,
+# execute_code safety-rail evasion fuzzing)
+hypothesis>=6.100.0

@@ -8,6 +8,7 @@ This module contains common utilities used across all tool modules:
 - Node serialization
 """
 
+import ast
 import logging
 import re
 from typing import Any
@@ -41,9 +42,11 @@ __all__ = [
     # Code safety
     "DANGEROUS_PATTERNS",
     "HEAVY_GEOMETRY_PATTERNS",
+    "MUTATION_PATTERNS",
     "_detect_dangerous_code",
     "_detect_heavy_geometry_code",
     "_detect_import_hou",
+    "_detect_mutation_code",
     # Output utilities
     "_truncate_output",
     # Response size utilities
@@ -234,15 +237,45 @@ def validate_resolution(
 
 
 # Dangerous code patterns for safety scanning
+# Note: patterns tolerate arbitrary whitespace around ``.`` and ``(`` so that
+# trivial obfuscation (``hou . exit ( )``) cannot slip past the scanner.
 DANGEROUS_PATTERNS: list[tuple[str, str]] = [
-    (r"\bhou\.exit\s*\(", "hou.exit() - will close Houdini"),
-    (r"\bos\.remove\s*\(", "os.remove() - file deletion"),
-    (r"\bos\.unlink\s*\(", "os.unlink() - file deletion"),
-    (r"\bshutil\.rmtree\s*\(", "shutil.rmtree() - directory deletion"),
+    (r"\bhou\s*\.\s*exit\s*\(", "hou.exit() - will close Houdini"),
+    (r"\bos\s*\.\s*remove\s*\(", "os.remove() - file deletion"),
+    (r"\bos\s*\.\s*unlink\s*\(", "os.unlink() - file deletion"),
+    (r"\bos\s*\.\s*rmdir\s*\(", "os.rmdir() - directory deletion"),
+    (r"\bshutil\s*\.\s*rmtree\s*\(", "shutil.rmtree() - directory deletion"),
+    (r"\bshutil\s*\.\s*move\s*\(", "shutil.move() - file move/overwrite"),
     (r"\bsubprocess\b", "subprocess - shell execution"),
-    (r"\bos\.system\s*\(", "os.system() - shell execution"),
-    (r'\bopen\s*\([^)]*["\'][wa]', "open() with write mode - file writing"),
-    (r"\bhou\.hipFile\.clear\s*\(", "hou.hipFile.clear() - scene wipe"),
+    (r"\bos\s*\.\s*system\s*\(", "os.system() - shell execution"),
+    (r"\bos\s*\.\s*popen\s*\(", "os.popen() - shell execution"),
+    (r"\bos\s*\.\s*exec[lv]", "os.exec*() - process replacement"),
+    (r"\bos\s*\.\s*kill\s*\(", "os.kill() - signal a process"),
+    (r"\bpty\s*\.\s*spawn\s*\(", "pty.spawn() - shell execution"),
+    (r'\bopen\s*\([^)]*["\'][wax]', "open() with write mode - file writing"),
+    (r"\bhou\s*\.\s*hipFile\s*\.\s*clear\s*\(", "hou.hipFile.clear() - scene wipe"),
+    # Dynamic execution primitives (common evasion vectors).
+    # Standalone builtin eval only; Houdini's safe parameter read `.eval()` is
+    # an ordinary method call and must remain usable under normal policy.
+    (r"(?<![.\w])eval\s*\(", "eval() - dynamic code execution"),
+    (r"\bexec\s*\(", "exec() - dynamic code execution"),
+    (r"\bcompile\s*\(", "compile() - dynamic code compilation"),
+    (r"\b__import__\s*\(", "__import__() - dynamic import (evasion vector)"),
+    (r"\bgetattr\s*\(\s*__builtins__", "getattr(__builtins__ ...) - builtins evasion"),
+    # Network egress: exfiltration / remote control risk.
+    (r"\b(?:import\s+socket\b|from\s+socket\s+import\b)", "socket - raw network access"),
+    (r"\bsocket\s*\.\s*socket\s*\(", "socket.socket() - raw network access"),
+    (
+        r"\b(?:import\s+requests\b|from\s+requests\s+import\b)",
+        "requests - HTTP network access",
+    ),
+    (r"\brequests\s*\.\s*(get|post|put|delete|request)\s*\(", "requests.* - HTTP network access"),
+    (r"\b(?:import\s+urllib\b|from\s+urllib(?:\.\w+)?\s+import\b)", "urllib - HTTP network access"),
+    (r"\burllib\b", "urllib - HTTP network access"),
+    (r"\bimport\s+http\b", "http - HTTP network access"),
+    (r"\bfrom\s+http\b", "http - HTTP network access"),
+    (r"\bhttp\s*\.\s*client\b", "http.client - HTTP network access"),
+    (r"\b(?:import\s+ftplib\b|from\s+ftplib\s+import\b)", "ftplib - FTP network access"),
 ]
 
 
@@ -275,20 +308,47 @@ HEAVY_GEOMETRY_PATTERNS: list[tuple[str, str]] = [
 
 
 def _detect_dangerous_code(code: str) -> list[str]:
-    """
-    Scan code for potentially dangerous patterns.
-
-    Args:
-        code: Python code to scan
-
-    Returns:
-        List of detected dangerous pattern descriptions
-    """
+    """Scan code for dangerous operations, including imported aliases."""
     detected: list[str] = []
     for pattern, description in DANGEROUS_PATTERNS:
         if re.search(pattern, code):
             detected.append(description)
-    return detected
+
+    # Regexes are useful for malformed/dynamic source, while AST inspection
+    # closes ordinary alias forms such as `from os import remove; remove(...)`.
+    try:
+        tree = ast.parse(code)
+    except SyntaxError:
+        return list(dict.fromkeys(detected))
+
+    dangerous_from_imports = {
+        "os": {"remove", "unlink", "rmdir", "system", "popen", "kill"},
+        "shutil": {"rmtree", "move"},
+        "subprocess": {"run", "call", "Popen", "check_call", "check_output"},
+        "requests": {"get", "post", "put", "delete", "request"},
+        "urllib.request": {"urlopen", "Request"},
+        "socket": {"socket", "create_connection"},
+        "ftplib": {"FTP", "FTP_TLS"},
+    }
+    imported_aliases: dict[str, str] = {}
+    for node in ast.walk(tree):
+        if isinstance(node, ast.ImportFrom) and node.module in dangerous_from_imports:
+            for alias in node.names:
+                if alias.name in dangerous_from_imports[node.module]:
+                    imported_aliases[alias.asname or alias.name] = f"{node.module}.{alias.name}"
+        elif isinstance(node, ast.Call):
+            if isinstance(node.func, ast.Name) and node.func.id in imported_aliases:
+                detected.append(
+                    f"{imported_aliases[node.func.id]}() - imported dangerous operation"
+                )
+            elif (
+                isinstance(node.func, ast.Attribute)
+                and isinstance(node.func.value, ast.Name)
+                and node.func.value.id == "builtins"
+                and node.func.attr in {"eval", "exec", "compile", "__import__"}
+            ):
+                detected.append(f"builtins.{node.func.attr}() - dynamic code execution")
+    return list(dict.fromkeys(detected))
 
 
 def _detect_heavy_geometry_code(code: str) -> list[str]:
@@ -326,6 +386,86 @@ def _detect_import_hou(code: str) -> bool:
         r"^\s*from\s+hou\s+import\s+",
     ]
     return any(re.search(pattern, code, re.MULTILINE) for pattern in import_patterns)
+
+
+# Scene-mutation patterns. These are perfectly legal under the ``normal`` and
+# ``privileged`` policies, but forbidden under ``read-only`` where the caller has
+# declared they only intend to inspect the scene.
+MUTATION_PATTERNS: list[tuple[str, str]] = [
+    (r"\.\s*createNode\s*\(", "createNode() - creates a node"),
+    (r"\.\s*createOutputNode\s*\(", "createOutputNode() - creates a node"),
+    (r"\.copyTo\s*\(", "copyTo() - copies nodes"),
+    (r"\.destroy\s*\(", "destroy() - deletes a node"),
+    (r"\.deleteItems\s*\(", "deleteItems() - deletes nodes"),
+    (r"\.setInput\s*\(", "setInput() - rewires a node"),
+    (r"\.setFirstInput\s*\(", "setFirstInput() - rewires a node"),
+    (r"\.setNamedInput\s*\(", "setNamedInput() - rewires a node"),
+    (r"\.\s*parm\s*\([^)]*\)\s*\.\s*set\s*\(", "parm().set() - mutates a parameter"),
+    (
+        r"\.\s*parmTuple\s*\([^)]*\)\s*\.\s*set\s*\(",
+        "parmTuple().set() - mutates a parameter",
+    ),
+    (r"\.setParms\s*\(", "setParms() - mutates parameters"),
+    (r"\.setName\s*\(", "setName() - renames a node"),
+    (r"\.setColor\s*\(", "setColor() - mutates node appearance"),
+    (r"\.setDisplayFlag\s*\(", "setDisplayFlag() - mutates node flags"),
+    (r"\.setRenderFlag\s*\(", "setRenderFlag() - mutates node flags"),
+    (r"\.setBypass\s*\(", "setBypass() - mutates node flags"),
+    (r"\bhou\s*\.\s*hipFile\s*\.\s*(save|load|clear|merge|new)\s*\(", "hou.hipFile mutation"),
+    (r"\.save\s*\(", "save() - writes to disk"),
+]
+
+
+def _detect_mutation_code(code: str) -> list[str]:
+    """Scan scene mutations using regex fallback plus AST call semantics."""
+    detected: list[str] = []
+    for pattern, description in MUTATION_PATTERNS:
+        if re.search(pattern, code):
+            detected.append(description)
+    detected.extend(_detect_dangerous_code(code))
+
+    # Method names are semantic regardless of whitespace or aliases (`p.set`).
+    mutation_methods = {
+        "createNode",
+        "createOutputNode",
+        "copyTo",
+        "destroy",
+        "deleteItems",
+        "setInput",
+        "setFirstInput",
+        "setNamedInput",
+        "set",
+        "setParms",
+        "setName",
+        "setColor",
+        "setDisplayFlag",
+        "setRenderFlag",
+        "setBypass",
+        "setPosition",
+        "layoutChildren",
+        "createNetworkBox",
+        "addNode",
+        "save",
+    }
+    try:
+        tree = ast.parse(code)
+    except SyntaxError:
+        return list(dict.fromkeys(detected))
+
+    for node in ast.walk(tree):
+        if not isinstance(node, ast.Call) or not isinstance(node.func, ast.Attribute):
+            continue
+        if node.func.attr in mutation_methods:
+            detected.append(f"{node.func.attr}() - scene mutation")
+        if (
+            node.func.attr == "hscript"
+            and isinstance(node.func.value, ast.Name)
+            and node.func.value.id == "hou"
+        ):
+            # HScript is a command language; read-only fails closed instead of
+            # attempting an incomplete allowlist of non-mutating commands.
+            detected.append("hou.hscript() - command may mutate scene")
+    return list(dict.fromkeys(detected))
 
 
 def _truncate_output(output: str, max_size: int) -> tuple[str, bool]:

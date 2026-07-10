@@ -378,6 +378,9 @@ class MockHouModule:
         self.Color = MockColor
         self.Vector2 = MockVector2
 
+        # Undo stack (used by execute_code rollback-on-timeout safety rail)
+        self.undos = MockUndos()
+
     def applicationVersionString(self) -> str:
         return self._version
 
@@ -541,6 +544,54 @@ def mock_rpyc_with_reset(
     with patch("houdini_mcp.connection.rpyc") as mock_rpyc_module:
         mock_rpyc_module.classic.connect.return_value = mock_conn
         yield mock_hou
+
+
+class MockUndoGroupContext:
+    """Context manager mimicking hou.undos.group()."""
+
+    def __init__(self, undos: "MockUndos", label: str):
+        self._undos = undos
+        self._label = label
+
+    def __enter__(self) -> "MockUndoGroupContext":
+        self._undos.open_groups.append(self._label)
+        return self
+
+    def __exit__(self, exc_type, exc, tb) -> bool:
+        # Mirror Houdini: leaving the group closes it and records it as undoable.
+        if self._undos.open_groups and self._undos.open_groups[-1] == self._label:
+            self._undos.open_groups.pop()
+        self._undos.closed_groups.append(self._label)
+        return False
+
+
+class MockUndos:
+    """Mock hou.undos namespace for testing the rollback safety rail."""
+
+    def __init__(self) -> None:
+        self.open_groups: list[str] = []
+        self.closed_groups: list[str] = []
+        self.performed_undos = 0
+        self.performed_redos = 0
+        self._enabled = True
+
+    def group(self, label: str) -> MockUndoGroupContext:
+        return MockUndoGroupContext(self, label)
+
+    def performUndo(self) -> None:
+        self.performed_undos += 1
+
+    def performRedo(self) -> None:
+        self.performed_redos += 1
+
+    def isUndoAvailable(self) -> bool:
+        return bool(self.closed_groups) and self.performed_undos < len(self.closed_groups)
+
+    def areUndosEnabled(self) -> bool:
+        return self._enabled
+
+    def undoLabels(self) -> list[str]:
+        return list(self.closed_groups)
 
 
 class MockColor:

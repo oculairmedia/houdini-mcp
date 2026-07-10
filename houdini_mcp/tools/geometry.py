@@ -227,6 +227,9 @@ print(json.dumps(result))
         allow_heavy_geometry=True,
         host=host,
         port=port,
+        # Private capability: this generated program is bounded by this tool's
+        # own sample/count limits. It is intentionally absent from the MCP API.
+        _trusted_internal_heavy_geometry=True,
     )
 
     if exec_result.get("status") == "error":
