@@ -373,6 +373,7 @@ def list_node_types(
         "total": total_matched,
         "returned": len(node_types),
         "has_more": has_more,
+        "offset": offset,
     }
 
     # Include category in result if filtered
@@ -539,6 +540,7 @@ def list_children(
         "total": paginated["total"],
         "returned": paginated["returned"],
         "has_more": paginated["has_more"],
+        "offset": max(0, int(cursor)) if cursor is not None else 0,
     }
 
     if paginated["has_more"]:
@@ -656,16 +658,14 @@ if root is not None:
             if total_matched <= offset:
                 continue
 
-            matches.append({{
-                "path": child.path(),
-                "name": child_name,
-                "type": child_type,
-            }})
-
-            # Keep counting exact totals after the page/lookahead is full, but
-            # stop materializing additional match records.
-            if len(matches) >= fetch_limit:
-                continue
+            # Keep counting exact totals, but materialize only one lookahead
+            # page to avoid path/type RPC work for every remaining match.
+            if len(matches) < fetch_limit:
+                matches.append({{
+                    "path": child.path(),
+                    "name": child_name,
+                    "type": child_type,
+                }})
 
 _result = {{"matches": matches, "total_matched": total_matched}}
 """.format(

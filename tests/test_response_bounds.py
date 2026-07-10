@@ -649,6 +649,52 @@ def _json_size(value):
     return len(json.dumps(value, ensure_ascii=False).encode("utf-8"))
 
 
+class TestGenericPayloadPreservation:
+    def test_execute_code_text_keeps_bounded_prefix(self):
+        from houdini_mcp.tools._common import apply_response_cap
+
+        result = apply_response_cap(
+            {"status": "success", "stdout": "hello" * 10000, "stderr": "warn" * 10000},
+            max_bytes=1800,
+        )
+        assert result["stdout"].startswith("hello")
+        assert result["stdout_truncated"] is True
+        assert _json_size(result) <= 1800
+
+    def test_single_oversized_parameter_keeps_identity(self):
+        from houdini_mcp.tools._common import apply_response_cap
+
+        result = apply_response_cap(
+            {
+                "status": "success",
+                "parameters": [
+                    {"name": "mode", "type": "menu", "menu_items": ["x" * 100 for _ in range(1000)]}
+                ],
+                "count": 1,
+            },
+            max_bytes=1600,
+        )
+        assert result["parameters"]
+        assert "name" in result["parameters"][0]
+        assert result["count"] == 1
+
+    def test_bounding_box_survives_geometry_cap(self):
+        from houdini_mcp.tools._common import apply_response_cap
+
+        bbox = {"min": [0, 0, 0], "max": [1, 1, 1]}
+        result = apply_response_cap(
+            {
+                "status": "success",
+                "bounding_box": bbox,
+                "attributes": {
+                    "point": [{"name": str(i), "detail": "x" * 100} for i in range(1000)]
+                },
+            },
+            max_bytes=1800,
+        )
+        assert result["bounding_box"] == bbox
+
+
 class TestFinalSerializedSizeAccounting:
     """The cap applies to the final object, including metadata added by finalization."""
 

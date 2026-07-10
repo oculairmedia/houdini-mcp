@@ -1159,12 +1159,27 @@ def apply_response_cap(
         "point_count",
         "primitive_count",
         "vertex_count",
+        "bounding_box",
+        "title",
+        "url",
         "warning",
         "message",
     ]
     for field in essential_fields:
         if field in data:
             result[field] = data[field]
+
+    # Preserve bounded textual payloads used by execute_code and help tools.
+    for field in ("stdout", "stderr", "traceback", "description"):
+        value = data.get(field)
+        if not isinstance(value, str) or not value:
+            continue
+        available = max(64, (max_bytes - _serialized_size(result)) // 2)
+        encoded = value.encode("utf-8")
+        if len(encoded) > available:
+            value = encoded[:available].decode("utf-8", errors="ignore") + "…"
+            result[f"{field}_truncated"] = True
+        result[field] = value
 
     # Try to preserve data fields (arrays, nested objects) within budget
     data_fields = [
@@ -1178,6 +1193,11 @@ def apply_response_cap(
         ("groups", "group"),
         ("error_nodes", "error_node"),
         ("warning_nodes", "warning_node"),
+        ("inputs", "input"),
+        ("outputs", "output"),
+        ("methods", "method"),
+        ("vex_info", "vex_item"),
+        ("scene_changes", "scene_change"),
     ]
 
     for field_name, _singular_name in data_fields:
@@ -1221,8 +1241,26 @@ def apply_response_cap(
                 except Exception:
                     high = midpoint - 1
 
+            if best == 0 and field_value:
+                # Preserve the identity/core shape of one oversized requested
+                # item by recursively capping it rather than dropping the field.
+                item = field_value[0]
+                if isinstance(item, dict):
+                    compact_item = apply_response_cap(item, max(256, max_bytes // 2))
+                elif isinstance(item, str):
+                    compact_item = item[: max(1, max_bytes // 8)] + "…"
+                else:
+                    compact_item = str(item)[: max(1, max_bytes // 8)]
+                candidate = prefix_candidate(1)
+                candidate[field_name] = [compact_item]
+                _set_final_serialized_size(candidate)
+                if _serialized_size(candidate) <= max_bytes:
+                    result.update(candidate)
+                    best = 1
+
             if best:
-                result[field_name] = field_value[:best]
+                if field_name not in result:
+                    result[field_name] = field_value[:best]
                 result[f"{field_name}_truncated"] = True
                 result[f"{field_name}_original_count"] = len(field_value)
                 result[f"{field_name}_preserved_count"] = best

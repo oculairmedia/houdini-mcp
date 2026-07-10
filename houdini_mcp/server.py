@@ -731,7 +731,12 @@ async def find_error_nodes(
         find_error_nodes(summarize=True)  # Get AI triage of errors
     """
     result = tools.find_error_nodes(
-        root_path, include_warnings, max_results, HOUDINI_HOST, HOUDINI_PORT
+        root_path,
+        include_warnings,
+        max_results,
+        HOUDINI_HOST,
+        HOUDINI_PORT,
+        _defer_cap=True,
     )
 
     # Apply AI summarization if requested or if many errors found
@@ -981,7 +986,13 @@ async def get_geo_summary(
         get_geo_summary("/obj/geo1/noise1", max_sample_points=200, summarize=True)
     """
     result = tools.get_geo_summary(
-        node_path, max_sample_points, include_attributes, include_groups, HOUDINI_HOST, HOUDINI_PORT
+        node_path,
+        max_sample_points,
+        include_attributes,
+        include_groups,
+        HOUDINI_HOST,
+        HOUDINI_PORT,
+        _defer_cap=True,
     )
 
     # Apply AI summarization if requested or if response is very large

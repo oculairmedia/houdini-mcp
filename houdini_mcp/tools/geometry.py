@@ -24,6 +24,8 @@ def get_geo_summary(
     include_groups: bool = True,
     host: str = "localhost",
     port: int = 18811,
+    *,
+    _defer_cap: bool = False,
 ) -> dict[str, Any]:
     """
     Get geometry statistics and metadata for verification.
@@ -244,7 +246,7 @@ print(json.dumps(result))
 
     try:
         result = json.loads(stdout)
-        return _add_response_metadata(result)
+        return _add_response_metadata(result, apply_cap=not _defer_cap)
     except json.JSONDecodeError as e:
         return {
             "status": "error",

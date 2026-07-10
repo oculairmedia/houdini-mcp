@@ -23,6 +23,8 @@ def find_error_nodes(
     max_results: int = 100,
     host: str = "localhost",
     port: int = 18811,
+    *,
+    _defer_cap: bool = False,
 ) -> dict[str, Any]:
     """
     Find all nodes with cook errors or warnings in the scene.
@@ -158,4 +160,4 @@ def find_error_nodes(
     if total_results >= max_results:
         result["warning"] = f"Results limited to {max_results}. Increase max_results to see more."
 
-    return _add_response_metadata(result)
+    return _add_response_metadata(result, apply_cap=not _defer_cap)
