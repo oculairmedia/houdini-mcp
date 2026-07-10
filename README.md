@@ -111,10 +111,15 @@ For production use or when Houdini runs on a different machine, use the Docker-b
 **Step 1: Start hrpyc in Houdini**
 
 If you have the Houdini MCP plugin installed:
-- Click "Start Remote" on the Houdini MCP shelf
-- Note the IP and port shown in the dialog
+- Click **"Start Remote"** on the Houdini MCP shelf
+- Use **"Remote Status"** / **"Remote Self-Test"** to confirm the actual bound
+  endpoint, reachability, and firewall guidance
+- By default the listener binds to `127.0.0.1` (loopback-only). To let a
+  remote client (e.g. the Docker gateway on another host) connect, set
+  `HOUDINI_RPC_BIND_HOST` **and** opt in with `HOUDINI_RPC_TRUSTED_NETWORK=1`
+  or `HOUDINI_RPC_TOKEN`. See [docs/remote-listener.md](docs/remote-listener.md).
 
-Or manually in Houdini's Python Shell:
+Or manually in Houdini's Python Shell (unchanged, still supported):
 ```python
 import hrpyc
 hrpyc.start_server(port=18811)
@@ -511,6 +516,10 @@ python -m houdini_mcp
 ### Authentication errors
 - hrpyc uses no authentication by default
 - Ensure you're on a trusted network
+- The plugin refuses to bind a non-loopback address unless you explicitly opt
+  in (`HOUDINI_RPC_TRUSTED_NETWORK=1`) or set a shared secret
+  (`HOUDINI_RPC_TOKEN`). See [docs/remote-listener.md](docs/remote-listener.md)
+  for the full security model and its limitations.
 
 ## Project Structure
 

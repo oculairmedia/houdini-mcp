@@ -13,12 +13,22 @@ Provides two modes of operation:
    - Enables advanced server-side processing
 """
 
-__version__ = "0.1.0"
+__version__ = "0.2.0"
 
 from .connection import LocalHoudiniConnection, get_connection
+from .listener import (
+    DEFAULT_HOST,
+    DEFAULT_PORT,
+    ListenerConfig,
+    RemoteListener,
+    SecurityError,
+    resolve_security_policy,
+)
 from .remote import (
     get_hrpyc_status,
     is_hrpyc_running,
+    reload_hrpyc_server,
+    self_test_hrpyc,
     start_hrpyc_server,
     stop_hrpyc_server,
 )
@@ -35,6 +45,15 @@ __all__ = [
     # remote mode (hrpyc for external MCP server)
     "start_hrpyc_server",
     "stop_hrpyc_server",
+    "reload_hrpyc_server",
     "is_hrpyc_running",
     "get_hrpyc_status",
+    "self_test_hrpyc",
+    # remote listener primitives
+    "RemoteListener",
+    "ListenerConfig",
+    "SecurityError",
+    "resolve_security_policy",
+    "DEFAULT_HOST",
+    "DEFAULT_PORT",
 ]

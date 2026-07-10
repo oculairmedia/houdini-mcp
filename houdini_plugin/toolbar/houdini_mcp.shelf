@@ -7,6 +7,8 @@
     <memberTool name="mcp_status"/>
     <memberTool name="hrpyc_start"/>
     <memberTool name="hrpyc_stop"/>
+    <memberTool name="hrpyc_status"/>
+    <memberTool name="hrpyc_selftest"/>
   </toolshelf>
 
   <tool name="mcp_start" label="Start MCP" icon="MISC_python">
@@ -146,7 +148,7 @@ import hou
 
 try:
     from houdini_mcp_plugin import start_hrpyc_server, is_hrpyc_running
-    
+
     if is_hrpyc_running():
         hou.ui.displayMessage(
             "Remote server (hrpyc) is already running.",
@@ -155,30 +157,50 @@ try:
     else:
         # Ask for port
         result = hou.ui.readInput(
-            "Enter port for hrpyc server:",
+            "Enter port for hrpyc listener:",
             initial_contents="18811",
             title="Houdini MCP Remote"
         )
-        
+
         if result[0] == 0:  # OK pressed
             try:
                 port = int(result[1])
             except ValueError:
                 port = 18811
-            
+
+            # Bind host and security come from the environment:
+            #   HOUDINI_RPC_BIND_HOST       (default 127.0.0.1, loopback-only)
+            #   HOUDINI_RPC_TRUSTED_NETWORK (set to 1 to allow non-loopback bind)
+            #   HOUDINI_RPC_TOKEN           (shared secret for remote auth)
             status = start_hrpyc_server(port=port)
-            
+
             if status["status"] == "success":
+                sec = status.get("security", {})
+                warn = ""
+                if sec.get("loopback_only"):
+                    warn = (
+                        "\n\nNOTE: Listener is bound to loopback (127.0.0.1) ONLY.\n"
+                        "Remote clients (e.g. the Docker gateway) cannot reach it.\n"
+                        "To expose it, set HOUDINI_RPC_BIND_HOST plus either\n"
+                        "HOUDINI_RPC_TRUSTED_NETWORK=1 or HOUDINI_RPC_TOKEN, then restart it."
+                    )
+                elif not sec.get("authenticated"):
+                    warn = (
+                        "\n\nWARNING: Listener is exposed to the network WITHOUT a token.\n"
+                        "Only do this on a trusted network."
+                    )
                 hou.ui.displayMessage(
-                    f"Remote server started!\n\n"
-                    f"Port: {status['port']}\n"
-                    f"IP: {status.get('local_ip', 'unknown')}\n\n"
-                    f"Connect with:\n{status['message']}",
+                    f"Remote listener started.\n\n"
+                    f"Bind: {status.get('host')}:{status.get('bound_port', status.get('port'))}\n"
+                    f"Local IP: {status.get('local_ip', 'unknown')}\n"
+                    f"Exposure: {sec.get('exposure', 'unknown')} | "
+                    f"Authenticated: {sec.get('authenticated', False)}\n\n"
+                    f"{status['message']}{warn}",
                     title="Houdini MCP Remote"
                 )
             else:
                 hou.ui.displayMessage(
-                    f"Failed to start remote server:\n{status['message']}",
+                    f"Failed to start remote listener:\n{status['message']}",
                     title="Houdini MCP Remote",
                     severity=hou.severityType.Error
                 )
@@ -226,6 +248,98 @@ try:
                 title="Houdini MCP Remote",
                 severity=hou.severityType.Warning
             )
+except ImportError as e:
+    hou.ui.displayMessage(
+        f"Failed to import houdini_mcp_plugin:\n{e}",
+        title="Houdini MCP Remote",
+        severity=hou.severityType.Error
+    )
+    ]]></script>
+  </tool>
+
+  <tool name="hrpyc_status" label="Remote Status" icon="NETWORKS_top">
+    <helpText><![CDATA[
+Show the current status of the hrpyc remote listener,
+including bind address, actual bound port, exposure and auth.
+    ]]></helpText>
+    <script scriptType="python"><![CDATA[
+import hou
+
+try:
+    from houdini_mcp_plugin import get_hrpyc_status
+
+    status = get_hrpyc_status()
+    if not status.get("running"):
+        hou.ui.displayMessage(
+            "Remote listener (hrpyc) is not running.\n\n"
+            "Click 'Start Remote' to enable remote connections.",
+            title="Houdini MCP Remote Status"
+        )
+    else:
+        sec = status.get("security", {})
+        hou.ui.displayMessage(
+            "Remote listener (hrpyc): RUNNING\n\n"
+            f"Bind: {status.get('host')}:{status.get('bound_port', status.get('port'))}\n"
+            f"Local IP: {status.get('local_ip', 'unknown')}\n"
+            f"Exposure: {sec.get('exposure', 'unknown')}\n"
+            f"Authenticated: {sec.get('authenticated', False)}\n\n"
+            f"Connect with:\n{status.get('connection_string', '')}",
+            title="Houdini MCP Remote Status"
+        )
+except ImportError as e:
+    hou.ui.displayMessage(
+        f"Failed to import houdini_mcp_plugin:\n{e}",
+        title="Houdini MCP Remote",
+        severity=hou.severityType.Error
+    )
+    ]]></script>
+  </tool>
+
+  <tool name="hrpyc_selftest" label="Remote Self-Test" icon="NETWORKS_top">
+    <helpText><![CDATA[
+Run a reachability + capability self-test on the hrpyc listener.
+
+Reports the actual bound endpoints, reachability, loopback-only
+warnings, firewall guidance, and Houdini/plugin/protocol versions.
+    ]]></helpText>
+    <script scriptType="python"><![CDATA[
+import hou
+
+try:
+    from houdini_mcp_plugin import self_test_hrpyc
+
+    report = self_test_hrpyc()
+
+    lines = []
+    lines.append("Reachable: %s" % report.get("reachable"))
+    if report.get("stale"):
+        lines.append("STALE: listener reference exists but is not answering.")
+    lines.append("Bound endpoints: %s" % ", ".join(report.get("bound_endpoints", []) or ["-"]))
+    lines.append("Houdini version: %s" % report.get("houdini_version"))
+    lines.append("Plugin version: %s" % report.get("plugin_version"))
+    lines.append("Protocol: %s" % report.get("protocol"))
+
+    warnings = report.get("warnings") or []
+    if warnings:
+        lines.append("")
+        lines.append("Warnings:")
+        lines.extend("  - %s" % w for w in warnings)
+
+    guidance = report.get("guidance") or []
+    if guidance:
+        lines.append("")
+        lines.append("Firewall / connectivity guidance:")
+        lines.extend("  - %s" % g for g in guidance)
+
+    severity = hou.severityType.Message
+    if report.get("stale") or not report.get("reachable"):
+        severity = hou.severityType.Warning
+
+    hou.ui.displayMessage(
+        "\n".join(lines),
+        title="Houdini MCP Remote Self-Test",
+        severity=severity
+    )
 except ImportError as e:
     hou.ui.displayMessage(
         f"Failed to import houdini_mcp_plugin:\n{e}",
