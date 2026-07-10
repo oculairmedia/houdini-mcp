@@ -564,6 +564,62 @@ class TestProductionPathResponseCap:
         assert preserved_something, "Truncated response should retain useful bounded data"
 
 
+class TestSemanticTruncation:
+    def test_truncated_page_cursor_advances_by_preserved_count(self):
+        from houdini_mcp.tools._common import apply_response_cap
+
+        result = apply_response_cap(
+            {
+                "status": "success",
+                "children": [{"name": f"n{i}", "detail": "x" * 300} for i in range(20)],
+                "returned": 20,
+                "count": 20,
+                "total": 20,
+                "has_more": False,
+            },
+            max_bytes=1400,
+        )
+        preserved = len(result["children"])
+        assert 0 < preserved < 20
+        assert result["returned"] == result["count"] == preserved
+        assert result["has_more"] is True
+        assert result["cursor"] == result["next_offset"] == preserved
+
+    def test_nested_geometry_categories_keep_bounded_prefixes(self):
+        from houdini_mcp.tools._common import apply_response_cap
+
+        result = apply_response_cap(
+            {
+                "status": "success",
+                "attributes": {
+                    "point": [{"name": f"p{i}", "detail": "x" * 100} for i in range(100)],
+                    "primitive": [{"name": f"pr{i}", "detail": "x" * 100} for i in range(100)],
+                },
+            },
+            max_bytes=1800,
+        )
+        assert result["attributes"]
+        assert result["attributes_category_counts"]["point"]["original"] == 100
+        assert _json_size(result) <= 1800
+
+    def test_diagnostic_lists_are_preserved(self):
+        from houdini_mcp.tools._common import apply_response_cap
+
+        result = apply_response_cap(
+            {
+                "status": "success",
+                "error_nodes": [{"path": f"/obj/n{i}", "error": "x" * 200} for i in range(100)],
+            },
+            max_bytes=1500,
+        )
+        assert result["error_nodes"]
+        assert result["error_nodes_truncated"] is True
+
+
+def _json_size(value):
+    return len(json.dumps(value, ensure_ascii=False).encode("utf-8"))
+
+
 class TestFinalSerializedSizeAccounting:
     """The cap applies to the final object, including metadata added by finalization."""
 
@@ -733,9 +789,10 @@ class TestOversizedResponseRetainsUsefulData:
         assert result["status"] == "success"
         assert result["node_path"] == "/obj/geo1"
         assert result["total"] == 5000
-        assert result["returned"] == 100
+        preserved = len(result["items"])
+        assert result["returned"] == result["count"] == preserved
         assert result["has_more"] is True
-        assert result["cursor"] == 100
+        assert result["cursor"] == result["next_offset"] == preserved
 
     def test_minimal_response_not_metadata_only(self):
         """Even minimal fallback response includes useful info."""

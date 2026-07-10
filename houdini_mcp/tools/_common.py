@@ -1175,6 +1175,8 @@ def apply_response_cap(
         ("sample_points", "sample_point"),
         ("attributes", "attribute"),
         ("groups", "group"),
+        ("error_nodes", "error_node"),
+        ("warning_nodes", "warning_node"),
     ]
 
     for field_name, _singular_name in data_fields:
@@ -1206,7 +1208,11 @@ def apply_response_cap(
             while low <= high:
                 midpoint = (low + high) // 2
                 try:
-                    if _serialized_size(prefix_candidate(midpoint)) <= max_bytes:
+                    # Reserve room for pagination/truncation metadata added
+                    # after the prefix is selected.
+                    if _serialized_size(prefix_candidate(midpoint)) <= max_bytes - min(
+                        512, max_bytes // 4
+                    ):
                         best = midpoint
                         low = midpoint + 1
                     else:
@@ -1219,17 +1225,44 @@ def apply_response_cap(
                 result[f"{field_name}_truncated"] = True
                 result[f"{field_name}_original_count"] = len(field_value)
                 result[f"{field_name}_preserved_count"] = best
+                # If this list is a paginated payload, continuation must start
+                # after what was actually returned, not after the pre-cap page.
+                if field_name in {"items", "children", "matches", "node_types"}:
+                    current_offset = int(data.get("offset", 0))
+                    result["returned"] = best
+                    result["count"] = best
+                    result["has_more"] = True
+                    result["cursor"] = current_offset + best
+                    result["next_offset"] = current_offset + best
         elif isinstance(field_value, dict):
-            # Try to include the dict if it fits
-            try:
-                test_result = dict(result)
-                test_result[field_name] = field_value
-                test_json = json.dumps(test_result, ensure_ascii=False)
-                test_size = len(test_json.encode("utf-8"))
-                if test_size <= max_bytes - 50:
-                    result[field_name] = field_value
-            except Exception:
-                pass
+            # Preserve bounded prefixes from nested geometry/category lists
+            # instead of dropping the entire requested diagnostic dictionary.
+            preserved_dict: dict[str, Any] = {}
+            category_counts: dict[str, dict[str, int]] = {}
+            for category, category_value in field_value.items():
+                if not isinstance(category_value, list):
+                    candidate_value = category_value
+                else:
+                    candidate_value = []
+                    for item in category_value:
+                        candidate = dict(result)
+                        nested = dict(preserved_dict)
+                        nested[category] = candidate_value + [item]
+                        candidate[field_name] = nested
+                        _set_final_serialized_size(candidate)
+                        if _serialized_size(candidate) <= max_bytes - min(512, max_bytes // 4):
+                            candidate_value.append(item)
+                        else:
+                            break
+                    category_counts[str(category)] = {
+                        "original": len(category_value),
+                        "preserved": len(candidate_value),
+                    }
+                preserved_dict[str(category)] = candidate_value
+            if any(value for value in preserved_dict.values()):
+                result[field_name] = preserved_dict
+                result[f"{field_name}_truncated"] = True
+                result[f"{field_name}_category_counts"] = category_counts
 
     # Add exact final size metadata (including the field itself).
     _set_final_serialized_size(result)
@@ -1257,8 +1290,18 @@ def apply_response_cap(
                 except Exception:
                     pass
 
-        # Add exact final size metadata for the minimal fallback too.
+        # Add exact final size metadata for the minimal fallback too. If that
+        # metadata crosses the cap, drop optional essentials from the end until
+        # the final object itself fits (a long error message is the common case).
         _set_final_serialized_size(minimal)
+        while _serialized_size(minimal) > max_bytes:
+            optional = [key for key in essential_fields if key in minimal and key != "status"]
+            if not optional:
+                minimal.pop("message", None)
+                _set_final_serialized_size(minimal)
+                break
+            minimal.pop(optional[-1], None)
+            _set_final_serialized_size(minimal)
 
         return minimal
 

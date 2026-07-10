@@ -10,6 +10,7 @@ from starlette.responses import JSONResponse
 
 from . import tools
 from .connection import ensure_connected, get_connection_info, is_connected, ping
+from .tools._common import apply_response_cap
 
 # Configure logging
 log_level = os.getenv("LOG_LEVEL", "INFO").upper()
@@ -140,18 +141,20 @@ def execute_code(
         if output exceeded size limits.
         If dangerous patterns detected and not allowed, returns error with detected patterns.
     """
-    return tools.execute_code(
-        code=code,
-        capture_diff=capture_diff,
-        max_stdout_size=max_stdout_size,
-        max_stderr_size=max_stderr_size,
-        max_diff_nodes=max_diff_nodes,
-        timeout=timeout,
-        allow_dangerous=allow_dangerous,
-        allow_heavy_geometry=allow_heavy_geometry,
-        policy=policy,
-        host=HOUDINI_HOST,
-        port=HOUDINI_PORT,
+    return apply_response_cap(
+        tools.execute_code(
+            code=code,
+            capture_diff=capture_diff,
+            max_stdout_size=max_stdout_size,
+            max_stderr_size=max_stderr_size,
+            max_diff_nodes=max_diff_nodes,
+            timeout=timeout,
+            allow_dangerous=allow_dangerous,
+            allow_heavy_geometry=allow_heavy_geometry,
+            policy=policy,
+            host=HOUDINI_HOST,
+            port=HOUDINI_PORT,
+        )
     )
 
 
