@@ -1151,6 +1151,7 @@ def apply_response_cap(
         "returned",
         "has_more",
         "cursor",
+        "next_offset",
         "count",
         "pattern",
         "category",

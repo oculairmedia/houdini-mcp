@@ -738,7 +738,7 @@ async def find_error_nodes(
     if summarize or (result.get("error_count", 0) > 5):
         result = await tools.summarize_errors(result)
 
-    return result
+    return apply_response_cap(result)
 
 
 @mcp.tool()
@@ -988,7 +988,7 @@ async def get_geo_summary(
     if summarize or tools.should_summarize(result):
         result = await tools.summarize_geometry(result)
 
-    return result
+    return apply_response_cap(result)
 
 
 @mcp.tool()

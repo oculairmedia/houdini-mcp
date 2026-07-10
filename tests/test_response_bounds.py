@@ -130,6 +130,17 @@ class TestLegacyPaginationCompatibility:
         assert result["has_more"] is True
         assert result["next_offset"] == result["cursor"] == 1
 
+    def test_find_nodes_clamps_zero_limit(self, mock_connection):
+        from houdini_mcp.tools.nodes import find_nodes
+        from tests.conftest import MockHouNode
+
+        obj = mock_connection.node("/obj")
+        child = MockHouNode(path="/obj/geo1", name="geo1", node_type="geo")
+        obj._children.append(child)
+        result = find_nodes(limit=0, cursor=0, host="localhost", port=18811)
+        assert result["returned"] == 1
+        assert result["matches"][0]["path"] == "/obj/geo1"
+
 
 class TestResponseTruncation:
     """Test JSON-safe response truncation with metadata."""
@@ -614,6 +625,24 @@ class TestSemanticTruncation:
         )
         assert result["error_nodes"]
         assert result["error_nodes_truncated"] is True
+
+    def test_capped_page_preserves_next_offset(self):
+        from houdini_mcp.tools._common import apply_response_cap
+
+        result = apply_response_cap(
+            {
+                "status": "success",
+                "children": [{"name": f"n{i}", "detail": "x" * 300} for i in range(20)],
+                "returned": 20,
+                "count": 20,
+                "total": 100,
+                "has_more": True,
+                "cursor": 20,
+                "next_offset": 20,
+            },
+            max_bytes=1400,
+        )
+        assert result["next_offset"] == result["cursor"] == len(result["children"])
 
 
 def _json_size(value):

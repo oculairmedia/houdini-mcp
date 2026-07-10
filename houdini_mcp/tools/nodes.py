@@ -535,7 +535,7 @@ def list_children(
         "status": "success",
         "node_path": node_path,
         "children": paginated["items"],
-        "count": paginated["returned"],  # Backward compat: count = returned
+        "count": paginated["total"],  # Backward compat: count was total collected
         "total": paginated["total"],
         "returned": paginated["returned"],
         "has_more": paginated["has_more"],
@@ -607,9 +607,9 @@ def find_nodes(
     elif offset is None:
         offset = 0
 
-    # Validate offset
-    if offset < 0:
-        offset = 0
+    # Invalid aliases must not produce empty repeating pages.
+    max_results = max(1, min(int(max_results), 500))
+    offset = max(0, int(offset))
 
     # Execute search on Houdini side to minimize RPC overhead
     # Uses allSubChildren() which is much faster than recursive children() calls
@@ -662,9 +662,10 @@ if root is not None:
                 "type": child_type,
             }})
 
-            # Stop after one lookahead item; it proves another page exists.
+            # Keep counting exact totals after the page/lookahead is full, but
+            # stop materializing additional match records.
             if len(matches) >= fetch_limit:
-                break
+                continue
 
 _result = {{"matches": matches, "total_matched": total_matched}}
 """.format(
@@ -694,14 +695,9 @@ _result = {{"matches": matches, "total_matched": total_matched}}
 
         def search_recursive(node: Any) -> None:
             nonlocal total_matched
-            if len(matches) >= max_results + 1:
-                return
 
             try:
                 for child in node.children():
-                    if len(matches) >= max_results + 1:
-                        break
-
                     name_match = fnmatch_module.fnmatch(child.name().lower(), pattern.lower())
                     if "*" not in pattern and "?" not in pattern:
                         name_match = name_match or pattern.lower() in child.name().lower()
@@ -715,13 +711,14 @@ _result = {{"matches": matches, "total_matched": total_matched}}
                         if total_matched <= offset:
                             search_recursive(child)
                             continue
-                        matches.append(
-                            {
-                                "path": child.path(),
-                                "name": child.name(),
-                                "type": child.type().name(),
-                            }
-                        )
+                        if len(matches) < max_results + 1:
+                            matches.append(
+                                {
+                                    "path": child.path(),
+                                    "name": child.name(),
+                                    "type": child.type().name(),
+                                }
+                            )
                     search_recursive(child)
             except Exception as ex:
                 logger.debug(f"Could not search in {node.path()}: {ex}")
