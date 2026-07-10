@@ -14,6 +14,7 @@ from typing import Any
 from ._common import (
     _detect_dangerous_code,
     _detect_heavy_geometry_code,
+    _detect_import_hou,
     _get_scene_diff,
     _serialize_scene_state,
     _truncate_output,
@@ -44,8 +45,12 @@ def execute_code(
     """
     Execute Python code in Houdini with optional scene diff tracking and safety rails.
 
+    IMPORTANT: The 'hou' module is pre-injected as a global variable via RPyC.
+    Do NOT use 'import hou' or 'from hou import ...' - just use 'hou' directly.
+
     Args:
-        code: Python code to execute. The 'hou' module is available.
+        code: Python code to execute. The 'hou' module is pre-injected and available
+            as a global variable. Access it directly (e.g., hou.node('/obj')) without importing.
         capture_diff: If True, captures before/after scene state for comparison
         max_stdout_size: Maximum stdout size in bytes (default: 100000 = 100KB)
         max_stderr_size: Maximum stderr size in bytes (default: 100000 = 100KB)
@@ -73,6 +78,21 @@ def execute_code(
             "stdout": "",
             "stderr": "",
             "message": "Empty code - nothing to execute",
+        }
+
+    # 0. Detect common mistake: trying to import hou when it's already pre-injected
+    if _detect_import_hou(code):
+        return {
+            "status": "error",
+            "message": "Code attempts to import hou module, but hou is already available",
+            "hint": (
+                "The 'hou' module is pre-injected as a global variable by execute_code via RPyC. "
+                "You can use 'hou' directly without importing it. Remove 'import hou' or "
+                "'from hou import ...' from your code and access hou directly (e.g., hou.node('/obj'))."
+            ),
+            "suggested_fix": code.replace(
+                "import hou", "# import hou  # Not needed - hou is pre-injected"
+            ).replace("from hou import ", "# from hou import "),
         }
 
     # 1. Scan for dangerous patterns BEFORE execution
