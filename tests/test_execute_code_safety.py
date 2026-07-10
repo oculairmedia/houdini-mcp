@@ -337,6 +337,34 @@ class TestTimeoutRollback:
         assert "rollback" in result
         assert result["rollback"]["attempted"] is True
 
+    def test_rollback_does_not_overclaim_guarantee(self, mock_connection):
+        """The daemon exec thread cannot be force-killed on timeout, so even a
+        'succeeded' rollback must not be reported as a hard guarantee that the
+        scene is consistent - the original code may still be running and
+        mutating the scene concurrently. The response must surface this risk
+        explicitly rather than implying rollback == safety.
+        """
+        from houdini_mcp.tools import execute_code
+
+        code = "import time\nwhile True:\n    time.sleep(0.05)\n"
+        result = execute_code(
+            code,
+            timeout=1,
+            allow_dangerous=True,
+            host="localhost",
+            port=18811,
+        )
+        assert result["rollback"]["attempted"] is True
+        assert result["rollback"]["succeeded"] is True
+        # Even on a "succeeded" rollback, the thread-still-running risk must be
+        # reported explicitly in the structured rollback block...
+        assert result["rollback"]["thread_still_running"] is True
+        # ...and the human-readable warning must not claim a hard guarantee -
+        # it should communicate that the scene may still be mutated further.
+        warning = result.get("warning", "").lower()
+        assert "not" in warning and "guarantee" in warning
+        assert "still" in warning and ("running" in warning or "thread" in warning)
+
     def test_undo_group_opened_around_execution(self, mock_connection):
         """Successful runs must be wrapped in a named undo group for later rollback."""
         from houdini_mcp.tools import execute_code

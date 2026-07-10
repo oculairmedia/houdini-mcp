@@ -18,9 +18,16 @@ Safety model (bead houdini-mcp-9e2)
   ``allow_heavy_geometry``) AND server configuration
   (``HOUDINI_MCP_ALLOW_BYPASS``). Missing either fails closed.
 * Every call returns a structured ``audit`` block and is logged.
-* On timeout the run is rolled back via a named Houdini undo group when a usable
-  undo primitive is available; otherwise it fails closed and reports that
-  mutations may be untracked (the daemon thread cannot be force-killed).
+* On timeout the run's undo group is reverted via ``hou.undos.performUndo()``
+  when a usable undo primitive is available; otherwise it fails closed and
+  reports that mutations may be untracked. IMPORTANT: Python cannot forcibly
+  kill the timed-out thread (it is left running as a daemon so it does not
+  block process exit), so ``performUndo()`` is a best-effort revert of what
+  was recorded up to that point in time - it is NOT a guarantee that the
+  scene is fully consistent afterward, because the original code may still be
+  executing concurrently and mutating the scene even after rollback returns.
+  The response always reports this risk explicitly rather than claiming a
+  hard rollback guarantee.
 """
 
 import builtins
@@ -432,10 +439,24 @@ def execute_code(
 
     if exec_thread.is_alive():
         # --- Timeout: roll back if possible, else fail closed ---------------
+        # NOTE: the daemon thread cannot be forcibly killed from here (Python has
+        # no safe thread-cancellation primitive). performUndo() only reverts the
+        # undo-group operations Houdini has recorded *so far* - it does NOT stop
+        # the still-running thread. That thread keeps executing user code
+        # concurrently and can keep mutating the scene (including issuing further
+        # changes *after* the undo call returns), so "rollback succeeded" is a
+        # point-in-time statement about the undo stack, never a guarantee that no
+        # further, unrolled-back mutation will occur. Callers must not treat this
+        # as a hard rollback guarantee.
         logger.warning("execute_code exceeded timeout of %ss; attempting rollback", timeout)
         rollback_attempted = False
         rollback_succeeded: bool | None = None
         rollback_error: str | None = None
+        # Thread is still alive at this point (we just observed it via
+        # is_alive()); it may finish at any moment afterward, but it was not
+        # stopped by us, so treat the risk window as open for the life of the
+        # process.
+        thread_still_running = True
 
         if undos is not None:
             rollback_attempted = True
@@ -450,12 +471,19 @@ def execute_code(
         if rollback_attempted:
             warning = (
                 "Execution timed out. A rollback via the Houdini undo stack was "
-                "attempted; verify scene state. The code thread may still be running."
+                f"attempted (succeeded={rollback_succeeded}), reverting mutations recorded "
+                "up to that point. This is NOT a guarantee that the scene is fully "
+                "consistent: the timed-out code runs in a background thread that "
+                "cannot be forcibly stopped and may still be running and mutating "
+                "the scene concurrently, including after this rollback call returns. "
+                "Treat the scene as potentially inconsistent until you independently "
+                "verify state (or restart Houdini)."
             )
         else:
             warning = (
                 "Execution timed out and NO undo primitive was available, so any "
-                "partial scene mutations are UNTRACKED. Consider restarting Houdini."
+                "partial scene mutations are UNTRACKED. The code thread cannot be "
+                "forcibly stopped and may still be running. Consider restarting Houdini."
             )
 
         result: dict[str, Any] = {
@@ -470,6 +498,11 @@ def execute_code(
                 "attempted": rollback_attempted,
                 "succeeded": rollback_succeeded,
                 "error": rollback_error,
+                # True whenever we hit this branch: the thread was still running
+                # at the moment we decided to roll back, and we have no way to
+                # confirm it has stopped since. A rollback "succeeded" result
+                # never implies this flips to False.
+                "thread_still_running": thread_still_running,
             },
             "audit": _build_audit(
                 code=code,

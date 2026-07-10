@@ -68,6 +68,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `hrpyc.ThreadedServer` and stops it through the server object's `close()`,
   replacing the missing `hrpyc.stop_server()` API. The bind host defaults to
   `127.0.0.1` and is configurable via `HOUDINI_RPC_BIND_HOST`.
+- **CI**: Added the missing `hypothesis` test dependency (used by the
+  `execute_code` safety-rail property/fuzz tests) to the `dev` extra,
+  `requirements.txt`, and the CI fallback install list.
 
 ## [1.0.0] - 2025-12-28
 
