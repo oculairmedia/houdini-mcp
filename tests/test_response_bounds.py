@@ -338,15 +338,13 @@ class TestProductionPathResponseCap:
         # Create a large child hierarchy
         large_children = []
         for i in range(200):
-            child = MockHouNode(
-                path=f"/obj/geo1/child{i}",
-                name=f"child{i}",
-                node_type="geo"
-            )
+            child = MockHouNode(path=f"/obj/geo1/child{i}", name=f"child{i}", node_type="geo")
             large_children.append(child)
 
         # Create parent with many children
-        parent = MockHouNode(path="/obj/geo1", name="geo1", node_type="geo", children=large_children)
+        parent = MockHouNode(
+            path="/obj/geo1", name="geo1", node_type="geo", children=large_children
+        )
         mock_hou.add_node(parent)
 
         # Call with small cap
@@ -358,6 +356,7 @@ class TestProductionPathResponseCap:
 
         # Should respect the DEFAULT_RESPONSE_CAP_BYTES (16KB)
         from houdini_mcp.tools._common import DEFAULT_RESPONSE_CAP_BYTES
+
         assert result_bytes <= DEFAULT_RESPONSE_CAP_BYTES, (
             f"list_children response {result_bytes} bytes exceeds cap {DEFAULT_RESPONSE_CAP_BYTES}"
         )
@@ -374,11 +373,7 @@ class TestProductionPathResponseCap:
         # Create many nested nodes
         children = []
         for i in range(500):
-            child = MockHouNode(
-                path=f"/obj/sphere{i}",
-                name=f"sphere{i}",
-                node_type="sphere"
-            )
+            child = MockHouNode(path=f"/obj/sphere{i}", name=f"sphere{i}", node_type="sphere")
             children.append(child)
 
         # Create obj node with many children
@@ -392,6 +387,7 @@ class TestProductionPathResponseCap:
         result_bytes = len(result_json.encode("utf-8"))
 
         from houdini_mcp.tools._common import DEFAULT_RESPONSE_CAP_BYTES
+
         assert result_bytes <= DEFAULT_RESPONSE_CAP_BYTES
 
     def test_list_node_types_respects_cap(self, mock_connection):
@@ -408,6 +404,7 @@ class TestProductionPathResponseCap:
         result_bytes = len(result_json.encode("utf-8"))
 
         from houdini_mcp.tools._common import DEFAULT_RESPONSE_CAP_BYTES
+
         assert result_bytes <= DEFAULT_RESPONSE_CAP_BYTES
 
     def test_get_parameter_schema_respects_cap(self, mock_connection):
@@ -424,12 +421,7 @@ class TestProductionPathResponseCap:
         for i in range(300):
             params[f"parm{i}"] = 1.0
 
-        node = MockHouNode(
-            path="/obj/geo1",
-            name="geo1",
-            node_type="geo",
-            params=params
-        )
+        node = MockHouNode(path="/obj/geo1", name="geo1", node_type="geo", params=params)
         mock_hou.add_node(node)
 
         result = get_parameter_schema("/obj/geo1", max_parms=200, host="localhost", port=18811)
@@ -439,14 +431,146 @@ class TestProductionPathResponseCap:
         result_bytes = len(result_json.encode("utf-8"))
 
         from houdini_mcp.tools._common import DEFAULT_RESPONSE_CAP_BYTES
+
         assert result_bytes <= DEFAULT_RESPONSE_CAP_BYTES
 
-    def test_get_geo_summary_respects_cap(self, mock_connection):
-        """get_geo_summary final JSON response never exceeds cap (via execute_code)."""
-        # get_geo_summary uses execute_code which handles its own response size
-        # The cap is applied at the _add_response_metadata level
-        # This is tested indirectly through execute_code output limits
-        pass
+    def test_get_geo_summary_respects_cap(self):
+        """get_geo_summary final JSON response never exceeds cap.
+
+        Exercises the real production path: get_geo_summary() -> execute_code()
+        -> _add_response_metadata() -> apply_response_cap(). Only execute_code's
+        Houdini-side execution is mocked (it returns oversized geometry JSON on
+        stdout, as the real Houdini-side analysis code would for a dense mesh);
+        the response-bounding logic itself is exercised for real.
+        """
+        from unittest.mock import patch
+
+        from houdini_mcp.tools import get_geo_summary
+        from houdini_mcp.tools._common import DEFAULT_RESPONSE_CAP_BYTES
+
+        # Build an oversized geometry summary: many attributes, many groups,
+        # and many sample points with several attribute values each. This
+        # mirrors what a dense production SOP (many named attributes/groups)
+        # would produce before bounding is applied.
+        point_attrs = [{"name": f"point_attr_{i}", "type": "float", "size": 3} for i in range(200)]
+        prim_attrs = [{"name": f"prim_attr_{i}", "type": "string", "size": 1} for i in range(200)]
+        vertex_attrs = [{"name": f"vertex_attr_{i}", "type": "float", "size": 2} for i in range(50)]
+        detail_attrs = [{"name": f"detail_attr_{i}", "type": "int", "size": 1} for i in range(50)]
+
+        point_groups = [f"point_group_{i}" for i in range(200)]
+        prim_groups = [f"prim_group_{i}" for i in range(200)]
+
+        sample_points = [
+            {
+                "index": i,
+                "P": [float(i), float(i) * 2, float(i) * 3],
+                "N": [0.0, 1.0, 0.0],
+                "Cd": [1.0, 0.5, 0.25],
+                "extra_attr": f"sample_point_payload_{i}" * 5,
+            }
+            for i in range(16)
+        ]
+
+        oversized_geo_data = {
+            "status": "success",
+            "node_path": "/obj/geo1/dense_mesh1",
+            "cook_state": "cooked",
+            "point_count": 500000,
+            "primitive_count": 250000,
+            "vertex_count": 1000000,
+            "bounding_box": {
+                "min": [-10.0, -10.0, -10.0],
+                "max": [10.0, 10.0, 10.0],
+                "size": [20.0, 20.0, 20.0],
+                "center": [0.0, 0.0, 0.0],
+            },
+            "attributes": {
+                "point": point_attrs,
+                "primitive": prim_attrs,
+                "vertex": vertex_attrs,
+                "detail": detail_attrs,
+            },
+            "groups": {
+                "point": point_groups,
+                "primitive": prim_groups,
+            },
+            "sample_points": sample_points,
+        }
+
+        oversized_json = json.dumps(oversized_geo_data)
+        # Sanity check the fixture is actually oversized relative to the cap;
+        # otherwise this test would not be exercising truncation at all.
+        assert len(oversized_json.encode("utf-8")) > DEFAULT_RESPONSE_CAP_BYTES
+
+        with patch("houdini_mcp.tools.code.execute_code") as mock_execute_code:
+            mock_execute_code.return_value = {
+                "status": "success",
+                "stdout": oversized_json,
+                "stderr": "",
+            }
+
+            result = get_geo_summary(
+                "/obj/geo1/dense_mesh1",
+                max_sample_points=16,
+                host="localhost",
+                port=18811,
+            )
+
+        # Final serialized response (as returned to the MCP client) must
+        # respect the hard cap.
+        result_json = json.dumps(result, ensure_ascii=False)
+        result_bytes = len(result_json.encode("utf-8"))
+        assert result_bytes <= DEFAULT_RESPONSE_CAP_BYTES, (
+            f"get_geo_summary response {result_bytes} bytes exceeds cap "
+            f"{DEFAULT_RESPONSE_CAP_BYTES}"
+        )
+
+        # It must actually have been truncated (proves the cap engaged, not
+        # just that the mock happened to be small).
+        assert result["_truncated"] is True
+        assert result["status"] == "success"
+        assert result["node_path"] == "/obj/geo1/dense_mesh1"
+
+        # Truncation retains useful bounded data, not metadata-only.
+        preserved_something = any(
+            key in result and result[key] for key in ("attributes", "groups", "sample_points")
+        )
+        assert preserved_something, "Truncated response should retain useful bounded data"
+
+
+class TestFinalSerializedSizeAccounting:
+    """The cap applies to the final object, including metadata added by finalization."""
+
+    def test_metadata_added_after_initial_measurement_cannot_cross_cap(self):
+        """A near-cap response is re-capped after size metadata is inserted."""
+        from houdini_mcp.tools._common import _add_response_metadata
+
+        cap = 200
+        # This payload is 172 bytes before metadata, but the size metadata pushes
+        # it to 201 bytes unless finalization performs a second cap pass.
+        payload = {"status": "success", "items": ["x" * 136]}
+        assert len(json.dumps(payload).encode("utf-8")) < cap
+
+        result = _add_response_metadata(payload, max_bytes=cap)
+
+        assert len(json.dumps(result, ensure_ascii=False).encode("utf-8")) <= cap
+
+    def test_truncated_size_bytes_equals_final_serialized_size(self):
+        """Self-referential byte-count metadata converges to the final JSON size."""
+        from houdini_mcp.tools._common import apply_response_cap
+
+        result = apply_response_cap(
+            {
+                "status": "success",
+                "items": [{"name": f"item-{i}", "data": "世界🌍" * 40} for i in range(100)],
+            },
+            max_bytes=1200,
+        )
+        final_size = len(json.dumps(result, ensure_ascii=False).encode("utf-8"))
+
+        assert result["_truncated"] is True
+        assert result["truncated_size_bytes"] == final_size
+        assert final_size <= 1200
 
 
 class TestMultibyteResponseBoundaries:

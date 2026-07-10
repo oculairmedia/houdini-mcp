@@ -546,6 +546,27 @@ def _estimate_response_size(data: Any, _depth: int = 0) -> int:
     return len(str(data)) + 2
 
 
+def _serialized_size(data: Any) -> int:
+    """Return the exact UTF-8 byte size used by MCP JSON serialization."""
+    import json
+
+    return len(json.dumps(data, ensure_ascii=False).encode("utf-8"))
+
+
+def _set_final_serialized_size(result: dict[str, Any]) -> None:
+    """Set self-referential size metadata to its exact fixed-point value."""
+    # The field's decimal digit count can change the size it reports. The value
+    # converges in a handful of iterations because only that digit count varies.
+    size = 0
+    for _ in range(8):
+        result["truncated_size_bytes"] = size
+        measured = _serialized_size(result)
+        if measured == size:
+            return
+        size = measured
+    result["truncated_size_bytes"] = _serialized_size(result)
+
+
 def _add_response_metadata(
     result: dict[str, Any],
     include_size: bool = True,
@@ -572,15 +593,18 @@ def _add_response_metadata(
             return apply_response_cap(result, max_bytes=max_bytes)
         return result
 
-    # First apply cap if requested (this becomes the response)
+    # Apply the cap to the payload first so oversized collections retain a
+    # useful bounded prefix plus continuation metadata.
     if apply_cap:
         result = apply_response_cap(result, max_bytes=max_bytes)
-        # If truncated, skip further size checks
         if result.get("_truncated"):
             return result
 
-    # Add size metadata for non-capped responses
-    size_bytes = _estimate_response_size(result)
+    # Add observability metadata for responses that did not require truncation.
+    # This metadata itself consumes bytes, so run the final object through the
+    # cap once more; otherwise a payload just below the boundary can become an
+    # over-cap response after `_response_size_bytes` is inserted.
+    size_bytes = _serialized_size(result)
     result["_response_size_bytes"] = size_bytes
 
     if size_bytes > RESPONSE_SIZE_LARGE_THRESHOLD:
@@ -591,7 +615,7 @@ def _add_response_metadata(
     elif size_bytes > RESPONSE_SIZE_WARNING_THRESHOLD:
         result["_response_size_note"] = f"Response size: {size_bytes // 1024}KB"
 
-    return result
+    return apply_response_cap(result, max_bytes=max_bytes) if apply_cap else result
 
 
 def _json_safe_hou_value(
@@ -1115,10 +1139,24 @@ def apply_response_cap(
 
     # Preserve essential metadata fields (small, informative)
     essential_fields = [
-        "node_path", "root_path", "path", "type", "name",
-        "total", "returned", "has_more", "cursor", "count",
-        "pattern", "category", "cook_state", "point_count",
-        "primitive_count", "vertex_count", "warning", "message"
+        "node_path",
+        "root_path",
+        "path",
+        "type",
+        "name",
+        "total",
+        "returned",
+        "has_more",
+        "cursor",
+        "count",
+        "pattern",
+        "category",
+        "cook_state",
+        "point_count",
+        "primitive_count",
+        "vertex_count",
+        "warning",
+        "message",
     ]
     for field in essential_fields:
         if field in data:
@@ -1143,27 +1181,41 @@ def apply_response_cap(
         field_value = data[field_name]
 
         if isinstance(field_value, list) and len(field_value) > 0:
-            # Try to fit as many items as possible within budget
-            preserved_items: list[Any] = []
-            for item in field_value:
+            # Find the longest useful prefix together with ALL truncation/size
+            # metadata. Serialized size is monotonic with prefix length, so a
+            # binary search avoids the old O(n²) repeated-growing-list cost on
+            # responses containing tens of thousands of items.
+            def prefix_candidate(
+                count: int,
+                *,
+                name: str = field_name,
+                values: list[Any] = field_value,
+            ) -> dict[str, Any]:
+                candidate = dict(result)
+                candidate[name] = values[:count]
+                candidate[f"{name}_truncated"] = True
+                candidate[f"{name}_original_count"] = len(values)
+                candidate[f"{name}_preserved_count"] = count
+                _set_final_serialized_size(candidate)
+                return candidate
+
+            low, high, best = 1, len(field_value), 0
+            while low <= high:
+                midpoint = (low + high) // 2
                 try:
-                    test_result = dict(result)
-                    test_result[field_name] = preserved_items + [item]
-                    test_json = json.dumps(test_result, ensure_ascii=False)
-                    test_size = len(test_json.encode("utf-8"))
-
-                    if test_size <= max_bytes - 50:  # Leave room for final metadata
-                        preserved_items.append(item)
+                    if _serialized_size(prefix_candidate(midpoint)) <= max_bytes:
+                        best = midpoint
+                        low = midpoint + 1
                     else:
-                        break
+                        high = midpoint - 1
                 except Exception:
-                    break
+                    high = midpoint - 1
 
-            if preserved_items:
-                result[field_name] = preserved_items
+            if best:
+                result[field_name] = field_value[:best]
                 result[f"{field_name}_truncated"] = True
                 result[f"{field_name}_original_count"] = len(field_value)
-                result[f"{field_name}_preserved_count"] = len(preserved_items)
+                result[f"{field_name}_preserved_count"] = best
         elif isinstance(field_value, dict):
             # Try to include the dict if it fits
             try:
@@ -1176,13 +1228,11 @@ def apply_response_cap(
             except Exception:
                 pass
 
-    # Add final truncated size with multibyte-safe encoding
-    final_json = json.dumps(result, ensure_ascii=False)
-    final_bytes = final_json.encode("utf-8")
-    result["truncated_size_bytes"] = len(final_bytes)
+    # Add exact final size metadata (including the field itself).
+    _set_final_serialized_size(result)
 
-    # Ensure we're actually under the cap
-    if len(final_bytes) > max_bytes:
+    # Ensure the final object, metadata included, is actually under the cap.
+    if _serialized_size(result) > max_bytes:
         # Need to be more aggressive - remove data fields and keep only metadata
         minimal = {
             "_truncated": True,
@@ -1204,9 +1254,8 @@ def apply_response_cap(
                 except Exception:
                     pass
 
-        # Add truncated_size_bytes for minimal fallback
-        minimal_json = json.dumps(minimal, ensure_ascii=False)
-        minimal["truncated_size_bytes"] = len(minimal_json.encode("utf-8"))
+        # Add exact final size metadata for the minimal fallback too.
+        _set_final_serialized_size(minimal)
 
         return minimal
 
