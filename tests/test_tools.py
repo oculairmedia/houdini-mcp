@@ -2631,6 +2631,12 @@ class TestMaterialTools:
 
         assert result["status"] == "success"
         assert "red_metal" in result["material_path"]
+        # Side effects: parameters actually landed on the created node.
+        assert sorted(result["parameters_set"]) == ["basecolor", "metallic"]
+        created = mat_context._children[-1]
+        assert created.name() == "red_metal"
+        assert created._params["metallic"] == 1.0
+        assert list(created._params["basecolor"]) == [1, 0, 0]
 
     def test_assign_material_success(self, mock_connection):
         """Test successful material assignment to geometry."""
@@ -2659,6 +2665,13 @@ class TestMaterialTools:
         assert result["status"] == "success"
         assert result["geometry_path"] == "/obj/geo1"
         assert result["material_path"] == "/mat/test_mat"
+        # Side effects: a Material SOP was created inside the geo network and
+        # points at the assigned material.
+        assert result["method"] == "material_sop"
+        mat_sop = next((c for c in geo._children if c.type().name() == "material"), None)
+        assert mat_sop is not None, "expected a material SOP created inside /obj/geo1"
+        assert result["material_sop_path"] == mat_sop.path()
+        assert mat_sop._params.get("shop_materialpath1") == "/mat/test_mat"
 
 
 class TestLayoutTools:
@@ -2793,6 +2806,43 @@ class TestLayoutTools:
         assert result["status"] == "success"
         assert result["node_path"] == "/obj/geo1"
         assert result["child_count"] == 2
+        # Side effect: Houdini's layoutChildren was invoked with the spacing.
+        assert geo.layout_calls == [(2.0, 1.0)]
+
+    def test_layout_children_custom_spacing_reaches_houdini(self, mock_connection):
+        """Custom spacing parameters must be forwarded to layoutChildren."""
+        from houdini_mcp.tools import layout_children
+
+        geo = MockHouNode(path="/obj/geo1", name="geo1", node_type="geo")
+        child = MockHouNode(path="/obj/geo1/a", name="a", node_type="null")
+        geo._children = [child]
+        mock_connection.add_node(geo)
+
+        result = layout_children(
+            node_path="/obj/geo1",
+            horizontal_spacing=3.5,
+            vertical_spacing=2.25,
+            host="localhost",
+            port=18811,
+        )
+
+        assert result["status"] == "success"
+        assert result["horizontal_spacing"] == 3.5
+        assert result["vertical_spacing"] == 2.25
+        assert geo.layout_calls == [(3.5, 2.25)]
+
+    def test_layout_children_empty_does_not_invoke_houdini(self, mock_connection):
+        """Zero children returns success without a layoutChildren call."""
+        from houdini_mcp.tools import layout_children
+
+        geo = MockHouNode(path="/obj/geo1", name="geo1", node_type="geo", children=[])
+        mock_connection.add_node(geo)
+
+        result = layout_children(node_path="/obj/geo1", host="localhost", port=18811)
+
+        assert result["status"] == "success"
+        assert result["child_count"] == 0
+        assert geo.layout_calls == []
 
     def test_set_node_color_success(self, mock_connection):
         """Test successfully setting node color."""
@@ -2811,6 +2861,9 @@ class TestLayoutTools:
         assert result["status"] == "success"
         assert result["node_path"] == "/obj/geo1"
         assert result["color"] == [1.0, 0.0, 0.0]
+        # Side effect: the node's stored color changed.
+        assert geo.color() is not None
+        assert geo.color().rgb() == (1.0, 0.0, 0.0)
 
     def test_set_node_position_success(self, mock_connection):
         """Test successfully setting node position."""
@@ -2830,6 +2883,8 @@ class TestLayoutTools:
         assert result["status"] == "success"
         assert result["node_path"] == "/obj/geo1"
         assert result["position"] == [5.0, -3.0]
+        # Side effect: the node's network-editor position moved.
+        assert geo.position() == (5.0, -3.0)
 
     def test_create_network_box_success(self, mock_connection):
         """Test successful network box creation."""
@@ -2859,6 +2914,36 @@ class TestLayoutTools:
         assert result["label"] == "My Nodes"
         # Result returns list of paths, not count
         assert len(result["nodes_contained"]) == 2
+        # Side effects: a box exists on the parent, labeled, containing BOTH nodes.
+        assert len(geo._network_boxes) == 1
+        netbox = geo._network_boxes[0]
+        assert netbox._label == "My Nodes"
+        assert {n.path() for n in netbox._nodes} == {"/obj/geo1/sphere1", "/obj/geo1/box1"}
+
+    def test_create_network_box_with_color_side_effect(self, mock_connection):
+        """Network box color parameter reaches the created box."""
+        from houdini_mcp.tools import create_network_box
+
+        geo = MockHouNode(path="/obj/geo1", name="geo1", node_type="geo")
+        child = MockHouNode(path="/obj/geo1/a", name="a", node_type="null")
+        child._parent = geo
+        geo._children = [child]
+        mock_connection.add_node(geo)
+        mock_connection.add_node(child)
+
+        result = create_network_box(
+            parent_path="/obj/geo1",
+            node_paths=["/obj/geo1/a"],
+            label="Input",
+            color=[0.2, 0.6, 0.2],
+            host="localhost",
+            port=18811,
+        )
+
+        assert result["status"] == "success"
+        netbox = geo._network_boxes[0]
+        assert netbox._color is not None
+        assert netbox._color.rgb() == (0.2, 0.6, 0.2)
 
 
 class TestResponseSizeMetadata:

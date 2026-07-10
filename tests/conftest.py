@@ -49,6 +49,8 @@ class MockHouNode:
         # Network boxes
         self._network_boxes: list[MockNetworkBox] = []
         self._network_box_counter = 0
+        # Recorded layoutChildren invocations: (horizontal_spacing, vertical_spacing)
+        self.layout_calls: list[tuple[float, float]] = []
 
     def path(self) -> str:
         return self._path
@@ -299,8 +301,9 @@ class MockHouNode:
     def layoutChildren(
         self, horizontal_spacing: float = 2.0, vertical_spacing: float = 1.0, *args, **kwargs
     ) -> None:
-        """Layout child nodes. No-op for mock."""
-        pass
+        """Layout child nodes. Records invocations so tests can assert the
+        production tool actually asked Houdini to lay out the network."""
+        self.layout_calls.append((horizontal_spacing, vertical_spacing))
 
     def setPosition(self, position: "MockVector2") -> None:
         """Set the node's position in the network editor."""
