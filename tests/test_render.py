@@ -702,3 +702,96 @@ class TestKarmaEngineParameter:
         sig = inspect.signature(render_viewport)
         default_value = sig.parameters["karma_engine"].default
         assert default_value == "cpu"
+
+
+class TestRenderViewportSchemaContract:
+    """Tests that render_viewport rejects parameters from prose-only discovery.
+
+    Issue: Users reading tool descriptions might call with intuitive-but-wrong
+    parameter names like 'width'/'height' instead of 'resolution', or
+    'camera_path' instead of 'camera_position'/'camera_rotation'.
+
+    These should fail early with a clear TypeError, not silently ignored.
+    """
+
+    def test_rejects_width_height_parameters(self):
+        """Test that width/height parameters are rejected (use resolution instead)."""
+        from houdini_mcp.tools import render_viewport
+
+        try:
+            # This should raise TypeError for unexpected keyword arguments
+            render_viewport(width=512, height=512, host="localhost", port=18811)
+            raise AssertionError("Should have raised TypeError for 'width' parameter")
+        except TypeError as e:
+            assert "width" in str(e).lower() or "unexpected" in str(e).lower()
+
+    def test_rejects_camera_path_parameter(self):
+        """Test that camera_path parameter is rejected (use camera_position/camera_rotation)."""
+        from houdini_mcp.tools import render_viewport
+
+        try:
+            render_viewport(camera_path="/obj/cam1", host="localhost", port=18811)
+            raise AssertionError("Should have raised TypeError for 'camera_path' parameter")
+        except TypeError as e:
+            assert "camera_path" in str(e).lower() or "unexpected" in str(e).lower()
+
+    def test_valid_resolution_parameter_format(self, mock_connection):
+        """Test that resolution must be a list [width, height], not separate args."""
+        from houdini_mcp.tools import render_viewport
+
+        # This should work
+        result = render_viewport(resolution=[512, 512], host="localhost", port=18811)
+        assert "status" in result
+
+        # But this should not work (width/height as separate kwargs)
+        try:
+            render_viewport(width=512, height=512, host="localhost", port=18811)
+            raise AssertionError("Should have raised TypeError")
+        except TypeError:
+            pass  # Expected
+
+
+class TestRenderViewportMinimalValidExamples:
+    """Test minimal valid examples that should work for each common use case."""
+
+    def test_minimal_default_render(self, mock_connection):
+        """Most minimal call: just defaults, auto-frame everything."""
+        from houdini_mcp.tools import render_viewport
+
+        result = render_viewport()
+        assert "status" in result
+
+    def test_minimal_with_resolution(self, mock_connection):
+        """Minimal call with explicit resolution."""
+        from houdini_mcp.tools import render_viewport
+
+        result = render_viewport(resolution=[1024, 768])
+        assert "status" in result
+
+    def test_minimal_look_at_node(self, mock_connection):
+        """Minimal call focusing on a specific node."""
+        from houdini_mcp.tools import render_viewport
+
+        result = render_viewport(look_at="/obj/geo1")
+        assert "status" in result
+
+    def test_minimal_orthographic_front_view(self, mock_connection):
+        """Minimal call for orthographic front view."""
+        from houdini_mcp.tools import render_viewport
+
+        result = render_viewport(camera_rotation=[0, 0, 0], orthographic=True)
+        assert "status" in result
+
+    def test_minimal_top_view(self, mock_connection):
+        """Minimal call for top-down view."""
+        from houdini_mcp.tools import render_viewport
+
+        result = render_viewport(camera_rotation=[-90, 0, 0])
+        assert "status" in result
+
+    def test_minimal_karma_gpu(self, mock_connection):
+        """Minimal call for fast Karma GPU render."""
+        from houdini_mcp.tools import render_viewport
+
+        result = render_viewport(renderer="karma", karma_engine="gpu", resolution=[512, 512])
+        assert "status" in result

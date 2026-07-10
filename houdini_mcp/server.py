@@ -81,7 +81,9 @@ def execute_code(
     """
     Execute Python code in Houdini with scene change tracking and safety rails.
 
-    The 'hou' module is available in the execution context.
+    IMPORTANT: The 'hou' module is pre-injected as a global variable. Do NOT use
+    'import hou' or 'from hou import ...' - just use 'hou' directly in your code.
+
     Use this for complex operations that aren't covered by other tools.
 
     SAFETY FEATURES:

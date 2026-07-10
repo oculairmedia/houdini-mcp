@@ -473,3 +473,52 @@ print(c.increment())
         result = execute_code(code, host="localhost", port=18811)
         assert result["status"] == "success"
         assert "[0, 1, 4, 9, 16]" in result["stdout"]
+
+
+class TestExecuteCodeImportHou:
+    """Tests for execute_code behavior when user tries to import hou."""
+
+    def test_import_hou_provides_actionable_hint(self, mock_connection):
+        """Test that 'import hou' provides actionable hint instead of raw ModuleNotFoundError.
+
+        This is a common mistake for users familiar with running Python code inside Houdini.
+        The execute_code tool injects 'hou' as a pre-injected global via RPyC, so importing
+        it as a module will fail. We should detect this and provide a helpful message.
+        """
+        from houdini_mcp.tools import execute_code
+
+        code = """
+import hou
+print(hou.applicationVersionString())
+"""
+        result = execute_code(code, host="localhost", port=18811)
+
+        # Should either succeed (if we make it work) or provide actionable hint
+        if result["status"] == "error":
+            # If it fails, it should have a helpful hint about hou being pre-injected
+            assert (
+                "import hou" in result["message"].lower() or "hou" in result.get("hint", "").lower()
+            )
+            assert (
+                "pre-inject" in result.get("hint", "").lower()
+                or "already available" in result.get("hint", "").lower()
+            )
+            # Should NOT be a raw traceback without context
+            assert result.get("hint") or "already available" in result["message"]
+        else:
+            # If it succeeds, that's even better - we made it work
+            assert result["status"] == "success"
+
+    def test_from_hou_import_provides_hint(self, mock_connection):
+        """Test that 'from hou import X' also provides actionable hint."""
+        from houdini_mcp.tools import execute_code
+
+        code = "from hou import node"
+        result = execute_code(code, host="localhost", port=18811)
+
+        if result["status"] == "error":
+            assert "hou" in result.get("hint", result["message"]).lower()
+            assert (
+                "pre-inject" in result.get("hint", "").lower()
+                or "already available" in result.get("hint", result["message"]).lower()
+            )

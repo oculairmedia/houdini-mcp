@@ -43,6 +43,7 @@ __all__ = [
     "HEAVY_GEOMETRY_PATTERNS",
     "_detect_dangerous_code",
     "_detect_heavy_geometry_code",
+    "_detect_import_hou",
     # Output utilities
     "_truncate_output",
     # Response size utilities
@@ -303,6 +304,28 @@ def _detect_heavy_geometry_code(code: str) -> list[str]:
         if re.search(pattern, code):
             detected.append(description)
     return detected
+
+
+def _detect_import_hou(code: str) -> bool:
+    """
+    Detect if code tries to import hou module.
+
+    The execute_code tool pre-injects hou as a global via RPyC, so importing
+    it as a module will fail with ModuleNotFoundError. This is a common mistake
+    for users familiar with running Python inside Houdini.
+
+    Args:
+        code: Python code to scan
+
+    Returns:
+        True if code contains import hou or from hou import patterns
+    """
+    # Match "import hou" or "from hou import ..."
+    import_patterns = [
+        r"^\s*import\s+hou\s*(?:$|#|;|,|\s)",
+        r"^\s*from\s+hou\s+import\s+",
+    ]
+    return any(re.search(pattern, code, re.MULTILINE) for pattern in import_patterns)
 
 
 def _truncate_output(output: str, max_size: int) -> tuple[str, bool]:
