@@ -11,6 +11,11 @@ Provides two modes of operation:
    - Use start_hrpyc_server() / stop_hrpyc_server()
    - External MCP servers connect via RPyC
    - Enables advanced server-side processing
+
+The reusable outbound WebSocket (WSS) connection state-machine core lives in
+:mod:`houdini_mcp_plugin.ws_client`. It is sans-I/O and does not yet integrate
+with Houdini callbacks/plugin lifecycle (that is a follow-up: houdini-mcp-9sx /
+houdini-mcp-vzp.9). The hrpyc modes above are intentionally left untouched.
 """
 
 __version__ = "0.1.0"
@@ -23,8 +28,27 @@ from .remote import (
     stop_hrpyc_server,
 )
 from .server import is_server_running, start_server, stop_server
+from .ws_client import (
+    Action,
+    ActionType,
+    ConnectionState,
+    QueueFullError,
+    StaleSessionError,
+    WSClientCore,
+    WSConfig,
+    redact,
+)
 
 __all__ = [
+    # Outbound WSS state-machine core (houdini-mcp-xu4)
+    "WSClientCore",
+    "WSConfig",
+    "ConnectionState",
+    "Action",
+    "ActionType",
+    "QueueFullError",
+    "StaleSessionError",
+    "redact",
     # Connection
     "LocalHoudiniConnection",
     "get_connection",
