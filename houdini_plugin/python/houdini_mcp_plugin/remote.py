@@ -1,196 +1,118 @@
-"""Remote mode for Houdini MCP Plugin.
+"""Remote mode for the Houdini MCP Plugin (backwards-compatible facade).
 
-This module provides hrpyc server activation, allowing external MCP servers
-to connect to Houdini via RPyC for remote control.
+This module preserves the historic module-level API
+(``start_hrpyc_server`` / ``stop_hrpyc_server`` / ``is_hrpyc_running`` /
+``get_hrpyc_status``) while delegating to the testable
+:class:`houdini_mcp_plugin.listener.RemoteListener`.
+
+The manual/direct hrpyc workflow (running ``import hrpyc;
+hrpyc.start_server(port=...)`` in Houdini's Python shell) remains fully
+supported and untouched — this facade is an *additional*, safer entry point.
+
+Security: binds to ``127.0.0.1`` by default. Non-loopback binds (via
+``HOUDINI_RPC_BIND_HOST``) require an explicit trusted-network opt-in
+(``HOUDINI_RPC_TRUSTED_NETWORK=1``) or an authentication token
+(``HOUDINI_RPC_TOKEN``). See :mod:`houdini_mcp_plugin.listener`.
 """
 
+from __future__ import annotations
+
 import logging
-import os
-import socket
-import threading
-import time
 from typing import Any
+
+from .listener import ListenerConfig, RemoteListener
 
 logger = logging.getLogger("houdini_mcp_plugin.remote")
 
-# Global state for remote mode
-_hrpyc_server: Any | None = None
-_hrpyc_port: int = 18811
-_hrpyc_host: str = "127.0.0.1"
+# A single process-wide listener instance backs the module-level API.
+_listener: RemoteListener | None = None
 
 
-def _wait_for_port(host: str, port: int, timeout: float = 2.0) -> bool:
-    """Return True when a TCP listener accepts connections."""
-    connect_host = "127.0.0.1" if host in ("0.0.0.0", "::") else host
-    deadline = time.monotonic() + timeout
-    while time.monotonic() < deadline:
-        try:
-            with socket.create_connection((connect_host, port), timeout=0.2):
-                return True
-        except OSError:
-            time.sleep(0.05)
-    return False
+def _import_hrpyc() -> Any:
+    """Import the real ``hrpyc`` module (overridable in tests)."""
+    import hrpyc  # noqa: PLC0415 - only available inside Houdini
+
+    return hrpyc
 
 
-def start_hrpyc_server(port: int = 18811) -> dict:
-    """Start the hrpyc server to allow remote connections.
-
-    This enables external MCP servers (like the Docker-based server) to
-    connect to this Houdini instance and execute commands.
-
-    Args:
-        port: Port to listen on (default: 18811)
-
-    Returns:
-        Dict with status and connection info
-    """
-    global _hrpyc_server, _hrpyc_port, _hrpyc_host
-
-    if _hrpyc_server is not None:
-        return {
-            "status": "already_running",
-            "port": _hrpyc_port,
-            "host": _hrpyc_host,
-            "message": f"hrpyc server is already running on {_hrpyc_host}:{_hrpyc_port}",
-        }
-
+def _import_hou() -> Any:
+    """Import the real ``hou`` module (overridable in tests)."""
     try:
-        import hrpyc
+        import hou  # noqa: PLC0415 - only available inside Houdini
 
-        bind_host = os.getenv("HOUDINI_RPC_BIND_HOST", "127.0.0.1")
-        _hrpyc_server = hrpyc.ThreadedServer(
-            hrpyc.SlaveService,
-            hostname=bind_host,
-            port=port,
-            reuse_addr=True,
-            auto_register=False,
-        )
-        _hrpyc_server.logger.quiet = True
-        thread = threading.Thread(target=_hrpyc_server.start, daemon=True)
-        thread.start()
+        return hou
+    except ImportError:
+        return None
 
-        if not _wait_for_port(bind_host, port):
-            close = getattr(_hrpyc_server, "close", None)
-            if close is not None:
-                close()
-            _hrpyc_server = None
-            return {
-                "status": "error",
-                "message": f"Failed to start hrpyc server on {bind_host}:{port} (port may be in use).",
-            }
 
-        _hrpyc_port = port
-        _hrpyc_host = bind_host
+def _get_listener() -> RemoteListener:
+    global _listener
+    if _listener is None:
+        _listener = RemoteListener(hrpyc=_import_hrpyc(), hou=_import_hou())
+    return _listener
 
-        logger.info(f"Started hrpyc server on {bind_host}:{port}")
 
-        # Get local IP for connection info
+def reset_listener() -> None:
+    """Stop and drop the current listener (used by tests and hard resets)."""
+    global _listener
+    if _listener is not None:
         try:
-            # Get the machine's IP address
-            s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-            s.connect(("8.8.8.8", 80))
-            local_ip = s.getsockname()[0]
-            s.close()
-        except Exception:
-            local_ip = "localhost"
+            _listener.stop()
+        except Exception as exc:  # noqa: BLE001
+            logger.debug("Error during listener reset: %s", exc)
+    _listener = None
 
-        return {
-            "status": "success",
-            "host": bind_host,
-            "port": port,
-            "local_ip": local_ip,
-            "message": f"hrpyc server started. Connect with: HOUDINI_HOST={bind_host} HOUDINI_PORT={port}",
-        }
 
-    except ImportError as e:
-        logger.error(f"hrpyc module not available: {e}")
-        return {
-            "status": "error",
-            "message": "hrpyc module not available. Make sure Houdini's Python environment includes hrpyc.",
-        }
-    except Exception as e:
-        logger.error(f"Failed to start hrpyc server: {e}")
-        return {
-            "status": "error",
-            "message": f"Failed to start hrpyc server: {e}",
-        }
+def start_hrpyc_server(port: int | None = None) -> dict:
+    """Start the hrpyc listener for remote connections (backwards-compatible).
+
+    Bind host / security options are read from the environment
+    (``HOUDINI_RPC_BIND_HOST``, ``HOUDINI_RPC_TRUSTED_NETWORK``,
+    ``HOUDINI_RPC_TOKEN``). ``port`` overrides ``HOUDINI_RPC_BIND_PORT`` when
+    provided.
+    """
+    listener = _get_listener()
+    cfg = ListenerConfig.from_env()
+    if port is not None:
+        cfg.port = port
+    return listener.start(cfg)
 
 
 def stop_hrpyc_server() -> dict:
-    """Stop the hrpyc server.
-
-    Returns:
-        Dict with status
-    """
-    global _hrpyc_server
-
-    if _hrpyc_server is None:
-        return {
-            "status": "not_running",
-            "message": "hrpyc server is not running",
-        }
-
-    try:
-        close = getattr(_hrpyc_server, "close", None)
-        if close is None:
-            return {
-                "status": "error",
-                "message": "hrpyc server object cannot be stopped; restart Houdini to clear this listener.",
-            }
-
-        close()
-        _hrpyc_server = None
-
-        logger.info("Stopped hrpyc server")
-        return {
-            "status": "success",
-            "message": "hrpyc server stopped",
-        }
-
-    except Exception as e:
-        logger.error(f"Failed to stop hrpyc server: {e}")
-        return {
-            "status": "error",
-            "message": f"Failed to stop hrpyc server: {e}",
-        }
+    """Stop the hrpyc listener."""
+    return _get_listener().stop()
 
 
 def is_hrpyc_running() -> bool:
-    """Check if hrpyc server is running.
-
-    Returns:
-        True if running, False otherwise
-    """
-    return _hrpyc_server is not None
+    """Return True if the hrpyc listener is running."""
+    global _listener
+    return _listener is not None and _listener.is_running()
 
 
 def get_hrpyc_status() -> dict:
-    """Get hrpyc server status.
+    """Return the current hrpyc listener status."""
+    if _listener is None:
+        return {"running": False, "message": "hrpyc listener is not running."}
+    return _listener.status()
 
-    Returns:
-        Dict with status information
-    """
-    if not is_hrpyc_running():
+
+def self_test_hrpyc() -> dict:
+    """Run a reachability + capability self-test on the hrpyc listener."""
+    if _listener is None:
         return {
             "running": False,
-            "message": "hrpyc server is not running. Use start_hrpyc_server() to enable remote connections.",
+            "reachable": False,
+            "stale": False,
+            "warnings": ["hrpyc listener is not running."],
+            "guidance": ["Start the listener before running a self-test."],
         }
+    return _listener.self_test()
 
-    import socket
 
-    try:
-        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        s.connect(("8.8.8.8", 80))
-        local_ip = s.getsockname()[0]
-        s.close()
-    except Exception:
-        local_ip = "localhost"
-
-    return {
-        "running": True,
-        "host": _hrpyc_host,
-        "port": _hrpyc_port,
-        "local_ip": local_ip,
-        "connection_string": f"HOUDINI_HOST={_hrpyc_host} HOUDINI_PORT={_hrpyc_port}",
-        "message": "hrpyc server is running and accepting remote connections.",
-    }
+def reload_hrpyc_server(port: int | None = None) -> dict:
+    """Restart the hrpyc listener with current environment configuration."""
+    listener = _get_listener()
+    cfg = ListenerConfig.from_env()
+    if port is not None:
+        cfg.port = port
+    return listener.reload(cfg)

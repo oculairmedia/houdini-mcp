@@ -9,6 +9,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Remote hrpyc listener activation** (`houdini_mcp_plugin.listener`): the
+  Houdini plugin can now start/stop/reload a remotely reachable hrpyc listener
+  with an explicit, configurable bind address/port
+  (`HOUDINI_RPC_BIND_HOST` / `HOUDINI_RPC_BIND_PORT`). Start/stop/reload are
+  idempotent, and a self-test reports the actual bound endpoints, reachability,
+  a loopback-only warning, per-OS firewall guidance, and Houdini/plugin/protocol
+  versions. New shelf tools: **Remote Status** and **Remote Self-Test**.
+- **Remote listener security policy**: non-loopback binds (`0.0.0.0` or a LAN IP)
+  are refused unless explicitly opted into via `HOUDINI_RPC_TRUSTED_NETWORK=1`
+  or an authentication token `HOUDINI_RPC_TOKEN`. No code path silently binds
+  `0.0.0.0` without auth. Documented in `docs/remote-listener.md` (including
+  limitations: token is a shared-secret handshake, not TLS).
+- **Opt-in live verification**: `scripts/verify_remote_listener.py` performs a
+  read-only reachability/version check against an already-running listener
+  (gated by `RUN_LIVE_REMOTE_CHECK=1`); it never starts/stops/restarts Houdini.
 - **Heavy geometry guard**: `execute_code` now detects and blocks direct SOP
   geometry access (`node.geometry()`, `geo.points()`, `geo.prims()`,
   `geo.vertices()`, `geo.iterPoints()`, `geo.iterPrims()`) which can stall the
