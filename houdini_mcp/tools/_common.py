@@ -54,6 +54,11 @@ __all__ = [
     "RESPONSE_SIZE_LARGE_THRESHOLD",
     "_estimate_response_size",
     "_add_response_metadata",
+    # Response pagination and bounds (HDMCP-52 / houdini-mcp-2t6)
+    "paginate_list",
+    "apply_response_cap",
+    "apply_detail_mode",
+    "DEFAULT_RESPONSE_CAP_BYTES",
     # Serialization utilities
     "_json_safe_hou_value",
     "_node_to_dict",
@@ -488,6 +493,9 @@ def _truncate_output(output: str, max_size: int) -> tuple[str, bool]:
 # Response size thresholds (in bytes)
 RESPONSE_SIZE_WARNING_THRESHOLD = 100 * 1024  # 100KB - warn above this
 RESPONSE_SIZE_LARGE_THRESHOLD = 500 * 1024  # 500KB - considered large
+
+# Hard response cap for bounded responses (HDMCP-52 / houdini-mcp-2t6)
+DEFAULT_RESPONSE_CAP_BYTES = 16 * 1024  # 16KB default cap
 
 
 def _estimate_response_size(data: Any, _depth: int = 0) -> int:
@@ -979,3 +987,223 @@ async def run_in_executor(func: Any, *args: Any, **kwargs: Any) -> Any:
     loop = asyncio.get_event_loop()
     partial_func = functools.partial(func, *args, **kwargs)
     return await loop.run_in_executor(None, partial_func)
+
+
+# =============================================================================
+# Response Pagination and Bounds (HDMCP-52 / houdini-mcp-2t6)
+# =============================================================================
+
+
+def paginate_list(
+    items: list[Any],
+    limit: int = 20,
+    cursor: int | None = None,
+) -> dict[str, Any]:
+    """
+    Paginate a list with limit/cursor controls.
+
+    Args:
+        items: List to paginate
+        limit: Maximum items per page (default: 20)
+        cursor: Start offset for pagination (default: 0)
+
+    Returns:
+        Dict with:
+        - items: Page of items
+        - total: Total number of items
+        - returned: Number of items in this page
+        - has_more: Whether more pages exist
+        - cursor: Next cursor if has_more, otherwise omitted
+
+    Example:
+        result = paginate_list(nodes, limit=10, cursor=0)
+        # Returns first 10 nodes with cursor=10 if more exist
+    """
+    offset = cursor if cursor is not None else 0
+    total = len(items)
+
+    # Slice the page
+    page = items[offset : offset + limit]
+    returned = len(page)
+
+    # Check if more pages exist
+    has_more = (offset + returned) < total
+
+    result: dict[str, Any] = {
+        "items": page,
+        "total": total,
+        "returned": returned,
+        "has_more": has_more,
+    }
+
+    # Add cursor for next page if more exist
+    if has_more:
+        result["cursor"] = offset + returned
+
+    return result
+
+
+def apply_response_cap(
+    data: dict[str, Any],
+    max_bytes: int = DEFAULT_RESPONSE_CAP_BYTES,
+) -> dict[str, Any]:
+    """
+    Apply hard response size cap with JSON-safe truncation.
+
+    Ensures response never exceeds max_bytes after JSON serialization.
+    Truncated responses include metadata about original size and truncation.
+
+    Args:
+        data: Response dict to cap
+        max_bytes: Maximum bytes after JSON serialization
+
+    Returns:
+        Dict that serializes to <= max_bytes with truncation metadata if needed
+
+    Example:
+        result = apply_response_cap(large_response, max_bytes=16000)
+        # Result JSON is guaranteed <= 16KB
+    """
+    import json
+
+    # Serialize to measure size
+    try:
+        json_str = json.dumps(data, ensure_ascii=False)
+        json_bytes = json_str.encode("utf-8")
+        original_size = len(json_bytes)
+    except Exception:
+        # If can't serialize, return error metadata
+        return {
+            "status": "error",
+            "message": "Response serialization failed",
+            "_truncated": True,
+        }
+
+    # If under cap, return as-is
+    if original_size <= max_bytes:
+        return data
+
+    # Need to truncate - start with metadata
+    result = {
+        "_truncated": True,
+        "original_size_bytes": original_size,
+    }
+
+    # Preserve status if present
+    if "status" in data:
+        result["status"] = data["status"]
+
+    # Try to include as much of the original data as possible
+    # Iteratively truncate fields until we fit
+    truncated_data = dict(data)
+
+    # Remove large fields in order of size
+    field_sizes = []
+    for key, value in truncated_data.items():
+        try:
+            field_json = json.dumps({key: value}, ensure_ascii=False)
+            field_size = len(field_json.encode("utf-8"))
+            field_sizes.append((field_size, key))
+        except Exception:
+            field_sizes.append((0, key))
+
+    field_sizes.sort(reverse=True)
+
+    # Remove largest fields until we fit
+    for _size, key in field_sizes:
+        if key in ("status", "_truncated", "original_size_bytes", "truncated_size_bytes"):
+            continue  # Preserve metadata fields
+
+        current_size = len(json.dumps(result, ensure_ascii=False).encode("utf-8"))
+        if current_size <= max_bytes:
+            break
+
+        # Try to include a truncated version of this field
+        value = truncated_data[key]
+        if isinstance(value, list) and len(value) > 0:
+            # Truncate list to first few items
+            result[key] = value[: min(3, len(value))]
+            result[f"{key}_truncated"] = True
+            result[f"{key}_original_count"] = len(value)
+        elif isinstance(value, str) and len(value) > 100:
+            # Truncate string to first 100 chars
+            result[key] = value[:100] + "..."
+        elif key not in result:
+            # Skip this field entirely
+            pass
+
+    # Add final truncated size
+    final_json = json.dumps(result, ensure_ascii=False)
+    final_bytes = final_json.encode("utf-8")
+    result["truncated_size_bytes"] = len(final_bytes)
+
+    # Ensure we're actually under the cap
+    if len(final_bytes) > max_bytes:
+        # Fallback: return minimal response
+        minimal = {
+            "_truncated": True,
+            "original_size_bytes": original_size,
+            "message": f"Response too large ({original_size} bytes), truncated to fit {max_bytes} bytes",
+        }
+        if "status" in data:
+            minimal["status"] = data["status"]
+        return minimal
+
+    return result
+
+
+def apply_detail_mode(
+    data: dict[str, Any],
+    mode: str = "standard",
+) -> dict[str, Any]:
+    """
+    Apply detail level to response (compact/standard/detail).
+
+    Args:
+        data: Response dict
+        mode: Detail level - "compact", "standard", or "detail"
+
+    Returns:
+        Response dict filtered by detail level
+
+    Modes:
+        - compact: Essential fields only (path, type, counts)
+        - standard: Balanced (includes parameters, no metadata)
+        - detail: All fields including metadata
+    """
+    if mode == "detail":
+        # Return everything
+        return data
+
+    if mode == "standard":
+        # Return as-is for now (balanced default)
+        return data
+
+    if mode == "compact":
+        # Return minimal essential fields
+        compact = {}
+
+        # Always include these essential fields
+        essential_fields = ["status", "path", "type", "name", "node_path"]
+        for field in essential_fields:
+            if field in data:
+                compact[field] = data[field]
+
+        # Include counts instead of full arrays
+        if "children" in data and isinstance(data["children"], list):
+            compact["child_count"] = len(data["children"])
+        if "items" in data and isinstance(data["items"], list):
+            compact["item_count"] = len(data["items"])
+            compact["items"] = data["items"][:3]  # Sample
+        if "parameters" in data and isinstance(data["parameters"], dict):
+            compact["parameter_count"] = len(data["parameters"])
+
+        # Include pagination metadata
+        for field in ["total", "returned", "has_more", "cursor"]:
+            if field in data:
+                compact[field] = data[field]
+
+        return compact
+
+    # Unknown mode, return standard
+    return data

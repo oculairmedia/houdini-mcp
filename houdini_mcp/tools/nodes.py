@@ -17,6 +17,7 @@ from ._common import (
     _json_safe_hou_value,
     ensure_connected,
     handle_connection_errors,
+    paginate_list,
 )
 from .cache import node_type_cache
 
@@ -344,11 +345,14 @@ def list_node_types(
         offset=offset,
     )
 
-    # Build result
+    # Build result with consistent pagination metadata (HDMCP-52)
     result: dict[str, Any] = {
         "status": "success",
-        "count": len(node_types),
         "node_types": node_types,
+        "count": len(node_types),  # Backward compat: count = returned
+        "total": total_matched,
+        "returned": len(node_types),
+        "has_more": has_more,
     }
 
     # Include category in result if filtered
@@ -358,13 +362,9 @@ def list_node_types(
         # Get available categories from cache
         result["categories_available"] = node_type_cache.get_categories(hou)
 
-    # Add pagination info
-    if offset > 0:
-        result["offset"] = offset
-
+    # Add cursor for next page
     if has_more:
-        result["has_more"] = True
-        result["next_offset"] = offset + len(node_types)
+        result["cursor"] = offset + len(node_types)
 
     # Add warning if results were limited
     if len(node_types) >= max_results and has_more:
@@ -391,6 +391,8 @@ def list_children(
     recursive: bool = False,
     max_depth: int = 10,
     max_nodes: int = 1000,
+    limit: int = 20,
+    cursor: int | None = None,
     compact: bool = False,
     host: str = "localhost",
     port: int = 18811,
@@ -401,16 +403,22 @@ def list_children(
     This tool is essential for agents to understand node networks and insert
     nodes without breaking existing connections.
 
+    Pagination (HDMCP-52 / houdini-mcp-2t6): Use limit/cursor for page-by-page
+    traversal. The default limit is 20 nodes per page.
+
     Args:
         node_path: Path to the parent node
         recursive: If True, recursively traverse child nodes
         max_depth: Maximum recursion depth (prevents infinite loops)
-        max_nodes: Maximum number of nodes to return (safety limit)
+        max_nodes: Maximum total nodes to collect (safety limit, default: 1000)
+        limit: Maximum nodes per page (default: 20)
+        cursor: Pagination cursor (offset) for next page
         compact: If True, return only path/name/type without connection details
 
     Returns:
         Dict with child nodes including their connection information.
         When compact=True, inputs/outputs are omitted for reduced payload size.
+        Includes pagination metadata: total, returned, has_more, cursor.
     """
     hou = ensure_connected(host, port)
 
@@ -497,15 +505,24 @@ def list_children(
 
     collect_children(parent)
 
+    # Apply pagination to collected children
+    paginated = paginate_list(children_list, limit=limit, cursor=cursor)
+
     result: dict[str, Any] = {
         "status": "success",
         "node_path": node_path,
-        "children": children_list,
-        "count": len(children_list),
+        "children": paginated["items"],
+        "count": paginated["returned"],  # Backward compat: count = returned
+        "total": paginated["total"],
+        "returned": paginated["returned"],
+        "has_more": paginated["has_more"],
     }
 
+    if paginated["has_more"]:
+        result["cursor"] = paginated["cursor"]
+
     if nodes_collected >= max_nodes:
-        result["warning"] = f"Result limited to {max_nodes} nodes"
+        result["warning"] = f"Collection limited to {max_nodes} nodes"
 
     # Add response size metadata for large responses
     return _add_response_metadata(result)
@@ -664,26 +681,30 @@ _result = {{"matches": matches, "total_matched": total_matched}}
 
         search_recursive(root)
 
+    # Calculate pagination metadata
+    has_more = total_matched > offset + len(matches)
+
     result: dict[str, Any] = {
         "status": "success",
         "root_path": root_path,
         "pattern": pattern,
         "matches": matches,
-        "count": len(matches),
+        "count": len(matches),  # Backward compat: count = returned
+        "total": total_matched,
+        "returned": len(matches),
+        "has_more": has_more,
     }
 
     if node_type:
         result["node_type_filter"] = node_type
 
-    # Add pagination info
+    # Add offset for backward compat
     if offset > 0:
         result["offset"] = offset
 
-    # Calculate if there are more results
-    has_more = total_matched > offset + len(matches)
+    # Add cursor for next page
     if has_more:
-        result["has_more"] = True
-        result["next_offset"] = offset + len(matches)
+        result["cursor"] = offset + len(matches)
 
     if len(matches) >= max_results:
         result["warning"] = (
