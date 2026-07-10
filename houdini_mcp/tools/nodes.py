@@ -453,6 +453,15 @@ def list_children(
     children_list: list[dict[str, Any]] = []
     nodes_collected = 0
 
+    def compact_flag(node: Any, method: str) -> str:
+        getter = getattr(node, method, None)
+        if not callable(getter):
+            return "-"
+        try:
+            return "1" if bool(getter()) else "0"
+        except Exception:
+            return "-"
+
     def collect_children(node: Any, depth: int = 0) -> None:
         nonlocal nodes_collected
 
@@ -475,13 +484,12 @@ def list_children(
                         "path": child.path(),
                         "name": child.name(),
                         "type": child.type().name(),
-                        # Pack stable flags to avoid three repeated JSON keys per
-                        # node while keeping the compact contract explicit.
-                        "flags": {
-                            "display": bool(child.isDisplayFlagSet()),
-                            "render": bool(child.isRenderFlagSet()),
-                            "bypassed": bool(child.isBypassed()),
-                        },
+                        # Three-character bitset: display/render/bypassed. `-`
+                        # means the node class does not expose that flag API.
+                        "flags": "".join(
+                            compact_flag(child, method)
+                            for method in ("isDisplayFlagSet", "isRenderFlagSet", "isBypassed")
+                        ),
                     }
                 else:
                     # Full mode: include input/output connection details

@@ -1464,9 +1464,22 @@ class TestListChildren:
             assert "name" in child
             assert "type" in child
             assert set(child) == {"path", "name", "type", "flags"}
-            assert set(child["flags"]) == {"display", "render", "bypassed"}
+            assert len(child["flags"]) == 3
+            assert set(child["flags"]) <= {"0", "1", "-"}
             assert "inputs" not in child
             assert "outputs" not in child
+
+    def test_compact_flags_are_optional_per_node(self, mock_connection, monkeypatch):
+        from houdini_mcp.tools import list_children
+
+        child = MockHouNode(path="/obj/geo1/custom", name="custom", node_type="custom")
+        monkeypatch.setattr(child, "isRenderFlagSet", None)
+        mock_connection.add_node(
+            MockHouNode(path="/obj/geo1", name="geo1", node_type="geo", children=[child])
+        )
+        result = list_children("/obj/geo1", compact=True, host="localhost", port=18811)
+        assert result["returned"] == 1
+        assert result["children"][0]["flags"][1] == "-"
 
     def test_list_children_compact_preserves_pagination_and_cap(self, mock_connection):
         from houdini_mcp.tools import list_children
