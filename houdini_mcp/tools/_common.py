@@ -54,6 +54,10 @@ __all__ = [
     "RESPONSE_SIZE_LARGE_THRESHOLD",
     "_estimate_response_size",
     "_add_response_metadata",
+    # Response pagination and bounds (HDMCP-52 / houdini-mcp-2t6)
+    "paginate_list",
+    "apply_response_cap",
+    "DEFAULT_RESPONSE_CAP_BYTES",
     # Serialization utilities
     "_json_safe_hou_value",
     "_node_to_dict",
@@ -489,6 +493,9 @@ def _truncate_output(output: str, max_size: int) -> tuple[str, bool]:
 RESPONSE_SIZE_WARNING_THRESHOLD = 100 * 1024  # 100KB - warn above this
 RESPONSE_SIZE_LARGE_THRESHOLD = 500 * 1024  # 500KB - considered large
 
+# Hard response cap for bounded responses (HDMCP-52 / houdini-mcp-2t6)
+DEFAULT_RESPONSE_CAP_BYTES = 16 * 1024  # 16KB default cap
+
 
 def _estimate_response_size(data: Any, _depth: int = 0) -> int:
     """
@@ -539,21 +546,65 @@ def _estimate_response_size(data: Any, _depth: int = 0) -> int:
     return len(str(data)) + 2
 
 
-def _add_response_metadata(result: dict[str, Any], include_size: bool = True) -> dict[str, Any]:
+def _serialized_size(data: Any) -> int:
+    """Return the exact UTF-8 byte size used by MCP JSON serialization."""
+    import json
+
+    return len(json.dumps(data, ensure_ascii=False).encode("utf-8"))
+
+
+def _set_final_serialized_size(result: dict[str, Any]) -> None:
+    """Set self-referential size metadata to its exact fixed-point value."""
+    # The field's decimal digit count can change the size it reports. The value
+    # converges in a handful of iterations because only that digit count varies.
+    size = 0
+    for _ in range(8):
+        result["truncated_size_bytes"] = size
+        measured = _serialized_size(result)
+        if measured == size:
+            return
+        size = measured
+    result["truncated_size_bytes"] = _serialized_size(result)
+
+
+def _add_response_metadata(
+    result: dict[str, Any],
+    include_size: bool = True,
+    apply_cap: bool = True,
+    max_bytes: int = DEFAULT_RESPONSE_CAP_BYTES,
+) -> dict[str, Any]:
     """
-    Add response metadata including size information.
+    Add response metadata including size information and apply hard cap.
+
+    This is the single shared response finalization boundary for all production tools.
+    It ensures no response exceeds the configured cap after JSON serialization.
 
     Args:
         result: The result dictionary to augment
         include_size: Whether to include size metadata
+        apply_cap: Whether to apply hard response cap (default: True)
+        max_bytes: Maximum bytes after JSON serialization (default: DEFAULT_RESPONSE_CAP_BYTES)
 
     Returns:
-        The result dictionary with added metadata
+        The result dictionary with added metadata and applied cap
     """
     if not include_size:
+        if apply_cap:
+            return apply_response_cap(result, max_bytes=max_bytes)
         return result
 
-    size_bytes = _estimate_response_size(result)
+    # Apply the cap to the payload first so oversized collections retain a
+    # useful bounded prefix plus continuation metadata.
+    if apply_cap:
+        result = apply_response_cap(result, max_bytes=max_bytes)
+        if result.get("_truncated"):
+            return result
+
+    # Add observability metadata for responses that did not require truncation.
+    # This metadata itself consumes bytes, so run the final object through the
+    # cap once more; otherwise a payload just below the boundary can become an
+    # over-cap response after `_response_size_bytes` is inserted.
+    size_bytes = _serialized_size(result)
     result["_response_size_bytes"] = size_bytes
 
     if size_bytes > RESPONSE_SIZE_LARGE_THRESHOLD:
@@ -564,7 +615,7 @@ def _add_response_metadata(result: dict[str, Any], include_size: bool = True) ->
     elif size_bytes > RESPONSE_SIZE_WARNING_THRESHOLD:
         result["_response_size_note"] = f"Response size: {size_bytes // 1024}KB"
 
-    return result
+    return apply_response_cap(result, max_bytes=max_bytes) if apply_cap else result
 
 
 def _json_safe_hou_value(
@@ -979,3 +1030,324 @@ async def run_in_executor(func: Any, *args: Any, **kwargs: Any) -> Any:
     loop = asyncio.get_event_loop()
     partial_func = functools.partial(func, *args, **kwargs)
     return await loop.run_in_executor(None, partial_func)
+
+
+# =============================================================================
+# Response Pagination and Bounds (HDMCP-52 / houdini-mcp-2t6)
+# =============================================================================
+
+
+def paginate_list(
+    items: list[Any],
+    limit: int = 20,
+    cursor: int | None = None,
+) -> dict[str, Any]:
+    """
+    Paginate a list with limit/cursor controls.
+
+    Args:
+        items: List to paginate
+        limit: Maximum items per page (default: 20)
+        cursor: Start offset for pagination (default: 0)
+
+    Returns:
+        Dict with:
+        - items: Page of items
+        - total: Total number of items
+        - returned: Number of items in this page
+        - has_more: Whether more pages exist
+        - cursor: Next cursor if has_more, otherwise omitted
+
+    Example:
+        result = paginate_list(nodes, limit=10, cursor=0)
+        # Returns first 10 nodes with cursor=10 if more exist
+    """
+    # Clamp invalid inputs so callers cannot receive a repeating cursor (for
+    # example limit=0, cursor=0 forever) or negative Python-slice semantics.
+    limit = max(1, int(limit))
+    offset = max(0, int(cursor)) if cursor is not None else 0
+    total = len(items)
+
+    # Slice the page
+    page = items[offset : offset + limit]
+    returned = len(page)
+
+    # Check if more pages exist
+    has_more = (offset + returned) < total
+
+    result: dict[str, Any] = {
+        "items": page,
+        "total": total,
+        "returned": returned,
+        "has_more": has_more,
+    }
+
+    # Add cursor for next page if more exist
+    if has_more:
+        result["cursor"] = offset + returned
+
+    return result
+
+
+def apply_response_cap(
+    data: dict[str, Any],
+    max_bytes: int = DEFAULT_RESPONSE_CAP_BYTES,
+) -> dict[str, Any]:
+    """
+    Apply hard response size cap with JSON-safe truncation.
+
+    Ensures response never exceeds max_bytes after JSON serialization.
+    Truncated responses retain a useful bounded prefix/page plus continuation
+    and truncation metadata, not just metadata-only.
+
+    Args:
+        data: Response dict to cap
+        max_bytes: Maximum bytes after JSON serialization
+
+    Returns:
+        Dict that serializes to <= max_bytes with truncation metadata if needed
+
+    Example:
+        result = apply_response_cap(large_response, max_bytes=16000)
+        # Result JSON is guaranteed <= 16KB, preserves useful data
+    """
+    import json
+
+    # Serialize to measure size
+    try:
+        json_str = json.dumps(data, ensure_ascii=False)
+        json_bytes = json_str.encode("utf-8")
+        original_size = len(json_bytes)
+    except Exception:
+        # If can't serialize, return error metadata
+        return {
+            "status": "error",
+            "message": "Response serialization failed",
+            "_truncated": True,
+        }
+
+    # If under cap, return as-is
+    if original_size <= max_bytes:
+        return data
+
+    # Need to truncate - preserve status and essential fields first
+    result: dict[str, Any] = {
+        "_truncated": True,
+        "original_size_bytes": original_size,
+    }
+
+    # Preserve status if present
+    if "status" in data:
+        result["status"] = data["status"]
+
+    # Preserve essential metadata fields (small, informative)
+    essential_fields = [
+        "node_path",
+        "root_path",
+        "path",
+        "type",
+        "name",
+        "total",
+        "returned",
+        "has_more",
+        "cursor",
+        "next_offset",
+        "count",
+        "pattern",
+        "category",
+        "cook_state",
+        "point_count",
+        "primitive_count",
+        "vertex_count",
+        "bounding_box",
+        "title",
+        "url",
+        "warning",
+        "message",
+    ]
+    for field in essential_fields:
+        if field in data:
+            result[field] = data[field]
+
+    # Preserve bounded textual payloads used by execute_code and help tools.
+    for field in ("stdout", "stderr", "traceback", "description"):
+        value = data.get(field)
+        if not isinstance(value, str) or not value:
+            continue
+        available = max(64, (max_bytes - _serialized_size(result)) // 2)
+        encoded = value.encode("utf-8")
+        if len(encoded) > available:
+            value = encoded[:available].decode("utf-8", errors="ignore") + "…"
+            result[f"{field}_truncated"] = True
+        result[field] = value
+
+    # Try to preserve data fields (arrays, nested objects) within budget
+    data_fields = [
+        ("items", "item"),
+        ("children", "child"),
+        ("matches", "match"),
+        ("node_types", "node_type"),
+        ("parameters", "parameter"),
+        ("sample_points", "sample_point"),
+        ("attributes", "attribute"),
+        ("groups", "group"),
+        ("error_nodes", "error_node"),
+        ("warning_nodes", "warning_node"),
+        ("inputs", "input"),
+        ("outputs", "output"),
+        ("methods", "method"),
+        ("vex_info", "vex_item"),
+        ("scene_changes", "scene_change"),
+    ]
+
+    for field_name, _singular_name in data_fields:
+        if field_name not in data:
+            continue
+
+        field_value = data[field_name]
+
+        if isinstance(field_value, list) and len(field_value) > 0:
+            # Find the longest useful prefix together with ALL truncation/size
+            # metadata. Serialized size is monotonic with prefix length, so a
+            # binary search avoids the old O(n²) repeated-growing-list cost on
+            # responses containing tens of thousands of items.
+            def prefix_candidate(
+                count: int,
+                *,
+                name: str = field_name,
+                values: list[Any] = field_value,
+            ) -> dict[str, Any]:
+                candidate = dict(result)
+                candidate[name] = values[:count]
+                candidate[f"{name}_truncated"] = True
+                candidate[f"{name}_original_count"] = len(values)
+                candidate[f"{name}_preserved_count"] = count
+                _set_final_serialized_size(candidate)
+                return candidate
+
+            low, high, best = 1, len(field_value), 0
+            while low <= high:
+                midpoint = (low + high) // 2
+                try:
+                    # Reserve room for pagination/truncation metadata added
+                    # after the prefix is selected.
+                    if _serialized_size(prefix_candidate(midpoint)) <= max_bytes - min(
+                        512, max_bytes // 4
+                    ):
+                        best = midpoint
+                        low = midpoint + 1
+                    else:
+                        high = midpoint - 1
+                except Exception:
+                    high = midpoint - 1
+
+            if best == 0 and field_value:
+                # Preserve the identity/core shape of one oversized requested
+                # item by recursively capping it rather than dropping the field.
+                item = field_value[0]
+                if isinstance(item, dict):
+                    compact_item = apply_response_cap(item, max(256, max_bytes // 2))
+                elif isinstance(item, str):
+                    compact_item = item[: max(1, max_bytes // 8)] + "…"
+                else:
+                    compact_item = str(item)[: max(1, max_bytes // 8)]
+                candidate = prefix_candidate(1)
+                candidate[field_name] = [compact_item]
+                _set_final_serialized_size(candidate)
+                if _serialized_size(candidate) <= max_bytes:
+                    result.update(candidate)
+                    best = 1
+
+            if best:
+                if field_name not in result:
+                    result[field_name] = field_value[:best]
+                result[f"{field_name}_truncated"] = True
+                result[f"{field_name}_original_count"] = len(field_value)
+                result[f"{field_name}_preserved_count"] = best
+                # If this list is a paginated payload, continuation must start
+                # after what was actually returned, not after the pre-cap page.
+                if field_name in {"items", "children", "matches", "node_types"}:
+                    current_offset = int(data.get("offset", 0))
+                    result["returned"] = best
+                    result["count"] = best
+                    result["has_more"] = True
+                    result["cursor"] = current_offset + best
+                    result["next_offset"] = current_offset + best
+        elif isinstance(field_value, dict):
+            # Preserve bounded prefixes from nested geometry/category lists
+            # instead of dropping the entire requested diagnostic dictionary.
+            preserved_dict: dict[str, Any] = {}
+            category_counts: dict[str, dict[str, int]] = {}
+            for category, category_value in field_value.items():
+                if not isinstance(category_value, list):
+                    candidate_value = category_value
+                else:
+                    candidate_value = []
+                    for item in category_value:
+                        candidate = dict(result)
+                        nested = dict(preserved_dict)
+                        nested[category] = candidate_value + [item]
+                        candidate[field_name] = nested
+                        _set_final_serialized_size(candidate)
+                        if _serialized_size(candidate) <= max_bytes - min(512, max_bytes // 4):
+                            candidate_value.append(item)
+                        else:
+                            break
+                    category_counts[str(category)] = {
+                        "original": len(category_value),
+                        "preserved": len(candidate_value),
+                    }
+                preserved_dict[str(category)] = candidate_value
+            if any(value for value in preserved_dict.values()):
+                result[field_name] = preserved_dict
+                result[f"{field_name}_truncated"] = True
+                result[f"{field_name}_category_counts"] = category_counts
+
+    # Add exact final size metadata (including the field itself).
+    _set_final_serialized_size(result)
+
+    # Ensure the final object, metadata included, is actually under the cap.
+    if _serialized_size(result) > max_bytes:
+        # Need to be more aggressive - remove data fields and keep only metadata
+        minimal = {
+            "_truncated": True,
+            "original_size_bytes": original_size,
+            "message": f"Response too large ({original_size} bytes), truncated to fit {max_bytes} bytes",
+        }
+        if "status" in data:
+            minimal["status"] = data["status"]
+
+        # Try to preserve essential fields
+        for field in essential_fields:
+            if field in data:
+                try:
+                    test_minimal = dict(minimal)
+                    test_minimal[field] = data[field]
+                    test_json = json.dumps(test_minimal, ensure_ascii=False)
+                    if len(test_json.encode("utf-8")) <= max_bytes:
+                        minimal[field] = data[field]
+                except Exception:
+                    pass
+
+        # Add exact final size metadata for the minimal fallback too. If that
+        # metadata crosses the cap, drop optional essentials from the end until
+        # the final object itself fits (a long error message is the common case).
+        _set_final_serialized_size(minimal)
+        while _serialized_size(minimal) > max_bytes:
+            optional = [key for key in essential_fields if key in minimal and key != "status"]
+            if not optional:
+                minimal.pop("message", None)
+                _set_final_serialized_size(minimal)
+                break
+            minimal.pop(optional[-1], None)
+            _set_final_serialized_size(minimal)
+
+        return minimal
+
+    return result
+
+
+# NOTE: apply_detail_mode was removed as it was not wired to production tools.
+# The PR scope is narrowed to focus on hard caps and pagination only.
+# Compact mode is available via the compact=True parameter on individual tools
+# (e.g., get_node_info, list_children) which directly control response verbosity.

@@ -19,11 +19,13 @@ logger = logging.getLogger("houdini_mcp.tools.geometry")
 @handle_connection_errors("get_geometry_summary")
 def get_geo_summary(
     node_path: str,
-    max_sample_points: int = 100,
+    max_sample_points: int = 16,
     include_attributes: bool = True,
     include_groups: bool = True,
     host: str = "localhost",
     port: int = 18811,
+    *,
+    _defer_cap: bool = False,
 ) -> dict[str, Any]:
     """
     Get geometry statistics and metadata for verification.
@@ -37,7 +39,9 @@ def get_geo_summary(
 
     Args:
         node_path: Path to the SOP node (e.g., "/obj/geo1/sphere1")
-        max_sample_points: Maximum number of sample points to return (default: 100, max: 10000)
+        max_sample_points: Maximum number of sample points to return (default: 16, max: 10000)
+            The default was reduced from 100 to 16 per HDMCP-52 (houdini-mcp-2t6)
+            to keep responses bounded. Use explicit sample_limit for more samples.
         include_attributes: Whether to include attribute metadata (default: True)
         include_groups: Whether to include group information (default: True)
 
@@ -242,7 +246,7 @@ print(json.dumps(result))
 
     try:
         result = json.loads(stdout)
-        return _add_response_metadata(result)
+        return _add_response_metadata(result, apply_cap=not _defer_cap)
     except json.JSONDecodeError as e:
         return {
             "status": "error",

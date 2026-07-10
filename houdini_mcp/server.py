@@ -10,6 +10,7 @@ from starlette.responses import JSONResponse
 
 from . import tools
 from .connection import ensure_connected, get_connection_info, is_connected, ping
+from .tools._common import apply_response_cap
 
 # Configure logging
 log_level = os.getenv("LOG_LEVEL", "INFO").upper()
@@ -140,18 +141,20 @@ def execute_code(
         if output exceeded size limits.
         If dangerous patterns detected and not allowed, returns error with detected patterns.
     """
-    return tools.execute_code(
-        code=code,
-        capture_diff=capture_diff,
-        max_stdout_size=max_stdout_size,
-        max_stderr_size=max_stderr_size,
-        max_diff_nodes=max_diff_nodes,
-        timeout=timeout,
-        allow_dangerous=allow_dangerous,
-        allow_heavy_geometry=allow_heavy_geometry,
-        policy=policy,
-        host=HOUDINI_HOST,
-        port=HOUDINI_PORT,
+    return apply_response_cap(
+        tools.execute_code(
+            code=code,
+            capture_diff=capture_diff,
+            max_stdout_size=max_stdout_size,
+            max_stderr_size=max_stderr_size,
+            max_diff_nodes=max_diff_nodes,
+            timeout=timeout,
+            allow_dangerous=allow_dangerous,
+            allow_heavy_geometry=allow_heavy_geometry,
+            policy=policy,
+            host=HOUDINI_HOST,
+            port=HOUDINI_PORT,
+        )
     )
 
 
@@ -329,6 +332,8 @@ def list_node_types(
     max_results: int = 100,
     name_filter: str | None = None,
     offset: int = 0,
+    limit: int | None = None,
+    cursor: int | None = None,
 ) -> dict[str, Any]:
     """
     List available Houdini node types.
@@ -354,7 +359,14 @@ def list_node_types(
         list_node_types(category="Sop", offset=100)  # Get next page of SOPs
     """
     return tools.list_node_types(
-        category, max_results, name_filter, offset, HOUDINI_HOST, HOUDINI_PORT
+        category=category,
+        max_results=max_results,
+        name_filter=name_filter,
+        offset=offset,
+        host=HOUDINI_HOST,
+        port=HOUDINI_PORT,
+        limit=limit,
+        cursor=cursor,
     )
 
 
@@ -365,6 +377,8 @@ def list_children(
     max_depth: int = 10,
     max_nodes: int = 1000,
     compact: bool = False,
+    limit: int = 20,
+    cursor: int | None = None,
 ) -> dict[str, Any]:
     """
     List child nodes with paths, types, and current input connections.
@@ -394,7 +408,15 @@ def list_children(
         list_children("/obj/geo1", compact=True)  # Minimal payload
     """
     return tools.list_children(
-        node_path, recursive, max_depth, max_nodes, compact, HOUDINI_HOST, HOUDINI_PORT
+        node_path=node_path,
+        recursive=recursive,
+        max_depth=max_depth,
+        max_nodes=max_nodes,
+        compact=compact,
+        host=HOUDINI_HOST,
+        port=HOUDINI_PORT,
+        limit=limit,
+        cursor=cursor,
     )
 
 
@@ -405,6 +427,8 @@ def find_nodes(
     node_type: str | None = None,
     max_results: int = 100,
     offset: int = 0,
+    limit: int | None = None,
+    cursor: int | None = None,
 ) -> dict[str, Any]:
     """
     Find nodes by name pattern or type using glob/substring matching.
@@ -431,7 +455,15 @@ def find_nodes(
         find_nodes("/obj", "*", offset=100) - Get next page of results
     """
     return tools.find_nodes(
-        root_path, pattern, node_type, max_results, offset, HOUDINI_HOST, HOUDINI_PORT
+        root_path=root_path,
+        pattern=pattern,
+        node_type=node_type,
+        max_results=max_results,
+        offset=offset,
+        host=HOUDINI_HOST,
+        port=HOUDINI_PORT,
+        limit=limit,
+        cursor=cursor,
     )
 
 
@@ -699,14 +731,19 @@ async def find_error_nodes(
         find_error_nodes(summarize=True)  # Get AI triage of errors
     """
     result = tools.find_error_nodes(
-        root_path, include_warnings, max_results, HOUDINI_HOST, HOUDINI_PORT
+        root_path,
+        include_warnings,
+        max_results,
+        HOUDINI_HOST,
+        HOUDINI_PORT,
+        _defer_cap=True,
     )
 
     # Apply AI summarization if requested or if many errors found
     if summarize or (result.get("error_count", 0) > 5):
         result = await tools.summarize_errors(result)
 
-    return result
+    return apply_response_cap(result)
 
 
 @mcp.tool()
@@ -900,7 +937,7 @@ def get_parameter_schema(
 @mcp.tool()
 async def get_geo_summary(
     node_path: str,
-    max_sample_points: int = 100,
+    max_sample_points: int = 16,
     include_attributes: bool = True,
     include_groups: bool = True,
     summarize: bool = False,
@@ -914,7 +951,7 @@ async def get_geo_summary(
 
     Args:
         node_path: Full path to the SOP node (e.g., "/obj/geo1/sphere1")
-        max_sample_points: Maximum number of sample points to return (default: 100, max: 10000).
+        max_sample_points: Maximum number of sample points to return (default: 16, max: 10000).
                           Set to 0 to skip point sampling.
         include_attributes: Whether to include attribute metadata (default: True)
         include_groups: Whether to include group information (default: True)
@@ -949,14 +986,20 @@ async def get_geo_summary(
         get_geo_summary("/obj/geo1/noise1", max_sample_points=200, summarize=True)
     """
     result = tools.get_geo_summary(
-        node_path, max_sample_points, include_attributes, include_groups, HOUDINI_HOST, HOUDINI_PORT
+        node_path,
+        max_sample_points,
+        include_attributes,
+        include_groups,
+        HOUDINI_HOST,
+        HOUDINI_PORT,
+        _defer_cap=True,
     )
 
     # Apply AI summarization if requested or if response is very large
     if summarize or tools.should_summarize(result):
         result = await tools.summarize_geometry(result)
 
-    return result
+    return apply_response_cap(result)
 
 
 @mcp.tool()
