@@ -2819,20 +2819,22 @@ class TestResponseSizeMetadata:
         assert "_response_size_warning" not in augmented
 
     def test_add_response_metadata_large_response(self):
-        """Test that large responses get warning metadata."""
+        """Test that large responses get capped with truncation metadata."""
         from houdini_mcp.tools import RESPONSE_SIZE_LARGE_THRESHOLD, _add_response_metadata
 
-        # Create a response larger than the threshold
+        # Create a response larger than the threshold (will be capped at DEFAULT_RESPONSE_CAP_BYTES)
         large_data = "x" * (RESPONSE_SIZE_LARGE_THRESHOLD + 1000)
         result = {"status": "success", "data": large_data}
         augmented = _add_response_metadata(result)
 
-        assert "_response_size_bytes" in augmented
-        assert "_response_size_warning" in augmented
-        assert "Large response" in augmented["_response_size_warning"]
+        # Large responses are now capped, so they have truncation metadata
+        assert "_truncated" in augmented
+        assert augmented["_truncated"] is True
+        assert "original_size_bytes" in augmented
+        assert "truncated_size_bytes" in augmented
 
     def test_add_response_metadata_medium_response(self):
-        """Test that medium responses get a note but not a warning."""
+        """Test that medium responses (between warning and large) get capped."""
         from houdini_mcp.tools import (
             RESPONSE_SIZE_LARGE_THRESHOLD,
             RESPONSE_SIZE_WARNING_THRESHOLD,
@@ -2840,14 +2842,16 @@ class TestResponseSizeMetadata:
         )
 
         # Create a response between warning and large thresholds
+        # This will still exceed DEFAULT_RESPONSE_CAP_BYTES (16KB) so it gets capped
         medium_size = (RESPONSE_SIZE_WARNING_THRESHOLD + RESPONSE_SIZE_LARGE_THRESHOLD) // 2
         medium_data = "x" * medium_size
         result = {"status": "success", "data": medium_data}
         augmented = _add_response_metadata(result)
 
-        assert "_response_size_bytes" in augmented
-        assert "_response_size_note" in augmented
-        assert "_response_size_warning" not in augmented
+        # Medium-large responses get capped at 16KB
+        assert "_truncated" in augmented
+        assert augmented["_truncated"] is True
+        assert "original_size_bytes" in augmented
 
     def test_estimate_response_size(self):
         """Test response size estimation."""

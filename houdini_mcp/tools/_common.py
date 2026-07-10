@@ -57,7 +57,6 @@ __all__ = [
     # Response pagination and bounds (HDMCP-52 / houdini-mcp-2t6)
     "paginate_list",
     "apply_response_cap",
-    "apply_detail_mode",
     "DEFAULT_RESPONSE_CAP_BYTES",
     # Serialization utilities
     "_json_safe_hou_value",
@@ -547,20 +546,40 @@ def _estimate_response_size(data: Any, _depth: int = 0) -> int:
     return len(str(data)) + 2
 
 
-def _add_response_metadata(result: dict[str, Any], include_size: bool = True) -> dict[str, Any]:
+def _add_response_metadata(
+    result: dict[str, Any],
+    include_size: bool = True,
+    apply_cap: bool = True,
+    max_bytes: int = DEFAULT_RESPONSE_CAP_BYTES,
+) -> dict[str, Any]:
     """
-    Add response metadata including size information.
+    Add response metadata including size information and apply hard cap.
+
+    This is the single shared response finalization boundary for all production tools.
+    It ensures no response exceeds the configured cap after JSON serialization.
 
     Args:
         result: The result dictionary to augment
         include_size: Whether to include size metadata
+        apply_cap: Whether to apply hard response cap (default: True)
+        max_bytes: Maximum bytes after JSON serialization (default: DEFAULT_RESPONSE_CAP_BYTES)
 
     Returns:
-        The result dictionary with added metadata
+        The result dictionary with added metadata and applied cap
     """
     if not include_size:
+        if apply_cap:
+            return apply_response_cap(result, max_bytes=max_bytes)
         return result
 
+    # First apply cap if requested (this becomes the response)
+    if apply_cap:
+        result = apply_response_cap(result, max_bytes=max_bytes)
+        # If truncated, skip further size checks
+        if result.get("_truncated"):
+            return result
+
+    # Add size metadata for non-capped responses
     size_bytes = _estimate_response_size(result)
     result["_response_size_bytes"] = size_bytes
 
@@ -1051,7 +1070,8 @@ def apply_response_cap(
     Apply hard response size cap with JSON-safe truncation.
 
     Ensures response never exceeds max_bytes after JSON serialization.
-    Truncated responses include metadata about original size and truncation.
+    Truncated responses retain a useful bounded prefix/page plus continuation
+    and truncation metadata, not just metadata-only.
 
     Args:
         data: Response dict to cap
@@ -1062,7 +1082,7 @@ def apply_response_cap(
 
     Example:
         result = apply_response_cap(large_response, max_bytes=16000)
-        # Result JSON is guaranteed <= 16KB
+        # Result JSON is guaranteed <= 16KB, preserves useful data
     """
     import json
 
@@ -1083,8 +1103,8 @@ def apply_response_cap(
     if original_size <= max_bytes:
         return data
 
-    # Need to truncate - start with metadata
-    result = {
+    # Need to truncate - preserve status and essential fields first
+    result: dict[str, Any] = {
         "_truncated": True,
         "original_size_bytes": original_size,
     }
@@ -1093,53 +1113,77 @@ def apply_response_cap(
     if "status" in data:
         result["status"] = data["status"]
 
-    # Try to include as much of the original data as possible
-    # Iteratively truncate fields until we fit
-    truncated_data = dict(data)
+    # Preserve essential metadata fields (small, informative)
+    essential_fields = [
+        "node_path", "root_path", "path", "type", "name",
+        "total", "returned", "has_more", "cursor", "count",
+        "pattern", "category", "cook_state", "point_count",
+        "primitive_count", "vertex_count", "warning", "message"
+    ]
+    for field in essential_fields:
+        if field in data:
+            result[field] = data[field]
 
-    # Remove large fields in order of size
-    field_sizes = []
-    for key, value in truncated_data.items():
-        try:
-            field_json = json.dumps({key: value}, ensure_ascii=False)
-            field_size = len(field_json.encode("utf-8"))
-            field_sizes.append((field_size, key))
-        except Exception:
-            field_sizes.append((0, key))
+    # Try to preserve data fields (arrays, nested objects) within budget
+    data_fields = [
+        ("items", "item"),
+        ("children", "child"),
+        ("matches", "match"),
+        ("node_types", "node_type"),
+        ("parameters", "parameter"),
+        ("sample_points", "sample_point"),
+        ("attributes", "attribute"),
+        ("groups", "group"),
+    ]
 
-    field_sizes.sort(reverse=True)
+    for field_name, _singular_name in data_fields:
+        if field_name not in data:
+            continue
 
-    # Remove largest fields until we fit
-    for _size, key in field_sizes:
-        if key in ("status", "_truncated", "original_size_bytes", "truncated_size_bytes"):
-            continue  # Preserve metadata fields
+        field_value = data[field_name]
 
-        current_size = len(json.dumps(result, ensure_ascii=False).encode("utf-8"))
-        if current_size <= max_bytes:
-            break
+        if isinstance(field_value, list) and len(field_value) > 0:
+            # Try to fit as many items as possible within budget
+            preserved_items: list[Any] = []
+            for item in field_value:
+                try:
+                    test_result = dict(result)
+                    test_result[field_name] = preserved_items + [item]
+                    test_json = json.dumps(test_result, ensure_ascii=False)
+                    test_size = len(test_json.encode("utf-8"))
 
-        # Try to include a truncated version of this field
-        value = truncated_data[key]
-        if isinstance(value, list) and len(value) > 0:
-            # Truncate list to first few items
-            result[key] = value[: min(3, len(value))]
-            result[f"{key}_truncated"] = True
-            result[f"{key}_original_count"] = len(value)
-        elif isinstance(value, str) and len(value) > 100:
-            # Truncate string to first 100 chars
-            result[key] = value[:100] + "..."
-        elif key not in result:
-            # Skip this field entirely
-            pass
+                    if test_size <= max_bytes - 50:  # Leave room for final metadata
+                        preserved_items.append(item)
+                    else:
+                        break
+                except Exception:
+                    break
 
-    # Add final truncated size
+            if preserved_items:
+                result[field_name] = preserved_items
+                result[f"{field_name}_truncated"] = True
+                result[f"{field_name}_original_count"] = len(field_value)
+                result[f"{field_name}_preserved_count"] = len(preserved_items)
+        elif isinstance(field_value, dict):
+            # Try to include the dict if it fits
+            try:
+                test_result = dict(result)
+                test_result[field_name] = field_value
+                test_json = json.dumps(test_result, ensure_ascii=False)
+                test_size = len(test_json.encode("utf-8"))
+                if test_size <= max_bytes - 50:
+                    result[field_name] = field_value
+            except Exception:
+                pass
+
+    # Add final truncated size with multibyte-safe encoding
     final_json = json.dumps(result, ensure_ascii=False)
     final_bytes = final_json.encode("utf-8")
     result["truncated_size_bytes"] = len(final_bytes)
 
     # Ensure we're actually under the cap
     if len(final_bytes) > max_bytes:
-        # Fallback: return minimal response
+        # Need to be more aggressive - remove data fields and keep only metadata
         minimal = {
             "_truncated": True,
             "original_size_bytes": original_size,
@@ -1147,63 +1191,29 @@ def apply_response_cap(
         }
         if "status" in data:
             minimal["status"] = data["status"]
+
+        # Try to preserve essential fields
+        for field in essential_fields:
+            if field in data:
+                try:
+                    test_minimal = dict(minimal)
+                    test_minimal[field] = data[field]
+                    test_json = json.dumps(test_minimal, ensure_ascii=False)
+                    if len(test_json.encode("utf-8")) <= max_bytes:
+                        minimal[field] = data[field]
+                except Exception:
+                    pass
+
+        # Add truncated_size_bytes for minimal fallback
+        minimal_json = json.dumps(minimal, ensure_ascii=False)
+        minimal["truncated_size_bytes"] = len(minimal_json.encode("utf-8"))
+
         return minimal
 
     return result
 
 
-def apply_detail_mode(
-    data: dict[str, Any],
-    mode: str = "standard",
-) -> dict[str, Any]:
-    """
-    Apply detail level to response (compact/standard/detail).
-
-    Args:
-        data: Response dict
-        mode: Detail level - "compact", "standard", or "detail"
-
-    Returns:
-        Response dict filtered by detail level
-
-    Modes:
-        - compact: Essential fields only (path, type, counts)
-        - standard: Balanced (includes parameters, no metadata)
-        - detail: All fields including metadata
-    """
-    if mode == "detail":
-        # Return everything
-        return data
-
-    if mode == "standard":
-        # Return as-is for now (balanced default)
-        return data
-
-    if mode == "compact":
-        # Return minimal essential fields
-        compact = {}
-
-        # Always include these essential fields
-        essential_fields = ["status", "path", "type", "name", "node_path"]
-        for field in essential_fields:
-            if field in data:
-                compact[field] = data[field]
-
-        # Include counts instead of full arrays
-        if "children" in data and isinstance(data["children"], list):
-            compact["child_count"] = len(data["children"])
-        if "items" in data and isinstance(data["items"], list):
-            compact["item_count"] = len(data["items"])
-            compact["items"] = data["items"][:3]  # Sample
-        if "parameters" in data and isinstance(data["parameters"], dict):
-            compact["parameter_count"] = len(data["parameters"])
-
-        # Include pagination metadata
-        for field in ["total", "returned", "has_more", "cursor"]:
-            if field in data:
-                compact[field] = data[field]
-
-        return compact
-
-    # Unknown mode, return standard
-    return data
+# NOTE: apply_detail_mode was removed as it was not wired to production tools.
+# The PR scope is narrowed to focus on hard caps and pagination only.
+# Compact mode is available via the compact=True parameter on individual tools
+# (e.g., get_node_info, list_children) which directly control response verbosity.

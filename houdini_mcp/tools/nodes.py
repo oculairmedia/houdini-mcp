@@ -291,9 +291,11 @@ def delete_node(node_path: str, host: str = "localhost", port: int = 18811) -> d
 @handle_connection_errors("list_node_types")
 def list_node_types(
     category: str | None = None,
-    max_results: int = 100,
+    max_results: int | None = None,
     name_filter: str | None = None,
-    offset: int = 0,
+    offset: int | None = None,
+    limit: int | None = None,
+    cursor: int | None = None,
     host: str = "localhost",
     port: int = 18811,
 ) -> dict[str, Any]:
@@ -306,8 +308,14 @@ def list_node_types(
     Args:
         category: Optional category filter (e.g., "Object", "Sop", "Cop2", "Vop")
         max_results: Maximum number of results to return (default: 100, max: 500)
+                    DEPRECATED: Use limit instead for consistency
         name_filter: Optional substring filter for node type names (case-insensitive)
         offset: Number of results to skip for pagination (default: 0)
+               DEPRECATED: Use cursor instead for consistency
+        limit: Maximum number of results per page (default: 100, max: 500)
+              Preferred alias for max_results
+        cursor: Pagination cursor/offset (default: 0)
+               Preferred alias for offset
 
     Returns:
         Dict with list of node types and pagination info.
@@ -322,6 +330,17 @@ def list_node_types(
         - Subsequent calls: <1ms (filters from cache)
     """
     hou = ensure_connected(host, port)
+
+    # Backward-compatible aliases: limit/cursor take precedence over max_results/offset
+    if limit is not None:
+        max_results = limit
+    elif max_results is None:
+        max_results = 100
+
+    if cursor is not None:
+        offset = cursor
+    elif offset is None:
+        offset = 0
 
     # Cap max_results to prevent excessive data transfer
     if max_results > 500:
@@ -533,8 +552,10 @@ def find_nodes(
     root_path: str = "/obj",
     pattern: str = "*",
     node_type: str | None = None,
-    max_results: int = 100,
-    offset: int = 0,
+    max_results: int | None = None,
+    offset: int | None = None,
+    limit: int | None = None,
+    cursor: int | None = None,
     host: str = "localhost",
     port: int = 18811,
 ) -> dict[str, Any]:
@@ -545,8 +566,14 @@ def find_nodes(
         root_path: Root path to start search from
         pattern: Glob pattern or substring to match against node names (* for wildcard)
         node_type: Optional node type filter (e.g., "sphere", "noise", "geo")
-        max_results: Maximum number of results to return
+        max_results: Maximum number of results to return (default: 100)
+                    DEPRECATED: Use limit instead for consistency
         offset: Number of results to skip for pagination (default: 0)
+               DEPRECATED: Use cursor instead for consistency
+        limit: Maximum number of results per page (default: 100)
+              Preferred alias for max_results
+        cursor: Pagination cursor/offset (default: 0)
+               Preferred alias for offset
 
     Returns:
         Dict with matching nodes and their types.
@@ -562,6 +589,17 @@ def find_nodes(
     root = hou.node(root_path)
     if root is None:
         return {"status": "error", "message": f"Root node not found: {root_path}"}
+
+    # Backward-compatible aliases: limit/cursor take precedence over max_results/offset
+    if limit is not None:
+        max_results = limit
+    elif max_results is None:
+        max_results = 100
+
+    if cursor is not None:
+        offset = cursor
+    elif offset is None:
+        offset = 0
 
     # Validate offset
     if offset < 0:
