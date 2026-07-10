@@ -475,6 +475,13 @@ def list_children(
                         "path": child.path(),
                         "name": child.name(),
                         "type": child.type().name(),
+                        # Pack stable flags to avoid three repeated JSON keys per
+                        # node while keeping the compact contract explicit.
+                        "flags": {
+                            "display": bool(child.isDisplayFlagSet()),
+                            "render": bool(child.isRenderFlagSet()),
+                            "bypassed": bool(child.isBypassed()),
+                        },
                     }
                 else:
                     # Full mode: include input/output connection details
