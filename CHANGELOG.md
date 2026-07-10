@@ -24,6 +24,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Opt-in live verification**: `scripts/verify_remote_listener.py` performs a
   read-only reachability/version check against an already-running listener
   (gated by `RUN_LIVE_REMOTE_CHECK=1`); it never starts/stops/restarts Houdini.
+- **execute_code safety rails (policy profiles + rollback)**: `execute_code` now
+  supports explicit policy profiles (`read-only`, `normal`, `privileged`).
+  `read-only` blocks any scene mutation before execution; `privileged` requires
+  the server bypass config gate. Bypass flags (`allow_dangerous`,
+  `allow_heavy_geometry`) now require BOTH the request flag AND server config
+  (`HOUDINI_MCP_ALLOW_BYPASS=true`) and fail closed otherwise. Dangerous-pattern
+  detection was expanded to cover network egress (`socket`, `urllib`, `requests`,
+  `http`), dynamic execution (`eval`/`exec`/`compile`/`__import__`), and trivial
+  whitespace obfuscation. Every call returns a structured `audit` block (policy,
+  requested bypasses, detected patterns, code hash, timeout/rollback state) and
+  blocked/executed bypass attempts are logged. On timeout the run's undo group is
+  reverted via `hou.undos.performUndo()` when a usable undo primitive exists;
+  if none exists the call fails closed and reports that partial mutations may be
+  untracked. Note: the timed-out code runs in a daemon thread that Python cannot
+  forcibly kill, so `performUndo()` is a best-effort revert of what was recorded
+  up to that point, not a guarantee the scene stays consistent — the thread may
+  still be running and mutating the scene concurrently, and the response
+  explicitly reports that risk (`rollback.thread_still_running`) instead of
+  claiming a hard rollback guarantee.
 - **Heavy geometry guard**: `execute_code` now detects and blocks direct SOP
   geometry access (`node.geometry()`, `geo.points()`, `geo.prims()`,
   `geo.vertices()`, `geo.iterPoints()`, `geo.iterPrims()`) which can stall the
@@ -34,6 +53,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **BREAKING (safety)**: `execute_code` bypass flags no longer take effect on
+  request alone. `allow_dangerous`/`allow_heavy_geometry` now also require the
+  server to enable `HOUDINI_MCP_ALLOW_BYPASS`; without it the call fails closed.
 - **BREAKING (default behavior)**: `execute_code` rejects heavy geometry access by
   default (see above). Existing callers that rely on raw geometry access must now
   pass `allow_heavy_geometry=True`.

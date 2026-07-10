@@ -77,6 +77,7 @@ def execute_code(
     timeout: int = 30,
     allow_dangerous: bool = False,
     allow_heavy_geometry: bool = False,
+    policy: str = "normal",
 ) -> dict[str, Any]:
     """
     Execute Python code in Houdini with scene change tracking and safety rails.
@@ -87,11 +88,18 @@ def execute_code(
     Use this for complex operations that aren't covered by other tools.
 
     SAFETY FEATURES:
-    - Dangerous operation detection: Scans for patterns like hou.exit(), os.remove(), subprocess, etc.
+    - Policy profiles: "read-only" (inspection only), "normal" (default),
+      "privileged" (requires server config gate).
+    - Dangerous operation detection: hou.exit(), os.remove(), subprocess,
+      eval/exec, network egress (socket/urllib/requests), etc.
     - Heavy geometry guard: Blocks direct node.geometry()/geo.points()/geo.prims() access by default
+    - Config+request bypass: allow_dangerous / allow_heavy_geometry are only
+      honored when the server also sets HOUDINI_MCP_ALLOW_BYPASS=true.
     - Output size caps: Prevents massive output from overwhelming the response
-    - Execution timeout: Prevents runaway code from blocking indefinitely
+    - Execution timeout with rollback: on timeout the run is rolled back via a
+      named Houdini undo group when available, else it fails closed.
     - Scene diff limits: Caps the number of nodes returned in scene changes
+    - Structured audit block returned on every call.
 
     Args:
         code: Python code to execute
@@ -100,15 +108,19 @@ def execute_code(
         max_stderr_size: Maximum stderr size in bytes (default: 100000 = 100KB)
         max_diff_nodes: Maximum nodes in scene diff added_nodes list (default: 1000)
         timeout: Execution timeout in seconds (default: 30)
-        allow_dangerous: If True, allows code with dangerous patterns to execute (default: False)
-        allow_heavy_geometry: If True, allows direct SOP geometry access. Prefer get_geo_summary()
-            for bounded geometry inspection.
+        allow_dangerous: Request-side opt-in to bypass dangerous-pattern blocking.
+            Only honored when HOUDINI_MCP_ALLOW_BYPASS is enabled server-side.
+        allow_heavy_geometry: Request-side opt-in to allow direct SOP geometry access.
+            Only honored when HOUDINI_MCP_ALLOW_BYPASS is enabled. Prefer get_geo_summary().
+        policy: Safety profile - "read-only", "normal" (default), or "privileged".
 
     Dangerous patterns detected:
         - hou.exit() - closes Houdini
         - os.remove(), os.unlink() - file deletion
         - shutil.rmtree() - directory deletion
         - subprocess, os.system() - shell execution
+        - eval(), exec(), __import__() - dynamic execution
+        - socket, urllib, requests, http - network egress
         - open() with write modes - file writing
         - hou.hipFile.clear() - scene wipe
 
@@ -137,6 +149,7 @@ def execute_code(
         timeout=timeout,
         allow_dangerous=allow_dangerous,
         allow_heavy_geometry=allow_heavy_geometry,
+        policy=policy,
         host=HOUDINI_HOST,
         port=HOUDINI_PORT,
     )

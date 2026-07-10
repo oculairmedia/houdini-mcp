@@ -41,9 +41,11 @@ __all__ = [
     # Code safety
     "DANGEROUS_PATTERNS",
     "HEAVY_GEOMETRY_PATTERNS",
+    "MUTATION_PATTERNS",
     "_detect_dangerous_code",
     "_detect_heavy_geometry_code",
     "_detect_import_hou",
+    "_detect_mutation_code",
     # Output utilities
     "_truncate_output",
     # Response size utilities
@@ -234,15 +236,40 @@ def validate_resolution(
 
 
 # Dangerous code patterns for safety scanning
+# Note: patterns tolerate arbitrary whitespace around ``.`` and ``(`` so that
+# trivial obfuscation (``hou . exit ( )``) cannot slip past the scanner.
 DANGEROUS_PATTERNS: list[tuple[str, str]] = [
-    (r"\bhou\.exit\s*\(", "hou.exit() - will close Houdini"),
-    (r"\bos\.remove\s*\(", "os.remove() - file deletion"),
-    (r"\bos\.unlink\s*\(", "os.unlink() - file deletion"),
-    (r"\bshutil\.rmtree\s*\(", "shutil.rmtree() - directory deletion"),
+    (r"\bhou\s*\.\s*exit\s*\(", "hou.exit() - will close Houdini"),
+    (r"\bos\s*\.\s*remove\s*\(", "os.remove() - file deletion"),
+    (r"\bos\s*\.\s*unlink\s*\(", "os.unlink() - file deletion"),
+    (r"\bos\s*\.\s*rmdir\s*\(", "os.rmdir() - directory deletion"),
+    (r"\bshutil\s*\.\s*rmtree\s*\(", "shutil.rmtree() - directory deletion"),
+    (r"\bshutil\s*\.\s*move\s*\(", "shutil.move() - file move/overwrite"),
     (r"\bsubprocess\b", "subprocess - shell execution"),
-    (r"\bos\.system\s*\(", "os.system() - shell execution"),
-    (r'\bopen\s*\([^)]*["\'][wa]', "open() with write mode - file writing"),
-    (r"\bhou\.hipFile\.clear\s*\(", "hou.hipFile.clear() - scene wipe"),
+    (r"\bos\s*\.\s*system\s*\(", "os.system() - shell execution"),
+    (r"\bos\s*\.\s*popen\s*\(", "os.popen() - shell execution"),
+    (r"\bos\s*\.\s*exec[lv]", "os.exec*() - process replacement"),
+    (r"\bos\s*\.\s*kill\s*\(", "os.kill() - signal a process"),
+    (r"\bpty\s*\.\s*spawn\s*\(", "pty.spawn() - shell execution"),
+    (r'\bopen\s*\([^)]*["\'][wax]', "open() with write mode - file writing"),
+    (r"\bhou\s*\.\s*hipFile\s*\.\s*clear\s*\(", "hou.hipFile.clear() - scene wipe"),
+    # Dynamic execution primitives (common evasion vectors).
+    (r"\beval\s*\(", "eval() - dynamic code execution"),
+    (r"\bexec\s*\(", "exec() - dynamic code execution"),
+    (r"\bcompile\s*\(", "compile() - dynamic code compilation"),
+    (r"\b__import__\s*\(", "__import__() - dynamic import (evasion vector)"),
+    (r"\bgetattr\s*\(\s*__builtins__", "getattr(__builtins__ ...) - builtins evasion"),
+    # Network egress: exfiltration / remote control risk.
+    (r"\bimport\s+socket\b", "socket - raw network access"),
+    (r"\bsocket\s*\.\s*socket\s*\(", "socket.socket() - raw network access"),
+    (r"\bimport\s+requests\b", "requests - HTTP network access"),
+    (r"\brequests\s*\.\s*(get|post|put|delete|request)\s*\(", "requests.* - HTTP network access"),
+    (r"\bimport\s+urllib\b", "urllib - HTTP network access"),
+    (r"\burllib\b", "urllib - HTTP network access"),
+    (r"\bimport\s+http\b", "http - HTTP network access"),
+    (r"\bfrom\s+http\b", "http - HTTP network access"),
+    (r"\bhttp\s*\.\s*client\b", "http.client - HTTP network access"),
+    (r"\bimport\s+ftplib\b", "ftplib - FTP network access"),
 ]
 
 
@@ -326,6 +353,49 @@ def _detect_import_hou(code: str) -> bool:
         r"^\s*from\s+hou\s+import\s+",
     ]
     return any(re.search(pattern, code, re.MULTILINE) for pattern in import_patterns)
+
+
+# Scene-mutation patterns. These are perfectly legal under the ``normal`` and
+# ``privileged`` policies, but forbidden under ``read-only`` where the caller has
+# declared they only intend to inspect the scene.
+MUTATION_PATTERNS: list[tuple[str, str]] = [
+    (r"\.createNode\s*\(", "createNode() - creates a node"),
+    (r"\.createOutputNode\s*\(", "createOutputNode() - creates a node"),
+    (r"\.copyTo\s*\(", "copyTo() - copies nodes"),
+    (r"\.destroy\s*\(", "destroy() - deletes a node"),
+    (r"\.deleteItems\s*\(", "deleteItems() - deletes nodes"),
+    (r"\.setInput\s*\(", "setInput() - rewires a node"),
+    (r"\.setFirstInput\s*\(", "setFirstInput() - rewires a node"),
+    (r"\.setNamedInput\s*\(", "setNamedInput() - rewires a node"),
+    (r"\.parm\s*\([^)]*\)\s*\.\s*set\s*\(", "parm().set() - mutates a parameter"),
+    (r"\.parmTuple\s*\([^)]*\)\s*\.\s*set\s*\(", "parmTuple().set() - mutates a parameter"),
+    (r"\.setParms\s*\(", "setParms() - mutates parameters"),
+    (r"\.setName\s*\(", "setName() - renames a node"),
+    (r"\.setColor\s*\(", "setColor() - mutates node appearance"),
+    (r"\.setDisplayFlag\s*\(", "setDisplayFlag() - mutates node flags"),
+    (r"\.setRenderFlag\s*\(", "setRenderFlag() - mutates node flags"),
+    (r"\.setBypass\s*\(", "setBypass() - mutates node flags"),
+    (r"\bhou\s*\.\s*hipFile\s*\.\s*(save|load|clear|merge|new)\s*\(", "hou.hipFile mutation"),
+    (r"\.save\s*\(", "save() - writes to disk"),
+]
+
+
+def _detect_mutation_code(code: str) -> list[str]:
+    """
+    Scan code for patterns that mutate the Houdini scene or write to disk.
+
+    Used exclusively by the ``read-only`` policy profile to fail closed before
+    any interpreter execution when the caller promised not to mutate the scene.
+    """
+    detected: list[str] = []
+    for pattern, description in MUTATION_PATTERNS:
+        if re.search(pattern, code):
+            detected.append(description)
+    # Any dangerous op is also a mutation for read-only purposes.
+    for pattern, description in DANGEROUS_PATTERNS:
+        if re.search(pattern, code):
+            detected.append(description)
+    return detected
 
 
 def _truncate_output(output: str, max_size: int) -> tuple[str, bool]:

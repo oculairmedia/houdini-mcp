@@ -19,6 +19,7 @@ from ._common import (
     _add_response_metadata,
     _detect_dangerous_code,
     _detect_heavy_geometry_code,
+    _detect_mutation_code,
     _estimate_response_size,
     _get_scene_diff,
     _handle_connection_error,
@@ -117,6 +118,7 @@ __all__ = [
     # Code execution
     "execute_code",
     "_detect_heavy_geometry_code",
+    "_detect_mutation_code",
     # Help/documentation
     "get_houdini_help",
     # Cache management
