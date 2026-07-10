@@ -51,7 +51,7 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -e ".[dev]" || pip install fastmcp "rpyc>=5.0.0,<6.0.0" python-dotenv pytest pytest-cov
+          pip install -e ".[dev]" || pip install fastmcp "rpyc>=5.0.0,<6.0.0" python-dotenv pytest pytest-cov hypothesis
 
       - name: Run unit tests with coverage
         run: |
