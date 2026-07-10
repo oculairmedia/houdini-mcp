@@ -18,16 +18,10 @@ Safety model (bead houdini-mcp-9e2)
   ``allow_heavy_geometry``) AND server configuration
   (``HOUDINI_MCP_ALLOW_BYPASS``). Missing either fails closed.
 * Every call returns a structured ``audit`` block and is logged.
-* On timeout the run's undo group is reverted via ``hou.undos.performUndo()``
-  when a usable undo primitive is available; otherwise it fails closed and
-  reports that mutations may be untracked. IMPORTANT: Python cannot forcibly
-  kill the timed-out thread (it is left running as a daemon so it does not
-  block process exit), so ``performUndo()`` is a best-effort revert of what
-  was recorded up to that point in time - it is NOT a guarantee that the
-  scene is fully consistent afterward, because the original code may still be
-  executing concurrently and mutating the scene even after rollback returns.
-  The response always reports this risk explicitly rather than claiming a
-  hard rollback guarantee.
+* On timeout Python cannot forcibly kill the worker thread. While that thread
+  is alive its undo group is still open, so calling ``performUndo()`` could
+  undo the previous human action rather than this run. The tool therefore does
+  not touch the undo stack on timeout and reports scene consistency as unknown.
 """
 
 import builtins
@@ -166,6 +160,8 @@ def execute_code(
     port: int = 18811,
     allow_heavy_geometry: bool = False,
     policy: str = DEFAULT_POLICY,
+    *,
+    _trusted_internal_heavy_geometry: bool = False,
 ) -> dict[str, Any]:
     """
     Execute Python code in Houdini with policy-gated safety rails.
@@ -317,7 +313,12 @@ def execute_code(
 
     # --- Effective bypass = request flag AND server config -------------------
     dangerous_bypass = allow_dangerous and bypass_config
-    heavy_bypass = (allow_heavy_geometry or allow_dangerous) and bypass_config
+    # Dedicated bounded tools may opt into an internal capability that is not
+    # exposed by the MCP wrapper. Public bypass flags still require BOTH request
+    # opt-in and the server configuration gate.
+    heavy_bypass = _trusted_internal_heavy_geometry or (
+        (allow_heavy_geometry or allow_dangerous) and bypass_config
+    )
 
     # --- Dangerous-pattern gate ---------------------------------------------
     if dangerous_patterns and not dangerous_bypass:
@@ -438,53 +439,24 @@ def execute_code(
     exec_thread.join(timeout=timeout)
 
     if exec_thread.is_alive():
-        # --- Timeout: roll back if possible, else fail closed ---------------
-        # NOTE: the daemon thread cannot be forcibly killed from here (Python has
-        # no safe thread-cancellation primitive). performUndo() only reverts the
-        # undo-group operations Houdini has recorded *so far* - it does NOT stop
-        # the still-running thread. That thread keeps executing user code
-        # concurrently and can keep mutating the scene (including issuing further
-        # changes *after* the undo call returns), so "rollback succeeded" is a
-        # point-in-time statement about the undo stack, never a guarantee that no
-        # further, unrolled-back mutation will occur. Callers must not treat this
-        # as a hard rollback guarantee.
-        logger.warning("execute_code exceeded timeout of %ss; attempting rollback", timeout)
+        # The worker is still inside the undo-group context. Calling performUndo
+        # now can undo the PREVIOUS human action because this run's group has not
+        # closed yet, while the worker can continue mutating afterward. Never
+        # touch the undo stack from this state; report unknown consistency and let
+        # a higher-level transaction/session supervisor quarantine further writes.
+        logger.warning(
+            "execute_code exceeded timeout of %ss; worker still running, undo not attempted",
+            timeout,
+        )
         rollback_attempted = False
-        rollback_succeeded: bool | None = None
+        rollback_succeeded: bool | None = False
         rollback_error: str | None = None
-        # Thread is still alive at this point (we just observed it via
-        # is_alive()); it may finish at any moment afterward, but it was not
-        # stopped by us, so treat the risk window as open for the life of the
-        # process.
         thread_still_running = True
-
-        if undos is not None:
-            rollback_attempted = True
-            try:
-                undos.performUndo()
-                rollback_succeeded = True
-            except Exception as e:  # noqa: BLE001
-                rollback_succeeded = False
-                rollback_error = str(e)
-                logger.error("execute_code rollback failed after timeout: %s", e)
-
-        if rollback_attempted:
-            warning = (
-                "Execution timed out. A rollback via the Houdini undo stack was "
-                f"attempted (succeeded={rollback_succeeded}), reverting mutations recorded "
-                "up to that point. This is NOT a guarantee that the scene is fully "
-                "consistent: the timed-out code runs in a background thread that "
-                "cannot be forcibly stopped and may still be running and mutating "
-                "the scene concurrently, including after this rollback call returns. "
-                "Treat the scene as potentially inconsistent until you independently "
-                "verify state (or restart Houdini)."
-            )
-        else:
-            warning = (
-                "Execution timed out and NO undo primitive was available, so any "
-                "partial scene mutations are UNTRACKED. The code thread cannot be "
-                "forcibly stopped and may still be running. Consider restarting Houdini."
-            )
+        warning = (
+            "Execution timed out while its background thread and undo group are still active. "
+            "No undo was attempted because doing so could undo a previous human action. "
+            "Scene consistency is unknown; verify state or restart Houdini before further edits."
+        )
 
         result: dict[str, Any] = {
             "status": "error",
@@ -503,6 +475,7 @@ def execute_code(
                 # confirm it has stopped since. A rollback "succeeded" result
                 # never implies this flips to False.
                 "thread_still_running": thread_still_running,
+                "scene_consistency": "unknown",
             },
             "audit": _build_audit(
                 code=code,
@@ -579,6 +552,16 @@ def execute_code(
             result["diff_truncated"] = True
             result["diff_warning"] = f"added_nodes truncated to {max_diff_nodes} nodes"
 
+    if dangerous_patterns or (heavy_geometry_patterns and heavy_bypass):
+        # Server-side audit survives callers discarding the response. Never log
+        # source code or request secrets—only classifications and code digest.
+        logger.warning(
+            "execute_code approved bypass policy=%s dangerous=%s heavy=%s code_sha256=%s",
+            policy,
+            dangerous_patterns,
+            heavy_geometry_patterns if heavy_bypass else [],
+            audit["code_sha256"],
+        )
     if dangerous_patterns:
         result["dangerous_patterns_executed"] = dangerous_patterns
         result["safety_warning"] = (

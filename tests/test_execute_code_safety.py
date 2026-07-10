@@ -51,6 +51,10 @@ class TestNetworkPatternDetection:
             "import socket; socket.socket()",
             "import urllib.request; urllib.request.urlopen('http://x')",
             "import requests; requests.get('http://x')",
+            "from requests import get; get('http://x')",
+            "from urllib.request import urlopen; urlopen('http://x')",
+            "from socket import socket; socket()",
+            "from ftplib import FTP; FTP('example.com')",
             "from http.client import HTTPConnection",
             "eval('1+1')",
             "exec('x=1')",
@@ -146,6 +150,27 @@ class TestPolicyProfiles:
         )
         assert result["status"] == "success"
         assert result["policy"] == "read-only"
+
+    @pytest.mark.parametrize(
+        "code",
+        [
+            "hou.node('/obj') . createNode('geo')",
+            "hou.node('/obj/geo1') . parm('tx') . set(1)",
+            "hou.node('/obj/geo1') . parmTuple('t') . set((1, 2, 3))",
+        ],
+    )
+    def test_read_only_blocks_whitespace_mutation_variants(self, mock_connection, code):
+        from houdini_mcp.tools import execute_code
+
+        result = execute_code(code, policy="read-only", host="localhost", port=18811)
+        assert result["status"] == "error"
+        assert result["audit"]["blocked_reason"] == "read_only_mutation"
+
+    def test_normal_allows_houdini_parm_eval_read(self, mock_connection):
+        from houdini_mcp.tools import _detect_dangerous_code
+
+        assert _detect_dangerous_code("hou.node('/obj/geo1').parm('tx').eval()") == []
+        assert _detect_dangerous_code("eval('1 + 1')")
 
     def test_read_only_ignores_bypass_flags(self, mock_connection, allow_bypass_config):
         """read-only is the strictest profile: bypass flags cannot escalate it."""
@@ -253,6 +278,36 @@ class TestBypassRequiresConfigAndRequest:
         assert "config" in result["message"].lower()
 
 
+class TestTrustedInternalGeometryCapability:
+    def test_public_heavy_geometry_flag_still_requires_config(
+        self, mock_connection, deny_bypass_config
+    ):
+        from houdini_mcp.tools import execute_code
+
+        result = execute_code(
+            "hou.node('/obj/geo1').geometry()",
+            allow_heavy_geometry=True,
+            host="localhost",
+            port=18811,
+        )
+        assert result["status"] == "error"
+        assert result["audit"]["blocked_reason"] == "bypass_config_disabled"
+
+    def test_private_capability_allows_only_internal_bounded_program(
+        self, mock_connection, deny_bypass_config
+    ):
+        from houdini_mcp.tools.code import execute_code
+
+        result = execute_code(
+            "print(hou.node('/obj').geometry())",
+            allow_heavy_geometry=True,
+            _trusted_internal_heavy_geometry=True,
+            host="localhost",
+            port=18811,
+        )
+        assert result["status"] == "success"
+
+
 class TestAuditFields:
     """Every execution must return structured audit metadata."""
 
@@ -297,6 +352,29 @@ class TestAuditFields:
             for r in caplog.records
         )
 
+    def test_approved_bypass_is_logged_without_source(
+        self, mock_connection, allow_bypass_config, caplog
+    ):
+        import logging
+
+        from houdini_mcp.tools import execute_code
+
+        secret_source = "print('marker'); # hou.exit()"
+        with caplog.at_level(logging.WARNING):
+            result = execute_code(
+                secret_source,
+                allow_dangerous=True,
+                host="localhost",
+                port=18811,
+            )
+        assert result["status"] == "success"
+        records = [
+            record.message for record in caplog.records if "approved bypass" in record.message
+        ]
+        assert records
+        assert all(secret_source not in message and "marker" not in message for message in records)
+        assert result["audit"]["code_sha256"] in records[-1]
+
 
 # ---------------------------------------------------------------------------
 # AC2: timeout must not leave untracked mutations (undo / fail-closed)
@@ -304,66 +382,27 @@ class TestAuditFields:
 
 
 class TestTimeoutRollback:
-    def test_timeout_triggers_rollback_when_undo_available(self, mock_connection):
-        """A timed-out run wrapped in an undo group must attempt a rollback."""
+    def test_timeout_never_undoes_while_worker_group_is_open(self, mock_connection):
+        """Undoing an open group can revert the previous human action."""
         from houdini_mcp.tools import execute_code
 
         code = "import time\nwhile True:\n    time.sleep(0.05)\n"
-        result = execute_code(
-            code,
-            timeout=1,
-            allow_dangerous=True,  # 'import time' + while loop is otherwise fine
-            host="localhost",
-            port=18811,
-        )
+        before = mock_connection.undos.performed_undos
+        result = execute_code(code, timeout=1, host="localhost", port=18811)
+
         assert result["status"] == "error"
         assert result.get("timeout") == 1
-        # Rollback must have been attempted on the Houdini side.
-        assert mock_connection.undos.performed_undos >= 1
+        assert mock_connection.undos.performed_undos == before
         assert result["audit"]["timed_out"] is True
-        assert result["audit"]["rollback_attempted"] is True
-
-    def test_timeout_reports_rollback_status(self, mock_connection):
-        from houdini_mcp.tools import execute_code
-
-        code = "import time\nwhile True:\n    time.sleep(0.05)\n"
-        result = execute_code(
-            code,
-            timeout=1,
-            allow_dangerous=True,
-            host="localhost",
-            port=18811,
-        )
-        assert "rollback" in result
-        assert result["rollback"]["attempted"] is True
-
-    def test_rollback_does_not_overclaim_guarantee(self, mock_connection):
-        """The daemon exec thread cannot be force-killed on timeout, so even a
-        'succeeded' rollback must not be reported as a hard guarantee that the
-        scene is consistent - the original code may still be running and
-        mutating the scene concurrently. The response must surface this risk
-        explicitly rather than implying rollback == safety.
-        """
-        from houdini_mcp.tools import execute_code
-
-        code = "import time\nwhile True:\n    time.sleep(0.05)\n"
-        result = execute_code(
-            code,
-            timeout=1,
-            allow_dangerous=True,
-            host="localhost",
-            port=18811,
-        )
-        assert result["rollback"]["attempted"] is True
-        assert result["rollback"]["succeeded"] is True
-        # Even on a "succeeded" rollback, the thread-still-running risk must be
-        # reported explicitly in the structured rollback block...
-        assert result["rollback"]["thread_still_running"] is True
-        # ...and the human-readable warning must not claim a hard guarantee -
-        # it should communicate that the scene may still be mutated further.
-        warning = result.get("warning", "").lower()
-        assert "not" in warning and "guarantee" in warning
-        assert "still" in warning and ("running" in warning or "thread" in warning)
+        assert result["audit"]["rollback_attempted"] is False
+        assert result["rollback"] == {
+            "attempted": False,
+            "succeeded": False,
+            "error": None,
+            "thread_still_running": True,
+            "scene_consistency": "unknown",
+        }
+        assert "previous human action" in result["warning"].lower()
 
     def test_undo_group_opened_around_execution(self, mock_connection):
         """Successful runs must be wrapped in a named undo group for later rollback."""

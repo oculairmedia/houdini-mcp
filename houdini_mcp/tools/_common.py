@@ -254,22 +254,27 @@ DANGEROUS_PATTERNS: list[tuple[str, str]] = [
     (r'\bopen\s*\([^)]*["\'][wax]', "open() with write mode - file writing"),
     (r"\bhou\s*\.\s*hipFile\s*\.\s*clear\s*\(", "hou.hipFile.clear() - scene wipe"),
     # Dynamic execution primitives (common evasion vectors).
-    (r"\beval\s*\(", "eval() - dynamic code execution"),
+    # Standalone builtin eval only; Houdini's safe parameter read `.eval()` is
+    # an ordinary method call and must remain usable under normal policy.
+    (r"(?<![.\w])eval\s*\(", "eval() - dynamic code execution"),
     (r"\bexec\s*\(", "exec() - dynamic code execution"),
     (r"\bcompile\s*\(", "compile() - dynamic code compilation"),
     (r"\b__import__\s*\(", "__import__() - dynamic import (evasion vector)"),
     (r"\bgetattr\s*\(\s*__builtins__", "getattr(__builtins__ ...) - builtins evasion"),
     # Network egress: exfiltration / remote control risk.
-    (r"\bimport\s+socket\b", "socket - raw network access"),
+    (r"\b(?:import\s+socket\b|from\s+socket\s+import\b)", "socket - raw network access"),
     (r"\bsocket\s*\.\s*socket\s*\(", "socket.socket() - raw network access"),
-    (r"\bimport\s+requests\b", "requests - HTTP network access"),
+    (
+        r"\b(?:import\s+requests\b|from\s+requests\s+import\b)",
+        "requests - HTTP network access",
+    ),
     (r"\brequests\s*\.\s*(get|post|put|delete|request)\s*\(", "requests.* - HTTP network access"),
-    (r"\bimport\s+urllib\b", "urllib - HTTP network access"),
+    (r"\b(?:import\s+urllib\b|from\s+urllib(?:\.\w+)?\s+import\b)", "urllib - HTTP network access"),
     (r"\burllib\b", "urllib - HTTP network access"),
     (r"\bimport\s+http\b", "http - HTTP network access"),
     (r"\bfrom\s+http\b", "http - HTTP network access"),
     (r"\bhttp\s*\.\s*client\b", "http.client - HTTP network access"),
-    (r"\bimport\s+ftplib\b", "ftplib - FTP network access"),
+    (r"\b(?:import\s+ftplib\b|from\s+ftplib\s+import\b)", "ftplib - FTP network access"),
 ]
 
 
@@ -359,16 +364,19 @@ def _detect_import_hou(code: str) -> bool:
 # ``privileged`` policies, but forbidden under ``read-only`` where the caller has
 # declared they only intend to inspect the scene.
 MUTATION_PATTERNS: list[tuple[str, str]] = [
-    (r"\.createNode\s*\(", "createNode() - creates a node"),
-    (r"\.createOutputNode\s*\(", "createOutputNode() - creates a node"),
+    (r"\.\s*createNode\s*\(", "createNode() - creates a node"),
+    (r"\.\s*createOutputNode\s*\(", "createOutputNode() - creates a node"),
     (r"\.copyTo\s*\(", "copyTo() - copies nodes"),
     (r"\.destroy\s*\(", "destroy() - deletes a node"),
     (r"\.deleteItems\s*\(", "deleteItems() - deletes nodes"),
     (r"\.setInput\s*\(", "setInput() - rewires a node"),
     (r"\.setFirstInput\s*\(", "setFirstInput() - rewires a node"),
     (r"\.setNamedInput\s*\(", "setNamedInput() - rewires a node"),
-    (r"\.parm\s*\([^)]*\)\s*\.\s*set\s*\(", "parm().set() - mutates a parameter"),
-    (r"\.parmTuple\s*\([^)]*\)\s*\.\s*set\s*\(", "parmTuple().set() - mutates a parameter"),
+    (r"\.\s*parm\s*\([^)]*\)\s*\.\s*set\s*\(", "parm().set() - mutates a parameter"),
+    (
+        r"\.\s*parmTuple\s*\([^)]*\)\s*\.\s*set\s*\(",
+        "parmTuple().set() - mutates a parameter",
+    ),
     (r"\.setParms\s*\(", "setParms() - mutates parameters"),
     (r"\.setName\s*\(", "setName() - renames a node"),
     (r"\.setColor\s*\(", "setColor() - mutates node appearance"),
