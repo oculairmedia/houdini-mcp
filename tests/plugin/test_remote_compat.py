@@ -71,9 +71,7 @@ class TestLegacyModuleApi:
         assert status["status"] == "success"
         assert status["host"] == "127.0.0.1"
 
-    def test_env_bind_host_wildcard_refused_without_optin(
-        self, monkeypatch, fake_hrpyc, fake_hou
-    ):
+    def test_env_bind_host_wildcard_refused_without_optin(self, monkeypatch, fake_hrpyc, fake_hou):
         monkeypatch.setattr(remote, "_import_hrpyc", lambda: fake_hrpyc)
         monkeypatch.setattr(remote, "_import_hou", lambda: fake_hou)
         monkeypatch.setenv("HOUDINI_RPC_BIND_HOST", "0.0.0.0")

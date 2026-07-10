@@ -20,9 +20,7 @@ from houdini_mcp_plugin.listener import (
 
 
 class TestBindFailure:
-    def test_start_reports_error_on_bind_failure(
-        self, fake_hrpyc_bind_fail, fake_hou, free_port
-    ):
+    def test_start_reports_error_on_bind_failure(self, fake_hrpyc_bind_fail, fake_hou, free_port):
         listener = RemoteListener(hrpyc=fake_hrpyc_bind_fail, hou=fake_hou)
         result = listener.start(ListenerConfig(host="127.0.0.1", port=free_port))
 
@@ -75,9 +73,7 @@ class TestSecurityEnforcement:
     def test_wildcard_bind_raises_when_strict(self, fake_hrpyc, fake_hou, free_port):
         listener = RemoteListener(hrpyc=fake_hrpyc, hou=fake_hou)
         with pytest.raises(SecurityError):
-            listener.start(
-                ListenerConfig(host="0.0.0.0", port=free_port), raise_on_policy=True
-            )
+            listener.start(ListenerConfig(host="0.0.0.0", port=free_port), raise_on_policy=True)
 
     def test_wildcard_bind_allowed_with_trusted_network(self, fake_hrpyc, fake_hou, free_port):
         listener = RemoteListener(hrpyc=fake_hrpyc, hou=fake_hou)
@@ -90,9 +86,7 @@ class TestSecurityEnforcement:
 
     def test_wildcard_bind_allowed_with_token(self, fake_hrpyc, fake_hou, free_port):
         listener = RemoteListener(hrpyc=fake_hrpyc, hou=fake_hou)
-        result = listener.start(
-            ListenerConfig(host="0.0.0.0", port=free_port, token="hunter2")
-        )
+        result = listener.start(ListenerConfig(host="0.0.0.0", port=free_port, token="hunter2"))
         assert result["status"] == "success"
         assert result["security"]["authenticated"] is True
 
@@ -142,9 +136,7 @@ class TestSelfTestAndStatus:
 
     def test_self_test_no_loopback_warning_when_wildcard(self, fake_hrpyc, fake_hou, free_port):
         listener = RemoteListener(hrpyc=fake_hrpyc, hou=fake_hou)
-        listener.start(
-            ListenerConfig(host="0.0.0.0", port=free_port, trusted_network=True)
-        )
+        listener.start(ListenerConfig(host="0.0.0.0", port=free_port, trusted_network=True))
         report = listener.self_test()
         assert report["loopback_only"] is False
         # Firewall guidance still present (port must be open).

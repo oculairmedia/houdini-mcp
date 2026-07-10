@@ -298,8 +298,7 @@ class RemoteListener:
                     "port": self._config.port,
                     "bound_port": self._bound_port,
                     "message": (
-                        f"hrpyc listener already running on "
-                        f"{self._config.host}:{self._bound_port}"
+                        f"hrpyc listener already running on {self._config.host}:{self._bound_port}"
                     ),
                 }
 
@@ -366,9 +365,7 @@ class RemoteListener:
 
             bound_port = getattr(server, "bound_port", None) or cfg.port
 
-            thread = threading.Thread(
-                target=server.start, name="houdini-hrpyc", daemon=True
-            )
+            thread = threading.Thread(target=server.start, name="houdini-hrpyc", daemon=True)
             thread.start()
 
             if not _probe_reachable(cfg.host, bound_port):
@@ -381,8 +378,7 @@ class RemoteListener:
                     "host": cfg.host,
                     "port": bound_port,
                     "message": (
-                        f"hrpyc listener did not become reachable on "
-                        f"{cfg.host}:{bound_port}."
+                        f"hrpyc listener did not become reachable on {cfg.host}:{bound_port}."
                     ),
                 }
 
@@ -601,9 +597,7 @@ class RemoteListener:
             "houdini_version_tuple": houdini_version_tuple,
             "plugin_version": plugin_version,
             "protocol": "rpyc/hrpyc SlaveService (classic)",
-            "connection_string": (
-                f"HOUDINI_HOST={cfg.host} HOUDINI_PORT={bound_port}"
-            ),
+            "connection_string": (f"HOUDINI_HOST={cfg.host} HOUDINI_PORT={bound_port}"),
             "warnings": warnings,
             "guidance": firewall_guidance(cfg.host, bound_port),
         }
