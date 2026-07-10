@@ -294,10 +294,11 @@ def list_node_types(
     max_results: int | None = None,
     name_filter: str | None = None,
     offset: int | None = None,
-    limit: int | None = None,
-    cursor: int | None = None,
     host: str = "localhost",
     port: int = 18811,
+    *,
+    limit: int | None = None,
+    cursor: int | None = None,
 ) -> dict[str, Any]:
     """
     List available node types, optionally filtered by category.
@@ -381,9 +382,11 @@ def list_node_types(
         # Get available categories from cache
         result["categories_available"] = node_type_cache.get_categories(hou)
 
-    # Add cursor for next page
+    # Cursor is preferred; next_offset preserves the existing offset contract.
     if has_more:
-        result["cursor"] = offset + len(node_types)
+        next_page = offset + len(node_types)
+        result["cursor"] = next_page
+        result["next_offset"] = next_page
 
     # Add warning if results were limited
     if len(node_types) >= max_results and has_more:
@@ -410,11 +413,12 @@ def list_children(
     recursive: bool = False,
     max_depth: int = 10,
     max_nodes: int = 1000,
-    limit: int = 20,
-    cursor: int | None = None,
     compact: bool = False,
     host: str = "localhost",
     port: int = 18811,
+    *,
+    limit: int = 20,
+    cursor: int | None = None,
 ) -> dict[str, Any]:
     """
     List child nodes with paths, types, and current input connections.
@@ -539,6 +543,7 @@ def list_children(
 
     if paginated["has_more"]:
         result["cursor"] = paginated["cursor"]
+        result["next_offset"] = paginated["cursor"]
 
     if nodes_collected >= max_nodes:
         result["warning"] = f"Collection limited to {max_nodes} nodes"
@@ -554,10 +559,11 @@ def find_nodes(
     node_type: str | None = None,
     max_results: int | None = None,
     offset: int | None = None,
-    limit: int | None = None,
-    cursor: int | None = None,
     host: str = "localhost",
     port: int = 18811,
+    *,
+    limit: int | None = None,
+    cursor: int | None = None,
 ) -> dict[str, Any]:
     """
     Find nodes by name pattern or type using glob/substring matching.
@@ -615,6 +621,9 @@ pattern = "{pattern}"
 node_type_filter = {node_type_repr}
 max_results = {max_results}
 offset = {offset}
+# Fetch one extra match to determine has_more without scanning/materializing
+# the rest of a potentially huge network.
+fetch_limit = max_results + 1
 
 matches = []
 total_matched = 0
@@ -653,8 +662,8 @@ if root is not None:
                 "type": child_type,
             }})
 
-            # Stop if we have enough results
-            if len(matches) >= max_results:
+            # Stop after one lookahead item; it proves another page exists.
+            if len(matches) >= fetch_limit:
                 break
 
 _result = {{"matches": matches, "total_matched": total_matched}}
@@ -685,12 +694,12 @@ _result = {{"matches": matches, "total_matched": total_matched}}
 
         def search_recursive(node: Any) -> None:
             nonlocal total_matched
-            if len(matches) >= max_results:
+            if len(matches) >= max_results + 1:
                 return
 
             try:
                 for child in node.children():
-                    if len(matches) >= max_results:
+                    if len(matches) >= max_results + 1:
                         break
 
                     name_match = fnmatch_module.fnmatch(child.name().lower(), pattern.lower())
@@ -719,8 +728,10 @@ _result = {{"matches": matches, "total_matched": total_matched}}
 
         search_recursive(root)
 
-    # Calculate pagination metadata
-    has_more = total_matched > offset + len(matches)
+    # The extra lookahead item is never returned; it only proves another page.
+    has_more = len(matches) > max_results
+    if has_more:
+        matches = matches[:max_results]
 
     result: dict[str, Any] = {
         "status": "success",
@@ -740,9 +751,11 @@ _result = {{"matches": matches, "total_matched": total_matched}}
     if offset > 0:
         result["offset"] = offset
 
-    # Add cursor for next page
+    # Cursor is preferred; next_offset preserves the existing offset contract.
     if has_more:
-        result["cursor"] = offset + len(matches)
+        next_page = offset + len(matches)
+        result["cursor"] = next_page
+        result["next_offset"] = next_page
 
     if len(matches) >= max_results:
         result["warning"] = (

@@ -1062,7 +1062,10 @@ def paginate_list(
         result = paginate_list(nodes, limit=10, cursor=0)
         # Returns first 10 nodes with cursor=10 if more exist
     """
-    offset = cursor if cursor is not None else 0
+    # Clamp invalid inputs so callers cannot receive a repeating cursor (for
+    # example limit=0, cursor=0 forever) or negative Python-slice semantics.
+    limit = max(1, int(limit))
+    offset = max(0, int(cursor)) if cursor is not None else 0
     total = len(items)
 
     # Slice the page

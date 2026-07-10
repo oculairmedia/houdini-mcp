@@ -10,6 +10,14 @@ import json
 class TestResponsePagination:
     """Test pagination with limit/cursor/offset controls."""
 
+    def test_invalid_inputs_are_clamped_without_repeating_cursor(self):
+        from houdini_mcp.tools._common import paginate_list
+
+        result = paginate_list(list(range(5)), limit=0, cursor=-100)
+        assert result["items"] == [0]
+        assert result["cursor"] == 1
+        assert result["has_more"] is True
+
     def test_paginate_empty_list(self):
         """Paginating an empty list returns empty result with no cursor."""
         from houdini_mcp.tools._common import paginate_list
@@ -103,6 +111,24 @@ class TestResponsePagination:
         assert result["total"] == 25
         assert result["returned"] == 0
         assert result["has_more"] is False
+
+
+class TestLegacyPaginationCompatibility:
+    def test_direct_positional_host_port_calls_still_work(self, mock_connection):
+        from houdini_mcp.tools.nodes import find_nodes, list_children, list_node_types
+
+        assert list_node_types(None, 10, None, 0, "localhost", 18811)["status"] == "success"
+        assert (
+            list_children("/obj", False, 10, 1000, True, "localhost", 18811)["status"] == "success"
+        )
+        assert find_nodes("/obj", "*", None, 10, 0, "localhost", 18811)["status"] == "success"
+
+    def test_next_offset_alias_is_preserved(self, mock_connection):
+        from houdini_mcp.tools.nodes import list_node_types
+
+        result = list_node_types(limit=1, cursor=0, host="localhost", port=18811)
+        assert result["has_more"] is True
+        assert result["next_offset"] == result["cursor"] == 1
 
 
 class TestResponseTruncation:

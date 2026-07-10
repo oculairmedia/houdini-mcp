@@ -329,6 +329,8 @@ def list_node_types(
     max_results: int = 100,
     name_filter: str | None = None,
     offset: int = 0,
+    limit: int | None = None,
+    cursor: int | None = None,
 ) -> dict[str, Any]:
     """
     List available Houdini node types.
@@ -354,7 +356,14 @@ def list_node_types(
         list_node_types(category="Sop", offset=100)  # Get next page of SOPs
     """
     return tools.list_node_types(
-        category, max_results, name_filter, offset, HOUDINI_HOST, HOUDINI_PORT
+        category=category,
+        max_results=max_results,
+        name_filter=name_filter,
+        offset=offset,
+        host=HOUDINI_HOST,
+        port=HOUDINI_PORT,
+        limit=limit,
+        cursor=cursor,
     )
 
 
@@ -365,6 +374,8 @@ def list_children(
     max_depth: int = 10,
     max_nodes: int = 1000,
     compact: bool = False,
+    limit: int = 20,
+    cursor: int | None = None,
 ) -> dict[str, Any]:
     """
     List child nodes with paths, types, and current input connections.
@@ -394,7 +405,15 @@ def list_children(
         list_children("/obj/geo1", compact=True)  # Minimal payload
     """
     return tools.list_children(
-        node_path, recursive, max_depth, max_nodes, compact, HOUDINI_HOST, HOUDINI_PORT
+        node_path=node_path,
+        recursive=recursive,
+        max_depth=max_depth,
+        max_nodes=max_nodes,
+        compact=compact,
+        host=HOUDINI_HOST,
+        port=HOUDINI_PORT,
+        limit=limit,
+        cursor=cursor,
     )
 
 
@@ -405,6 +424,8 @@ def find_nodes(
     node_type: str | None = None,
     max_results: int = 100,
     offset: int = 0,
+    limit: int | None = None,
+    cursor: int | None = None,
 ) -> dict[str, Any]:
     """
     Find nodes by name pattern or type using glob/substring matching.
@@ -431,7 +452,15 @@ def find_nodes(
         find_nodes("/obj", "*", offset=100) - Get next page of results
     """
     return tools.find_nodes(
-        root_path, pattern, node_type, max_results, offset, HOUDINI_HOST, HOUDINI_PORT
+        root_path=root_path,
+        pattern=pattern,
+        node_type=node_type,
+        max_results=max_results,
+        offset=offset,
+        host=HOUDINI_HOST,
+        port=HOUDINI_PORT,
+        limit=limit,
+        cursor=cursor,
     )
 
 
@@ -900,7 +929,7 @@ def get_parameter_schema(
 @mcp.tool()
 async def get_geo_summary(
     node_path: str,
-    max_sample_points: int = 100,
+    max_sample_points: int = 16,
     include_attributes: bool = True,
     include_groups: bool = True,
     summarize: bool = False,
@@ -914,7 +943,7 @@ async def get_geo_summary(
 
     Args:
         node_path: Full path to the SOP node (e.g., "/obj/geo1/sphere1")
-        max_sample_points: Maximum number of sample points to return (default: 100, max: 10000).
+        max_sample_points: Maximum number of sample points to return (default: 16, max: 10000).
                           Set to 0 to skip point sampling.
         include_attributes: Whether to include attribute metadata (default: True)
         include_groups: Whether to include group information (default: True)
