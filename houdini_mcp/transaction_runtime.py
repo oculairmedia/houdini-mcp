@@ -12,7 +12,7 @@ from contextlib import contextmanager
 from pathlib import Path
 from typing import Any
 
-from .connection import HoudiniConnectionError, ensure_connected
+from .connection import HoudiniConnectionError, ensure_connected, get_connection
 from .tools._common import CONNECTION_ERRORS, _json_safe_hou_value
 from .tools.transactions import TransactionConflict, TransactionManager, TransactionRecord
 
@@ -23,7 +23,59 @@ TRANSACTION_CONNECTION_ERRORS = (HoudiniConnectionError, *CONNECTION_ERRORS)
 
 
 def _scene_revision(hou: Any) -> str:
-    """Hash topology plus mutable state across object and material contexts."""
+    """Hash mutable scene state in one Houdini-side RPC when remote."""
+    connection = get_connection()
+    if connection is not None and callable(getattr(connection, "execute", None)):
+        code = """
+import hashlib as _hashlib
+import json as _json
+_rows = []
+for _root_path in ("/obj", "/mat", "/shop", "/stage", "/out"):
+    _root = hou.node(_root_path)
+    if _root is None:
+        continue
+    _stack = [_root]
+    while _stack:
+        _node = _stack.pop()
+        _stack.extend(_node.children())
+        _parms = {}
+        for _parm in _node.parms():
+            try:
+                _value = _parm.eval()
+                if isinstance(_value, (str, int, float, bool)) or _value is None:
+                    _parms[_parm.name()] = _value
+                elif isinstance(_value, (tuple, list)):
+                    _parms[_parm.name()] = list(_value)
+                else:
+                    _parms[_parm.name()] = str(_value)
+            except Exception:
+                pass
+        try:
+            _color = list(_node.color().rgb())
+        except Exception:
+            _color = None
+        try:
+            _position = list(_node.position())
+        except Exception:
+            _position = None
+        _rows.append({
+            "path": _node.path(),
+            "type": _node.type().name(),
+            "parameters": _parms,
+            "inputs": [_input.path() if _input is not None else None for _input in _node.inputs()],
+            "position": _position,
+            "color": _color,
+            "flags": [
+                bool(getattr(_node, _method)()) if callable(getattr(_node, _method, None)) else None
+                for _method in ("isDisplayFlagSet", "isRenderFlagSet", "isBypassed")
+            ],
+        })
+_payload = _json.dumps(sorted(_rows, key=lambda _row: _row["path"]), sort_keys=True, separators=(",", ":"), default=str)
+_mcp_scene_revision = _hashlib.sha256(_payload.encode("utf-8")).hexdigest()
+"""
+        connection.execute(code)
+        return str(connection.namespace["_mcp_scene_revision"])
+
     rows: list[dict[str, Any]] = []
     for root_path in ("/obj", "/mat", "/shop", "/stage", "/out"):
         root = hou.node(root_path)
