@@ -16,6 +16,8 @@ from houdini_mcp.tools.transactions import (
 
 EXPECTED_MUTATING_TOOLS = {
     "assign_material",
+    "capture_multiple_panes",
+    "capture_pane_screenshot",
     "connect_nodes",
     "create_material",
     "create_network_box",
@@ -97,10 +99,10 @@ def test_undo_last_agent_action_when_revision_matches(mock_connection, tmp_path)
 def test_checkpoint_is_atomic_and_retention_bounded(mock_connection, tmp_path, monkeypatch):
     tx_manager = manager(mock_connection, tmp_path, lambda: "scene")
 
-    def save(path):
+    def save_backup(path):
         Path(path).write_text("hip", encoding="utf-8")
 
-    mock_connection.hipFile.save.side_effect = save
+    mock_connection.hipFile.saveAndBackup.side_effect = save_backup
     for index in range(3):
         with tx_manager.begin(
             ["load_scene"],
@@ -118,14 +120,14 @@ def test_external_side_effect_is_not_claimed_rolled_back(mock_connection, tmp_pa
     tx_manager = manager(mock_connection, tmp_path, lambda: "scene")
     with (
         pytest.raises(RuntimeError),
-        tx_manager.begin(["render_viewport"], affected_paths=["/tmp/output.png"]) as tx,
+        tx_manager.begin(["save_scene"], affected_paths=["/tmp/output.hip"]) as tx,
     ):
-        tx.add_external_side_effect("rendered /tmp/output.png")
+        tx.add_external_side_effect("saved /tmp/output.hip")
         raise RuntimeError("post-render failure")
 
     record = tx_manager.history[-1]
     assert record.result == "failed"
-    assert record.side_effects == ["rendered /tmp/output.png"]
+    assert record.side_effects == ["saved /tmp/output.hip"]
     assert mock_connection.undos.performed_undos == 0
 
 
@@ -147,6 +149,32 @@ def test_audit_contains_attribution_paths_duration_and_result(mock_connection, t
     assert row["affected_paths"] == ["/obj/a", "/obj/b"]
     assert row["duration_ms"] >= 0
     assert row["result"] == "committed"
+
+
+def test_policy_uses_most_conservative_tool(mock_connection, tmp_path):
+    tx_manager = manager(mock_connection, tmp_path, lambda: "rev")
+    tx = tx_manager.begin(["create_node", "save_scene"])
+    assert tx.record.policy == TransactionPolicy.EXTERNAL_SIDE_EFFECT
+
+
+def test_rollback_failure_is_audited_as_unknown_consistency(mock_connection, tmp_path):
+    tx_manager = manager(mock_connection, tmp_path, lambda: "rev")
+    mock_connection.undos.performUndo = lambda: (_ for _ in ()).throw(RuntimeError("undo failed"))
+    with pytest.raises(RuntimeError, match="undo failed"), tx_manager.begin(["create_node"]):
+        raise ValueError("body failed")
+    assert tx_manager.history[-1].result == "unknown_consistency"
+    assert tx_manager.history[-1].rollback_error == "undo failed"
+
+
+def test_undo_refuses_when_agent_label_is_not_stack_top(mock_connection, tmp_path):
+    revision = ["before"]
+    tx_manager = manager(mock_connection, tmp_path, lambda: revision[0])
+    with tx_manager.begin(["set_parameter"]):
+        revision[0] = "after"
+    mock_connection.undos.closed_groups.append("Human edit")
+    with pytest.raises(TransactionConflict, match="not the next undo"):
+        tx_manager.undo_last_agent_action()
+    assert mock_connection.undos.performed_undos == 0
 
 
 def test_undo_never_runs_while_group_is_open(mock_connection, tmp_path):
