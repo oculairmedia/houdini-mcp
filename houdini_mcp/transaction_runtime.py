@@ -29,6 +29,7 @@ def _scene_revision(hou: Any) -> str:
         code = """
 import hashlib as _hashlib
 import json as _json
+import hou
 _rows = []
 for _root_path in ("/obj", "/mat", "/shop", "/stage", "/out"):
     _root = hou.node(_root_path)
