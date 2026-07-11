@@ -6,22 +6,66 @@ import hashlib
 import json
 import os
 import tempfile
+import threading
 from collections.abc import Iterator
 from contextlib import contextmanager
 from pathlib import Path
 from typing import Any
 
-from .connection import ensure_connected
-from .tools._common import _serialize_scene_state
+from .connection import HoudiniConnectionError, ensure_connected
+from .tools._common import CONNECTION_ERRORS, _json_safe_hou_value
 from .tools.transactions import TransactionConflict, TransactionManager, TransactionRecord
 
 _manager: TransactionManager | None = None
 _manager_endpoint: tuple[str, int] | None = None
+_manager_init_lock = threading.Lock()
+TRANSACTION_CONNECTION_ERRORS = (HoudiniConnectionError, *CONNECTION_ERRORS)
 
 
 def _scene_revision(hou: Any) -> str:
-    state = _serialize_scene_state(hou, "/obj")
-    payload = json.dumps(state, sort_keys=True, separators=(",", ":"), default=str)
+    """Hash topology plus mutable state across object and material contexts."""
+    rows: list[dict[str, Any]] = []
+    for root_path in ("/obj", "/mat", "/shop", "/stage", "/out"):
+        root = hou.node(root_path)
+        if root is None:
+            continue
+        stack = [root]
+        while stack:
+            node = stack.pop()
+            children = list(node.children())
+            stack.extend(children)
+            parameters: dict[str, Any] = {}
+            for parm in getattr(node, "parms", lambda: [])():
+                try:
+                    parameters[parm.name()] = _json_safe_hou_value(parm.eval())
+                except Exception:
+                    continue
+            rows.append(
+                {
+                    "path": node.path(),
+                    "type": node.type().name(),
+                    "parameters": parameters,
+                    "inputs": [item.path() if item is not None else None for item in node.inputs()],
+                    "position": list(node.position())
+                    if callable(getattr(node, "position", None))
+                    else None,
+                    "color": list(node.color().rgb())
+                    if callable(getattr(node, "color", None)) and node.color() is not None
+                    else None,
+                    "flags": [
+                        bool(getattr(node, method)())
+                        if callable(getattr(node, method, None))
+                        else None
+                        for method in ("isDisplayFlagSet", "isRenderFlagSet", "isBypassed")
+                    ],
+                }
+            )
+    payload = json.dumps(
+        sorted(rows, key=lambda row: row["path"]),
+        sort_keys=True,
+        separators=(",", ":"),
+        default=str,
+    )
     return hashlib.sha256(payload.encode("utf-8")).hexdigest()
 
 
@@ -29,26 +73,28 @@ def transaction_manager(host: str, port: int) -> TransactionManager:
     global _manager, _manager_endpoint
     endpoint = (host, port)
     if _manager is None or _manager_endpoint != endpoint:
-        hou = ensure_connected(host, port)
-        checkpoint_dir = Path(
-            os.getenv(
-                "HOUDINI_MCP_CHECKPOINT_DIR",
-                str(Path(tempfile.gettempdir()) / "houdini-mcp-checkpoints"),
-            )
-        )
-        audit_path = Path(
-            os.getenv(
-                "HOUDINI_MCP_TRANSACTION_AUDIT",
-                str(Path(tempfile.gettempdir()) / "houdini-mcp-transactions.jsonl"),
-            )
-        )
-        _manager = TransactionManager(
-            hou,
-            lambda: _scene_revision(hou),
-            checkpoint_dir=checkpoint_dir,
-            audit_path=audit_path,
-        )
-        _manager_endpoint = endpoint
+        with _manager_init_lock:
+            if _manager is None or _manager_endpoint != endpoint:
+                hou = ensure_connected(host, port)
+                checkpoint_dir = Path(
+                    os.getenv(
+                        "HOUDINI_MCP_CHECKPOINT_DIR",
+                        str(Path(tempfile.gettempdir()) / "houdini-mcp-checkpoints"),
+                    )
+                )
+                audit_path = Path(
+                    os.getenv(
+                        "HOUDINI_MCP_TRANSACTION_AUDIT",
+                        str(Path(tempfile.gettempdir()) / "houdini-mcp-transactions.jsonl"),
+                    )
+                )
+                _manager = TransactionManager(
+                    hou,
+                    lambda: _scene_revision(hou),
+                    checkpoint_dir=checkpoint_dir,
+                    audit_path=audit_path,
+                )
+                _manager_endpoint = endpoint
     return _manager
 
 
@@ -85,6 +131,12 @@ def transactional_tool(
     result["_transaction"] = _record_metadata(transaction.record)
 
 
+class ToolResultError(RuntimeError):
+    def __init__(self, result: dict[str, Any]):
+        super().__init__(str(result.get("message", "Tool returned an error")))
+        self.result = result
+
+
 def run_transactional(
     tool: str,
     operation: Any,
@@ -93,11 +145,19 @@ def run_transactional(
     port: int,
     affected_paths: list[str] | None = None,
 ) -> dict[str, Any]:
-    result: dict[str, Any]
-    with transactional_tool(tool, host=host, port=port, affected_paths=affected_paths) as container:
-        result = operation()
-        container.update(result)
-    return container
+    try:
+        with transactional_tool(
+            tool, host=host, port=port, affected_paths=affected_paths
+        ) as container:
+            result = operation()
+            if result.get("status") in {"error", "partial"}:
+                raise ToolResultError(result)
+            container.update(result)
+        return container
+    except ToolResultError as error:
+        return error.result
+    except TRANSACTION_CONNECTION_ERRORS as error:
+        return {"status": "error", "message": f"Houdini connection error: {error}"}
 
 
 def undo_last_agent_action(host: str, port: int) -> dict[str, Any]:

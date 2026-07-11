@@ -233,24 +233,30 @@ class TransactionManager:
         return destination
 
     def undo_last_agent_action(self) -> TransactionRecord:
+        # Fast refusal avoids self-deadlock when called from inside the active
+        # transaction; the lock then makes revision/label check + undo atomic
+        # against concurrent commits.
         if self.active is not None:
             raise TransactionConflict("Cannot undo while a transaction is active")
-        committed = next(
-            (record for record in reversed(self.history) if record.result == "committed"), None
-        )
-        if committed is None:
-            raise TransactionConflict("No committed agent transaction to undo")
-        if committed.policy != TransactionPolicy.UNDOABLE:
-            raise TransactionConflict("Latest transaction is not Houdini-undoable")
-        if self.revision() != committed.after_revision:
-            raise TransactionConflict("Scene changed after the agent transaction")
-        labels = getattr(self.hou.undos, "undoLabels", lambda: [])()
-        if not labels or labels[0] != committed.undo_label:
-            raise TransactionConflict("Agent transaction is not the next undo operation")
-        self.hou.undos.performUndo()
-        committed.result = "undone"
-        self._append_audit(committed)
-        return committed
+        with self._transaction_lock:
+            if self.active is not None:
+                raise TransactionConflict("Cannot undo while a transaction is active")
+            committed = next(
+                (record for record in reversed(self.history) if record.result == "committed"), None
+            )
+            if committed is None:
+                raise TransactionConflict("No committed agent transaction to undo")
+            if committed.policy != TransactionPolicy.UNDOABLE:
+                raise TransactionConflict("Latest transaction is not Houdini-undoable")
+            if self.revision() != committed.after_revision:
+                raise TransactionConflict("Scene changed after the agent transaction")
+            labels = getattr(self.hou.undos, "undoLabels", lambda: [])()
+            if not labels or labels[0] != committed.undo_label:
+                raise TransactionConflict("Agent transaction is not the next undo operation")
+            self.hou.undos.performUndo()
+            committed.result = "undone"
+            self._append_audit(committed)
+            return committed
 
     def _finish(self, record: TransactionRecord) -> None:
         record.duration_ms = max(0, int((time.monotonic() - record.started_at) * 1000))

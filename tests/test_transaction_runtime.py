@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from houdini_mcp import server
-from houdini_mcp.transaction_runtime import reset_transaction_runtime
+from houdini_mcp.transaction_runtime import reset_transaction_runtime, transaction_manager
 
 
 def call_tool(tool, *args, **kwargs):
@@ -83,6 +83,41 @@ def test_undo_wrapper_succeeds_when_agent_action_is_stack_top(
     assert result["_transaction"]["transaction_id"] == created["_transaction"]["transaction_id"]
     assert result["_transaction"]["transaction_result"] == "undone"
     assert mock_connection.undos.performed_undos == 1
+
+
+def test_error_result_is_not_recorded_as_committed(mock_connection, monkeypatch, tmp_path):
+    reset_transaction_runtime()
+    monkeypatch.setenv("HOUDINI_MCP_TRANSACTION_AUDIT", str(tmp_path / "audit.jsonl"))
+
+    result = call_tool(server.create_node, "geo", parent_path="/missing")
+
+    assert result["status"] == "error"
+    manager = transaction_manager("localhost", 18811)
+    assert manager.history[-1].result == "rolled_back"
+    assert not any(record.result == "committed" for record in manager.history)
+
+
+def test_material_parameter_change_affects_scene_revision(mock_connection, monkeypatch, tmp_path):
+    from tests.conftest import MockHouNode
+
+    reset_transaction_runtime()
+    monkeypatch.setenv("HOUDINI_MCP_TRANSACTION_AUDIT", str(tmp_path / "audit.jsonl"))
+    mat_context = MockHouNode(path="/mat", name="mat", node_type="matnet")
+    mock_connection.add_node(mat_context)
+
+    result = call_tool(
+        server.create_material,
+        "principledshader",
+        "revision_mat",
+        "/mat",
+        {"metallic": 1.0},
+    )
+
+    assert result["status"] == "success"
+    assert (
+        result["_transaction"]["scene_revision_before"]
+        != result["_transaction"]["scene_revision_after"]
+    )
 
 
 def test_checkpoint_entry_failure_releases_runtime_lock(mock_connection, monkeypatch, tmp_path):
