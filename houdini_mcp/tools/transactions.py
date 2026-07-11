@@ -102,12 +102,12 @@ class SceneTransaction(AbstractContextManager["SceneTransaction"]):
             self.manager._transaction_lock.release()
             raise RuntimeError("A scene transaction is already active")
         self.manager.active = self
-        self.record.before_revision = self.manager.revision()
-        if self.record.policy == TransactionPolicy.CHECKPOINT_REQUIRED:
-            self.record.checkpoint_path = str(
-                self.manager.create_checkpoint(self.record.transaction_id)
-            )
         try:
+            self.record.before_revision = self.manager.revision()
+            if self.record.policy == TransactionPolicy.CHECKPOINT_REQUIRED:
+                self.record.checkpoint_path = str(
+                    self.manager.create_checkpoint(self.record.transaction_id)
+                )
             if self.record.policy == TransactionPolicy.UNDOABLE:
                 self.record.undo_label = f"Houdini MCP {self.record.transaction_id}"
                 self._undo_context = self.manager.hou.undos.group(self.record.undo_label)

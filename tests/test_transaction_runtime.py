@@ -69,6 +69,26 @@ def test_undo_wrapper_succeeds_when_agent_action_is_stack_top(
     assert mock_connection.undos.performed_undos == 1
 
 
+def test_checkpoint_entry_failure_releases_runtime_lock(mock_connection, monkeypatch, tmp_path):
+    """A checkpoint failure must not deadlock the next MCP mutation."""
+    import pytest
+
+    from houdini_mcp.transaction_runtime import transaction_manager
+
+    reset_transaction_runtime()
+    monkeypatch.setenv("HOUDINI_MCP_TRANSACTION_AUDIT", str(tmp_path / "audit.jsonl"))
+    manager = transaction_manager("localhost", 18811)
+    mock_connection.hipFile.saveAndBackup.side_effect = RuntimeError("checkpoint failed")
+
+    with pytest.raises(RuntimeError, match="checkpoint failed"), manager.begin(["new_scene"]):
+        pass
+
+    assert manager.active is None
+    # If the transaction-wide lock leaked, this call blocks forever in CI.
+    result = server.create_node.fn("geo", name="after_checkpoint_failure")
+    assert result["status"] == "success"
+
+
 def test_core_mutating_wrappers_are_transactional():
     """Static gate: core undoable wrappers may not bypass the runtime helper."""
     import inspect
