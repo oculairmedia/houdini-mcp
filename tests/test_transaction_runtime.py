@@ -6,11 +6,27 @@ from houdini_mcp import server
 from houdini_mcp.transaction_runtime import reset_transaction_runtime
 
 
+def call_tool(tool, *args, **kwargs):
+    """Call through FastMCP's FunctionTool or the raw function used by tests.
+
+    The randomized full suite imports server under both the real decorator and a
+    monkeypatched identity decorator, so module-level wrappers legitimately have
+    either shape depending on test order.
+    """
+    return getattr(tool, "fn", tool)(*args, **kwargs)
+
+
+def tool_source(tool):
+    import inspect
+
+    return inspect.getsource(getattr(tool, "fn", tool))
+
+
 def test_create_node_wrapper_returns_transaction_metadata(mock_connection, monkeypatch, tmp_path):
     reset_transaction_runtime()
     monkeypatch.setenv("HOUDINI_MCP_TRANSACTION_AUDIT", str(tmp_path / "audit.jsonl"))
 
-    result = server.create_node.fn("geo", name="transaction_geo")
+    result = call_tool(server.create_node, "geo", name="transaction_geo")
 
     assert result["status"] == "success"
     assert result["node_path"] == "/obj/transaction_geo"
@@ -31,7 +47,7 @@ def test_parameter_wrapper_is_one_named_undo_action(mock_connection, monkeypatch
     node = MockHouNode(path="/obj/geo1", name="geo1", node_type="geo", params={"tx": 0.0})
     mock_connection.add_node(node)
 
-    result = server.set_parameter.fn("/obj/geo1", "tx", 4.0)
+    result = call_tool(server.set_parameter, "/obj/geo1", "tx", 4.0)
 
     assert result["status"] == "success"
     assert node._params["tx"] == 4.0
@@ -42,12 +58,12 @@ def test_parameter_wrapper_is_one_named_undo_action(mock_connection, monkeypatch
 def test_undo_wrapper_refuses_intervening_scene_edit(mock_connection, monkeypatch, tmp_path):
     reset_transaction_runtime()
     monkeypatch.setenv("HOUDINI_MCP_TRANSACTION_AUDIT", str(tmp_path / "audit.jsonl"))
-    server.create_node.fn("geo", name="agent_geo")
+    call_tool(server.create_node, "geo", name="agent_geo")
     # Simulate a human edit that changes both revision and undo stack top.
     mock_connection.node("/obj").createNode("geo", "human_geo")
     mock_connection.undos.closed_groups.append("Human edit")
 
-    result = server.undo_last_agent_action.fn()
+    result = call_tool(server.undo_last_agent_action)
 
     assert result["status"] == "conflict"
     assert result["error"] == "transaction_conflict"
@@ -59,9 +75,9 @@ def test_undo_wrapper_succeeds_when_agent_action_is_stack_top(
 ):
     reset_transaction_runtime()
     monkeypatch.setenv("HOUDINI_MCP_TRANSACTION_AUDIT", str(tmp_path / "audit.jsonl"))
-    created = server.create_node.fn("geo", name="agent_geo")
+    created = call_tool(server.create_node, "geo", name="agent_geo")
 
-    result = server.undo_last_agent_action.fn()
+    result = call_tool(server.undo_last_agent_action)
 
     assert result["status"] == "success"
     assert result["_transaction"]["transaction_id"] == created["_transaction"]["transaction_id"]
@@ -85,14 +101,12 @@ def test_checkpoint_entry_failure_releases_runtime_lock(mock_connection, monkeyp
 
     assert manager.active is None
     # If the transaction-wide lock leaked, this call blocks forever in CI.
-    result = server.create_node.fn("geo", name="after_checkpoint_failure")
+    result = call_tool(server.create_node, "geo", name="after_checkpoint_failure")
     assert result["status"] == "success"
 
 
 def test_core_mutating_wrappers_are_transactional():
     """Static gate: core undoable wrappers may not bypass the runtime helper."""
-    import inspect
-
     names = {
         "create_node",
         "delete_node",
@@ -109,8 +123,6 @@ def test_core_mutating_wrappers_are_transactional():
         "create_network_box",
     }
     missing = {
-        name
-        for name in names
-        if "run_transactional" not in inspect.getsource(getattr(server, name).fn)
+        name for name in names if "run_transactional" not in tool_source(getattr(server, name))
     }
     assert not missing, f"Mutating wrappers bypass transaction runtime: {sorted(missing)}"
