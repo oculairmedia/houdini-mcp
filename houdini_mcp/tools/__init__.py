@@ -70,9 +70,22 @@ from .summarization import (
     summarize_render_settings,
     summarize_scene,
 )
+from .transactions import (
+    MUTATING_TOOL_POLICIES,
+    TransactionConflict,
+    TransactionManager,
+    TransactionPolicy,
+    TransactionRecord,
+)
 from .wiring import connect_nodes, disconnect_node_input, reorder_inputs, set_node_flags
 
 __all__ = [
+    # Transaction management
+    "MUTATING_TOOL_POLICIES",
+    "TransactionConflict",
+    "TransactionManager",
+    "TransactionPolicy",
+    "TransactionRecord",
     # Scene management
     "get_scene_info",
     "serialize_scene",
