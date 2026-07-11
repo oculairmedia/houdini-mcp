@@ -363,6 +363,7 @@ class MockHouModule:
         self.hipFile = MagicMock()
         self.hipFile.path.return_value = self._hip_file
         self.hipFile.save = MagicMock()
+        self.hipFile.saveAndBackup = MagicMock()
         self.hipFile.load = MagicMock()
         self.hipFile.clear = MagicMock()
 
@@ -587,14 +588,15 @@ class MockUndos:
     def performRedo(self) -> None:
         self.performed_redos += 1
 
+    def undoLabels(self) -> list[str]:
+        available = len(self.closed_groups) - self.performed_undos
+        return list(reversed(self.closed_groups[:available]))
+
     def isUndoAvailable(self) -> bool:
         return bool(self.closed_groups) and self.performed_undos < len(self.closed_groups)
 
     def areUndosEnabled(self) -> bool:
         return self._enabled
-
-    def undoLabels(self) -> list[str]:
-        return list(self.closed_groups)
 
 
 class MockColor:
