@@ -2,6 +2,86 @@
 
 An MCP (Model Context Protocol) server for controlling SideFX Houdini via `hrpyc`, enabling AI assistants like Claude, Cursor, and Letta agents to interact with Houdini sessions.
 
+## Persistent companion (Windows / Houdini 20.5)
+
+The optional companion lives inside the interactive Houdini session. The
+`houdini-agent` CLI and `companion_*` MCP tools share its tracked job queue,
+observations, previews, undo records and rendered feedback. Closing an agent or
+the panel does not stop the companion. Scene operations execute serially on
+Houdini's UI thread; HTTP requests can still query or cancel queued jobs.
+
+From an editable installation of this checkout:
+
+```powershell
+python -m pip install -e '.[dev]'
+houdini-agent install --prefs "$env:USERPROFILE\houdini20.5"
+houdini-agent doctor
+houdini-agent schema
+houdini-agent inspect --selected --geometry
+houdini-agent snapshot --path /obj/geo1/OUT --views front,right,persp
+```
+
+The package starts the companion on the next Houdini launch. Set
+`HOUDINI_COMPANION_AUTOSTART=0` to disable automatic startup. To attach to an
+already open session with `hrpyc` on port 18811, run
+`python scripts/bootstrap_companion.py`; this does not restart Houdini or save
+the HIP. The Python Panel interface is named **Houdini Companion**.
+`python -m houdini_companion.cli` also works if the console script is not on PATH.
+
+Use `inspect` to get `result.observation.token`. Submit parameter edits through
+`submit batch --file request.json --wait 30`, with a request shaped like:
+
+```json
+{
+  "actions": [{"op": "set", "path": "/obj/geo1/box1", "values": {"sizex": 2}}],
+  "expected": {"/obj/geo1/box1": "TOKEN_FROM_INSPECT"},
+  "output": "/obj/geo1/box1"
+}
+```
+
+Batch actions support create, set, connect, flags and delete. New nodes can be
+named with an `as` alias and referenced as `$alias` later in the same batch.
+Existing paths require observation tokens. Reusing a request ID with the same
+payload returns the same job; changed payloads are rejected. A wait timeout
+returns a trackable running job: use `job status JOB_ID`, `job wait JOB_ID` or
+`job cancel JOB_ID`. Cancellation cannot forcibly interrupt a running HOM cook.
+
+`preview` takes `path`, `expected` and `values`; it produces before/after images
+using copied SOPs, frozen inputs and staged quoted VEX includes. This release
+supports ordinary built-in leaf SOPs and locked standard Attribute Wrangles.
+`apply_preview` takes `preview_id`, validates the original again and applies the
+parameter values. It does not write source files. `undo` takes `job_id` and
+refuses to undo across newer user work. Arbitrary `run script.py` / `execute`
+is trusted Python, with no sandbox or atomic rollback guarantee.
+
+MCP exposes `companion_schema`, `companion_status`, `companion_inspect`,
+`companion_submit`, `companion_job`, `companion_cancel`, `companion_events` and
+`companion_feedback`. Feedback returns native MCP images. Existing legacy tools
+keep their current backend unless the MCP server starts with
+`HOUDINI_BACKEND=companion`; unsupported legacy mappings then fail explicitly.
+
+Descriptors and artifacts live under `%USERPROFILE%\.houdini-companion`.
+The service binds to `127.0.0.1:18812` and requires the per-session token stored
+in the descriptor. Do not share that file. `HOUDINI_COMPANION_HOME` and
+`HOUDINI_COMPANION_PORT` override these defaults; `--pid` selects a process.
+Snapshots include frozen geometry, PNG hashes, cook/render timings, bounded
+geometry diagnostics and blank-image checks. These are basic checks, not proof
+of artistic correctness. Source observations describe files on disk; Houdini's
+existing compiled VEX cache cannot be fingerprinted reliably. Snapshot `focus`
+accepts a bounding box in SOP local space for closeups.
+
+Per-session artifact pruning keeps receipts while bounding generated content
+to 64 recent jobs / approximately 1 GiB, excluding active jobs and previews.
+Archived sessions remain available for recovery and need manual retention
+management. Restarted sessions mark archived results stale and never replay
+unfinished mutations automatically. Startup registration is installed by the
+package; its next-launch behavior requires a Houdini restart to exercise.
+
+Companion tests: `python -X utf8 -m pytest tests/test_companion_*.py` (expand the
+filenames on shells without glob expansion). Live checks use
+`scripts/verify_companion_live.py` and `scripts/verify_companion_service.py`;
+they create and clean up owned fixtures without saving the HIP.
+
 ## Architecture
 
 ```
