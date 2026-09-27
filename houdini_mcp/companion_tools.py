@@ -39,8 +39,10 @@ def register(mcp):
     ) -> dict:
         """Submit one tracked operation. Reuse request_id only for identical retries.
 
-        Operations: inspect, snapshot, batch, execute, preview, apply_preview,
-        discard_preview, validate_observation, undo. batch accepts actions plus an
+        Discover enabled operations and plugin contracts with companion_schema.
+        Built-ins include query.batch, query.graph, query.parameters,
+        query.node_types, query.geometry, review.accept and review.compare.
+        batch accepts actions plus an
         expected map of node paths to inspection tokens. execute is trusted Python
         in Houdini, not sandboxed. Timeouts return a running job, never cancel it.
         """

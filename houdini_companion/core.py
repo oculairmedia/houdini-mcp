@@ -12,6 +12,7 @@ from collections import OrderedDict, deque
 from pathlib import Path
 
 from . import PROTOCOL_VERSION
+from .errors import CompanionError
 from .schema import validate
 
 TERMINAL = {"succeeded", "failed", "cancelled", "interrupted"}
@@ -26,16 +27,6 @@ OPERATIONS = {
     "apply_preview": "scene",
     "discard_preview": "preview",
 }
-
-
-class CompanionError(Exception):
-    def __init__(self, code, message, **details):
-        super().__init__(message)
-        self.code = code
-        self.details = details
-
-    def as_dict(self):
-        return {"code": self.code, "message": str(self), **self.details}
 
 
 def canonical(value):
@@ -61,7 +52,8 @@ class Ledger:
     limit we reject submissions, rather than silently forgetting deduplication keys.
     """
 
-    def __init__(self, root, queue_limit=32, history_limit=256, request_limit=10000):
+    def __init__(self, root, queue_limit=32, history_limit=256, request_limit=10000, registry=None):
+        self.registry = registry
         self.root = Path(root)
         self.session_id = uuid.uuid4().hex
         self.scene_id = uuid.uuid4().hex
@@ -77,6 +69,7 @@ class Ledger:
         self.accepting = True
         self.last_tick = time.time()
         self.lock = threading.RLock()
+        self.completed = threading.Condition(self.lock)
         self.root.mkdir(parents=True, exist_ok=True)
 
     def event(self, kind, **fields):
@@ -120,11 +113,12 @@ class Ledger:
                 raise CompanionError("STOPPED", "Companion is stopping")
             if request.get("scene_id") != self.scene_id:
                 raise CompanionError("STALE_SCENE", "Scene was replaced; inspect it again")
-            if request.get("operation") not in OPERATIONS or not isinstance(
-                request.get("params", {}), dict
-            ):
+            if request.get("operation") not in (
+                self.registry.effects() if self.registry else OPERATIONS
+            ) or not isinstance(request.get("params", {}), dict):
                 raise CompanionError("INVALID_OPERATION", "Unsupported operation or parameters")
-            validate(request["operation"], request.get("params", {}))
+            validator = self.registry.validate if self.registry else validate
+            validator(request["operation"], request.get("params", {}))
             if len(self.queue) >= self.queue_limit:
                 raise CompanionError("QUEUE_FULL", "Queue is full; no job was accepted")
             if len(self.requests) >= self.request_limit:
@@ -209,6 +203,7 @@ class Ledger:
                 self.active = None
             self._save(job)
             self.event("job.finished", job_id=jid, state=job["state"])
+            self.completed.notify_all()
 
     def cancel(self, jid):
         with self.lock:
@@ -225,6 +220,14 @@ class Ledger:
                 )
             self._save(job)
             self.event("job.cancel", job_id=jid, state=job["state"])
+            self.completed.notify_all()
+            return self.get(jid)
+
+    def wait(self, jid, timeout):
+        with self.completed:
+            self.completed.wait_for(
+                lambda: jid not in self.jobs or self.jobs[jid]["state"] in TERMINAL, timeout=timeout
+            )
             return self.get(jid)
 
     def checkpoint(self, jid):
@@ -251,7 +254,7 @@ class Ledger:
                 "active_job": self.active,
                 "queued": len(self.queue),
                 "ui_last_tick_age_s": round(time.time() - self.last_tick, 3),
-                "operations": OPERATIONS,
+                "operations": self.registry.effects() if self.registry else OPERATIONS,
             }
 
     def poll(self, cursor=0):

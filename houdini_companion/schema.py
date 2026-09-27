@@ -69,13 +69,48 @@ def schemas():
 
 
 def validate(operation, params):
-    from .core import CompanionError
+    validate_schema(schemas()[operation], params)
 
-    properties, required = CONTRACTS[operation]
-    if set(params) - set(properties) or set(required) - set(params):
-        raise CompanionError(
-            "INVALID_PARAMS", "Unknown or missing operation parameters", operation=operation
-        )
+
+def check_schema(rule, depth=0):
+    """Reject unsupported keywords rather than silently weakening a plugin contract."""
+    from .errors import CompanionError
+
+    supported = {
+        "type",
+        "properties",
+        "required",
+        "additionalProperties",
+        "items",
+        "enum",
+        "minimum",
+        "maximum",
+        "minLength",
+        "maxLength",
+        "minItems",
+        "maxItems",
+        "description",
+        "title",
+    }
+    if not isinstance(rule, dict) or depth > 32 or set(rule) - supported:
+        raise CompanionError("PLUGIN_SCHEMA", "Unsupported schema keyword or excessive depth")
+    kinds = rule.get("type", [])
+    kinds = kinds if isinstance(kinds, list) else [kinds]
+    if not set(kinds) <= {"string", "boolean", "integer", "number", "array", "object", "null"}:
+        raise CompanionError("PLUGIN_SCHEMA", "Unsupported parameter type")
+    if "additionalProperties" in rule and not isinstance(rule["additionalProperties"], bool):
+        raise CompanionError("PLUGIN_SCHEMA", "additionalProperties must be boolean")
+    for child in rule.get("properties", {}).values():
+        check_schema(child, depth + 1)
+    if "items" in rule:
+        check_schema(rule["items"], depth + 1)
+
+
+def validate_schema(rule, value, path="$", depth=0):
+    from .errors import CompanionError
+
+    if depth > 32:
+        raise CompanionError("INVALID_PARAMS", "Parameter nesting exceeds limit", parameter=path)
     types = {
         str: "string",
         bool: "boolean",
@@ -85,17 +120,38 @@ def validate(operation, params):
         dict: "object",
         type(None): "null",
     }
-    for name, value in params.items():
-        rule = properties[name]
-        allowed = rule["type"] if isinstance(rule["type"], list) else [rule["type"]]
-        invalid = types.get(type(value)) not in allowed
-        if not invalid and isinstance(value, (int, float)):
-            invalid = value < rule.get("minimum", float("-inf")) or value > rule.get(
-                "maximum", float("inf")
-            )
-        if not invalid and isinstance(value, str):
-            invalid = len(value) > rule.get("maxLength", 512000)
-        if invalid:
-            raise CompanionError(
-                "INVALID_PARAMS", "Parameter does not match its schema", parameter=name
-            )
+    allowed = rule.get("type", [])
+    allowed = allowed if isinstance(allowed, list) else [allowed]
+    actual = types.get(type(value))
+    invalid = bool(
+        allowed and actual not in allowed and not (actual == "integer" and "number" in allowed)
+    )
+    if "enum" in rule and value not in rule["enum"]:
+        invalid = True
+    if type(value) in (int, float):
+        import math
+
+        invalid |= (
+            not math.isfinite(value)
+            or value < rule.get("minimum", float("-inf"))
+            or value > rule.get("maximum", float("inf"))
+        )
+    if isinstance(value, str):
+        invalid |= not rule.get("minLength", 0) <= len(value) <= rule.get("maxLength", 512000)
+    if isinstance(value, list):
+        invalid |= not rule.get("minItems", 0) <= len(value) <= rule.get("maxItems", 10000)
+        if "items" in rule:
+            for i, item in enumerate(value):
+                validate_schema(rule["items"], item, f"{path}[{i}]", depth + 1)
+    if isinstance(value, dict):
+        properties = rule.get("properties", {})
+        invalid |= bool(set(rule.get("required", [])) - value.keys())
+        if rule.get("additionalProperties") is False:
+            invalid |= bool(value.keys() - properties.keys())
+        for key, item in value.items():
+            if key in properties:
+                validate_schema(properties[key], item, f"{path}.{key}", depth + 1)
+    if invalid:
+        raise CompanionError(
+            "INVALID_PARAMS", "Parameter does not match its schema", parameter=path
+        )

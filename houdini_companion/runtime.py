@@ -15,6 +15,7 @@ import uuid
 from pathlib import Path
 
 from .core import CompanionError, Ledger, atomic_json
+from .registry import load_registry
 
 _runtime = None
 
@@ -33,8 +34,15 @@ class Runtime:
         self.hou = hou
         self.port = port
         self.token = secrets.token_urlsafe(32)
-        self.ledger = Ledger(home() / "artifacts" / uuid.uuid4().hex)
-        self.operations = Operations(hou, self.ledger)
+        modules = [
+            s.strip()
+            for s in os.environ.get("HOUDINI_COMPANION_PLUGINS", "").split(",")
+            if s.strip()
+        ]
+        self.registry = load_registry(modules)
+        self.wait_slots = threading.BoundedSemaphore(2)
+        self.ledger = Ledger(home() / "artifacts" / uuid.uuid4().hex, registry=self.registry)
+        self.operations = Operations(hou, self.ledger, self.registry)
         self.watchers = Watchers(hou, self.ledger)
         self.server = None
         self.stopping = False
@@ -137,13 +145,20 @@ class Runtime:
     def handle(self, payload):
         action = payload.get("action")
         if action == "schema":
-            from .schema import schemas
-
-            return {"version": 1, "parameters": schemas()}
+            return {"version": 1, **self.registry.catalog()}
         if action == "health":
             return {**self.ledger.status(), "capabilities": self.capabilities}
-        if action == "submit":
-            return self.ledger.submit(payload["request"])
+        if action in {"submit", "submit_wait"}:
+            seconds = payload.get("wait_seconds", 0)
+            if type(seconds) not in (int, float) or not 0 <= seconds <= 1:
+                raise CompanionError("INVALID_WAIT", "wait_seconds must be 0 to 1")
+            job = self.ledger.submit(payload["request"])
+            if action == "submit_wait" and seconds and self.wait_slots.acquire(blocking=False):
+                try:
+                    return self.ledger.wait(job["job_id"], seconds)
+                finally:
+                    self.wait_slots.release()
+            return job
         if action == "job":
             jid = payload["job_id"]
             try:
@@ -216,11 +231,13 @@ class Runtime:
         jid = job["job_id"]
         try:
             result = self.operations.execute(job)
-            self.ledger.finish(jid, result=result)
             try:
                 self.watchers.track(result)
             except Exception as exc:
                 self.ledger.event("awareness.error", message=str(exc))
+            # Publish completion only after observations are registered. A fast
+            # client can edit a source immediately after receiving the result.
+            self.ledger.finish(jid, result=result)
         except CompanionError as exc:
             self.ledger.finish(jid, error=exc.as_dict())
         except Exception as exc:
@@ -241,8 +258,7 @@ class Runtime:
         if event in {self.hou.hipFileEventType.BeforeLoad, self.hou.hipFileEventType.BeforeClear}:
             self.ledger.new_scene()
             self.watchers.clear()
-            self.operations.previews.clear()
-            self.operations.undo_records.clear()
+            self.operations.reset()
 
     def cleanup(self, keep=64, byte_limit=1024 * 1024 * 1024):
         # Only our current session's completed job directories are eligible.
@@ -318,10 +334,37 @@ def reload_runtime():
     import importlib
     import sys
 
-    from . import core, observation, operations, rendering, schema, watchers
+    from . import (
+        core,
+        errors,
+        observation,
+        operations,
+        plugins,
+        registry,
+        rendering,
+        schema,
+        watchers,
+    )
+    from .plugins import acceptance, execution, introspection, query, review, scene
 
     stop()
-    for module in (schema, core, observation, rendering, operations, watchers):
+    for module in (
+        errors,
+        schema,
+        registry,
+        core,
+        observation,
+        rendering,
+        plugins,
+        query,
+        scene,
+        review,
+        execution,
+        introspection,
+        acceptance,
+        operations,
+        watchers,
+    ):
         importlib.reload(module)
     module = importlib.reload(sys.modules[__name__])
     return module.start()

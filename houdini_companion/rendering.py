@@ -39,7 +39,10 @@ def image_metrics(path):
     luminance = [(0.2126 * p.redF() + 0.7152 * p.greenF() + 0.0722 * p.blueF()) for p in pixels]
     mean = sum(luminance) / len(luminance)
     variance = sum((v - mean) ** 2 for v in luminance) / len(luminance)
+    coverage = sum(p.alphaF() > 0.1 for p in pixels) / len(pixels)
     return {
+        "alpha_coverage": round(coverage, 4),
+        "coverage_method": "sampled alpha on approximately 64x64 grid",
         "width": img.width(),
         "height": img.height(),
         "mean_luminance": round(mean, 4),

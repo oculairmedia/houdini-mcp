@@ -18,7 +18,8 @@ try:
         + f"sys.path.insert(0, {root!r}) if {root!r} not in sys.path else None\n"
         + "from houdini_companion import runtime\n"
         + (
-            "hdefereval.executeInMainThreadWithResult(runtime.stop)\nimport importlib\nimportlib.reload(runtime)\n"
+            "hdefereval.executeInMainThreadWithResult(runtime.stop)\nimport importlib\n"
+            "from houdini_companion import schema\nimportlib.reload(schema)\nimportlib.reload(runtime)\n"
             if args.reload
             else ""
         )

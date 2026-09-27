@@ -53,3 +53,19 @@ def test_schema_command_does_not_require_live_houdini(capsys):
     result = json.loads(capsys.readouterr().out)
     assert result["ok"]
     assert result["result"]["operations"]["execute"] == "code"
+
+
+def test_cli_rejected_acceptance_returns_nonzero(monkeypatch, capsys):
+    from types import SimpleNamespace
+
+    from houdini_companion import cli
+
+    monkeypatch.setattr(
+        cli,
+        "Client",
+        lambda **_kwargs: SimpleNamespace(
+            run=lambda *_args: {"state": "succeeded", "result": {"accepted": False}}
+        ),
+    )
+    assert main(["submit", "review.accept", "--json", '{"path":"/obj/g/b"}', "--wait", "1"]) == 1
+    assert not json.loads(capsys.readouterr().out)["ok"]

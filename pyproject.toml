@@ -37,6 +37,7 @@ dependencies = [
 dev = [
     "pytest>=7.0.0",
     "pytest-cov>=4.0.0",
+    "pytest-benchmark>=4.0.0",
     "pytest-asyncio>=0.23.0",
     # Property-based / stateful tests (outbound WSS state-machine core,
     # execute_code safety-rail evasion fuzzing).
@@ -118,6 +119,7 @@ filterwarnings = [
 ]
 markers = [
     "integration: requires a live Houdini hrpyc server",
+    "performance: companion performance budgets and deterministic hot-path checks",
 ]
 
 # Coverage configuration

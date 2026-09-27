@@ -82,6 +82,96 @@ filenames on shells without glob expansion). Live checks use
 `scripts/verify_companion_live.py` and `scripts/verify_companion_service.py`;
 they create and clean up owned fixtures without saving the HIP.
 
+### Companion plugins and programmatic review
+
+`houdini-agent schema --live` describes the active plugin versions, operation
+owners, effects and parameter contracts. Offline `schema` lists shipped plugins.
+The built-in plugins are query, scene, review, execution, introspection and
+acceptance. Existing operation names remain compatible.
+
+| Operation | Result |
+| --- | --- |
+| `query.graph` | Bounded nodes, input connections, errors and warnings |
+| `query.parameters` | Wildcard-filtered parameter values, types and menu/range metadata |
+| `query.node_types` | Types installed in the running Houdini, filtered by category/name |
+| `query.geometry` | Bounded samples of named point attributes, with offset and truncation |
+| `query.batch` | Up to 16 read operations in one UI dispatch |
+| `review.accept` | Rendered feedback, explicit acceptance checks and an evidence hash |
+| `review.compare` | Point/primitive deltas, bounds and geometry hashes for retained reviews |
+
+For example, pass this JSON to `submit query.batch --file queries.json --wait 30`:
+
+```json
+{"queries":[
+  {"operation":"query.graph","params":{"path":"/obj/geo1","depth":2,"limit":32}},
+  {"operation":"query.geometry","params":{"path":"/obj/geo1/OUT","attributes":["P","Cd"],"limit":16}}
+]}
+```
+
+`review.accept` accepts `path`, optional `expected`, `views`, `resolution` and
+`requirements`. Requirements include `min_points`, `min_primitives`,
+`max_warnings`, `required_point_attributes` and `min_coverage`. Coverage is a
+sampled alpha estimate; it measures framing, not artistic quality. The default
+checks require nonempty geometry, complete bounded geometry checks, finite
+points, nonzero polygon areas, fresh inputs and visible images. Large geometry
+outside the diagnostic budget does not receive a complete acceptance verdict.
+Inspect `result.accepted` even when the job successfully executed. The CLI exits
+nonzero for an explicitly rejected acceptance result; asynchronous submissions
+must first be waited on. No scene file is saved by these operations.
+
+The registry approach is informed by
+[Houdini-Agent](https://github.com/Kazama-Suichiku/Houdini-Agent), and the
+discoverable command/evidence workflow by
+[Blender CLI](https://github.com/renezander030/blender-cli). This implementation
+does not vendor their code.
+
+An extension exports `plugin() -> PluginSpec` from an importable Python module.
+See `examples/companion_plugins/diagnostics.py` for a working example.
+Set `HOUDINI_COMPANION_PLUGINS=your_package.your_module` before starting the
+companion; comma-separated module names are supported. Stop/restart the idle
+companion to change its catalog. Installed packages are never auto-enabled.
+
+Plugin API v1 uses `OperationSpec(name, effect, schema, handler, description)`.
+Handlers receive `(context, job, **params)` and return a finite JSON object,
+limited to 4 MiB. The context provides `hou`, `ledger`, scene-scoped `state` and
+`call(operation, job, **params)` for composition. Store state under your plugin
+name. Call `ledger.checkpoint(job['job_id'])` between expensive phases. Handlers
+execute on Houdini's UI thread, and must not retain HOM objects on worker threads.
+Effects describe trusted code; they are not a security sandbox. Grouped queries
+reject operations with mutating effects and reject recursive grouped calls.
+
+Manifests declare plugin name/version, `api_version=1` and plugin dependencies.
+Duplicate names, operation collisions, unsupported API versions, missing/cyclic
+dependencies and unsupported schema keywords fail before the listener starts.
+The supported schema subset covers objects/properties/required fields, arrays,
+primitive types, enums, numeric bounds and length bounds. It does not support
+`$ref`, combinators or arbitrary JSON Schema keywords.
+
+### Performance regression checks
+
+Short operations reuse HTTP connections and cached session identity. A bounded
+server wait can return the completed job in the submit response, avoiding a
+polling round trip. Only two HTTP workers may wait; others remain available for
+status/cancellation. Identity failures are returned without replaying edits.
+
+The companion CI workflow runs contract tests, request-count guards and a
+`pytest-benchmark` dispatch budget on Windows and Linux. It uploads the timing
+report even on failure. CI does not pretend to test live Houdini performance.
+For that, run a read-only baseline on a stable lightweight node:
+
+```powershell
+python scripts/benchmark_companion.py --path /obj/town_cam --output baseline.json
+python scripts/benchmark_companion.py --path /obj/town_cam --baseline baseline.json --output candidate.json
+```
+
+The live gate records p50/p95, UI queue time, execution time and response bytes.
+It rejects host/platform/Houdini/target mismatches and fails if a workload's p95
+exceeds the larger of 1.35 times its baseline or baseline plus 20 ms. Keep the
+target and scene comparable between runs. Tests for the gate itself verify that
+an intentional regression fails. Run `scripts/verify_companion_plugins_live.py`
+with a frozen `.bgeo.sc` specimen to verify grouped queries, successful and
+rejected review gates, comparison and fixture cleanup.
+
 ## Architecture
 
 ```

@@ -9,7 +9,7 @@ from pathlib import Path
 
 from .client import Client
 from .core import OPERATIONS, CompanionError, atomic_json
-from .schema import schemas
+from .registry import load_registry
 
 
 def install(prefs, repository=None):
@@ -45,7 +45,8 @@ def main(argv=None):
     )
     commands = parser.add_subparsers(dest="command", required=True)
     commands.add_parser("doctor")
-    commands.add_parser("schema")
+    p = commands.add_parser("schema")
+    p.add_argument("--live", action="store_true", help="Include enabled external plugins")
     p = commands.add_parser("install")
     p.add_argument("--prefs", required=True)
     p = commands.add_parser("inspect")
@@ -59,7 +60,7 @@ def main(argv=None):
     p.add_argument("--resolution", type=int, default=640)
     p.add_argument("--wait", type=float, default=30)
     p = commands.add_parser("submit")
-    p.add_argument("operation", choices=OPERATIONS)
+    p.add_argument("operation", help="Operation from the live schema, including plugin commands")
     data = p.add_mutually_exclusive_group(required=True)
     data.add_argument("--json")
     data.add_argument("--file")
@@ -89,7 +90,7 @@ def main(argv=None):
             result = {
                 "version": 1,
                 "operations": OPERATIONS,
-                "parameters": schemas(),
+                **load_registry().catalog(),
                 "commands": [
                     "doctor",
                     "inspect",
@@ -123,6 +124,8 @@ def main(argv=None):
                 "wait_timeout": "Returns the running job; does not cancel or retry it",
                 "execute_policy": "Trusted Python in the live Houdini process",
             }
+            if args.live:
+                result = {"version": 1, **Client(pid=args.pid).call("schema")}
         else:
             client = Client(pid=args.pid)
             if args.command == "doctor":
@@ -178,6 +181,8 @@ def main(argv=None):
             "cancelled",
             "interrupted",
         }
+        if isinstance(result, dict) and isinstance(result.get("result"), dict):
+            failed = failed or result["result"].get("accepted") is False
         print(json.dumps({"ok": not failed, "result": result}, allow_nan=False))
         return 1 if failed else 0
     except (CompanionError, OSError, ValueError) as exc:

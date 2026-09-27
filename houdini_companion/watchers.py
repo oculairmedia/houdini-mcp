@@ -53,7 +53,9 @@ class Watchers:
                 self.nodes[node.sessionId()] = node
             for source in obs.get("sources", []):
                 if len(self.files) < 128:
-                    self.files[source["path"]] = self.stat(source["path"])
+                    self.files[source["path"]] = (
+                        (source["mtime_ns"], source["bytes"]) if "mtime_ns" in source else None
+                    )
 
     @staticmethod
     def stat(path):
