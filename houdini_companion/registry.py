@@ -145,7 +145,17 @@ class Registry:
         return result
 
 
-BUILTINS = ("query", "scene", "review", "execution", "introspection", "acceptance", "iteration")
+BUILTINS = (
+    "query",
+    "scene",
+    "review",
+    "execution",
+    "introspection",
+    "acceptance",
+    "iteration",
+    "animation",
+    "timeline",
+)
 
 
 def load_registry(extra_modules=()):

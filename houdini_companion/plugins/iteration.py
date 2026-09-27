@@ -238,7 +238,10 @@ def stage_sources(hou, text, files, folder):
     return expand(text)
 
 
-def stage(ctx, job, capture_id, files, benchmark_samples=0):
+def stage(ctx, job, capture_id, files=None, benchmark_samples=0, snippet=None):
+    if not files and snippet is None:
+        raise CompanionError("EMPTY_CANDIDATE", "Provide source files or an inline snippet")
+    files = files or []
     cap = get(ctx, capture_id, "capture")
     node = check(ctx, cap)
     originals = {f["path"]: f for f in cap["files"]}
@@ -257,8 +260,11 @@ def stage(ctx, job, capture_id, files, benchmark_samples=0):
         }
     check_files(list(originals.values()), "before")
     folder = directory(ctx, job)
-    signature = digest([(f["path"], f["after_sha256"]) for f in updated.values()])
-    live_snippet = cap["authoring_snippet"] + "\n// companion source revision " + signature + "\n"
+    authoring = cap["authoring_snippet"] if snippet is None else snippet
+    signature = digest(
+        {"snippet": authoring, "files": [(f["path"], f["after_sha256"]) for f in updated.values()]}
+    )
+    live_snippet = authoring + "\n// companion source revision " + signature + "\n"
     # Applied nodes depend on these revisions beyond artifact/session retention.
     source_cache = ctx.ledger.root.parent.parent / "sources" / signature
     source_cache.mkdir(exist_ok=True, parents=True)
@@ -551,9 +557,10 @@ def plugin():
             {
                 "capture_id": PATH,
                 "files": {"type": "array", "minItems": 1, "maxItems": 16, "items": source},
+                "snippet": {"type": "string", "maxLength": 256000},
                 "benchmark_samples": {"type": "integer", "minimum": 0, "maximum": 10},
             },
-            ["capture_id", "files"],
+            ["capture_id"],
         ),
         ("apply", "scene", apply, {"stage_id": PATH}, ["stage_id"]),
         ("restore", "scene", restore, {"apply_id": PATH}, ["apply_id"]),

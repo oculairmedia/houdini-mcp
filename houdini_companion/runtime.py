@@ -57,6 +57,7 @@ class Runtime:
             "python_execution": "trusted, unsandboxed",
             "cancellation": "queued immediately; running at phase boundaries",
             "artifact_root": str(self.ledger.root),
+            "bounded_job_wait": True,
         }
         self.tick_callback = self.tick
         self.hip_callback = self.hip_event
@@ -145,7 +146,7 @@ class Runtime:
     def handle(self, payload):
         action = payload.get("action")
         if action == "schema":
-            return {"version": 1, **self.registry.catalog()}
+            return {"version": 1, **self.operations.registry.catalog()}
         if action == "health":
             return {**self.ledger.status(), "capabilities": self.capabilities}
         if action in {"submit", "submit_wait"}:
@@ -159,6 +160,17 @@ class Runtime:
                 finally:
                     self.wait_slots.release()
             return job
+        if action == "wait_job":
+            seconds = payload.get("wait_seconds", 0)
+            if type(seconds) not in (int, float) or not 0 <= seconds <= 1:
+                raise CompanionError("INVALID_WAIT", "wait_seconds must be 0 to 1")
+            job = self.handle({"action": "job", "job_id": payload["job_id"]})
+            if job.get("archived") or not seconds or not self.wait_slots.acquire(blocking=False):
+                return job
+            try:
+                return self.ledger.wait(job["job_id"], seconds)
+            finally:
+                self.wait_slots.release()
         if action == "job":
             jid = payload["job_id"]
             try:
@@ -300,6 +312,8 @@ class Runtime:
                             "transaction.json",
                             "stage-transaction.json",
                             "iteration.json",
+                            "animation-transaction.json",
+                            "sequence.json",
                         }
                         and path.resolve().parent == directory.resolve()
                     ):
@@ -356,10 +370,21 @@ def reload_runtime():
         registry,
         rendering,
         schema,
+        temporal,
         transactions,
         watchers,
     )
-    from .plugins import acceptance, execution, introspection, iteration, query, review, scene
+    from .plugins import (
+        acceptance,
+        animation,
+        execution,
+        introspection,
+        iteration,
+        query,
+        review,
+        scene,
+        timeline,
+    )
 
     stop()
     for module in (
@@ -371,6 +396,7 @@ def reload_runtime():
         rendering,
         diagnostics,
         transactions,
+        temporal,
         plugins,
         query,
         scene,
@@ -379,6 +405,8 @@ def reload_runtime():
         introspection,
         acceptance,
         iteration,
+        animation,
+        timeline,
         operations,
         watchers,
     ):

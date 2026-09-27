@@ -105,11 +105,22 @@ class Client:
 
     def wait(self, job_id, timeout=30):
         deadline = time.monotonic() + timeout
+        delay = 0.05
+        job = self.call("job", job_id=job_id)
         while True:
-            job = self.call("job", job_id=job_id)
-            if job["state"] in TERMINAL or time.monotonic() >= deadline:
+            remaining = deadline - time.monotonic()
+            if job["state"] in TERMINAL or remaining <= 0:
                 return job
-            time.sleep(0.05)
+            if (self.identity or {}).get("capabilities", {}).get("bounded_job_wait"):
+                started = time.monotonic()
+                job = self.call("wait_job", job_id=job_id, wait_seconds=min(1, remaining))
+                # All wait slots may be occupied; do not spin on immediate replies.
+                if job["state"] not in TERMINAL and time.monotonic() - started < 0.05:
+                    time.sleep(min(0.05, max(0, deadline - time.monotonic())))
+            else:
+                time.sleep(min(delay, remaining))
+                delay = min(0.5, delay * 1.7)
+                job = self.call("job", job_id=job_id)
 
     def run(self, operation, params=None, timeout=30, request_id=None):
         started = time.monotonic()

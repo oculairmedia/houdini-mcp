@@ -1,0 +1,245 @@
+{
+  "date": "2026-09-27",
+  "environment": {
+    "os": "Windows",
+    "houdini": "20.5.278",
+    "external_python": "3.12.1",
+    "embedded_python": "3.11"
+  },
+  "measurement_policy": "Observed live values, not universal budgets. Cook timings exclude rendering and audits. Full review includes all three. No HIP save.",
+  "issues": [
+    30,
+    31,
+    32,
+    33,
+    34,
+    35,
+    36,
+    37
+  ],
+  "prior_art": "https://github.com/renezander030/blender-cli",
+  "discovery": {
+    "full_catalog_json_bytes": 14135,
+    "timeline_compact_json_bytes": 820
+  },
+  "transport": {
+    "elapsed_ms": 45326.05719997082,
+    "requests": {
+      "submit_wait": 1,
+      "job": 1,
+      "wait_job": 44
+    },
+    "job_id": "6e58ecc08bc6418d9171f481e8204e84",
+    "state": "succeeded"
+  },
+  "full_town": {
+    "sample_id": "6e58ecc08bc6418d9171f481e8204e84",
+    "accepted": true,
+    "reasons": [],
+    "frame_count": 31,
+    "frames": [
+      1,
+      9,
+      17,
+      25,
+      33,
+      41,
+      49,
+      57,
+      65,
+      73,
+      81,
+      89,
+      97,
+      105,
+      113,
+      121,
+      129,
+      137,
+      145,
+      153,
+      161,
+      169,
+      177,
+      185,
+      193,
+      201,
+      209,
+      217,
+      225,
+      233,
+      241
+    ],
+    "motion_detected": true,
+    "topology_stable": true,
+    "cook_ms": [
+      82.62419997481629,
+      48.05109999142587,
+      44.86009996617213,
+      45.43800000101328,
+      44.788200000766665,
+      45.90430000098422,
+      46.982500003650784,
+      47.22129995934665,
+      46.46209999918938,
+      45.850599999539554,
+      43.28680003527552,
+      45.16660002991557,
+      47.71499999333173,
+      46.50319996289909,
+      57.95709998346865,
+      44.69519999111071,
+      49.317199969664216,
+      49.840599996969104,
+      45.40280002402142,
+      49.41420000977814,
+      46.78279999643564,
+      52.58199997479096,
+      47.87809995468706,
+      46.83910001767799,
+      48.573499952908605,
+      43.9337000134401,
+      48.47949999384582,
+      48.09280001791194,
+      47.606100037228316,
+      45.52280000643805,
+      78.90510000288486
+    ],
+    "initial_geometry_access_ms": 0.06589997792616487,
+    "total_ms": 45285.77399998903,
+    "cook_median_ms": 46.982500003650784,
+    "points_per_frame": [
+      711408
+    ],
+    "polygons_per_frame": [
+      179466
+    ],
+    "all_geometry_checks_complete": true,
+    "aggregate_failures": {
+      "nonfinite_point_count": 0,
+      "zero_area_count": 0,
+      "normal_mismatch_count": 0
+    },
+    "time_restored": true
+  },
+  "street_layer": {
+    "frames": [
+      1.0,
+      49.0,
+      97.0,
+      145.0,
+      193.0,
+      240.0,
+      97.0,
+      97.5
+    ],
+    "cook_ms": [
+      2.2986000403761864,
+      1.914600026793778,
+      2.275399980135262,
+      2.110100002028048,
+      2.01489997562021,
+      2.64030002290383,
+      1.7503999988548458,
+      1.989099953789264
+    ],
+    "accepted": true,
+    "scope": "Earlier accepted 8-frame moving street layer; final stop clearance subsequently improved and checked in full-town review."
+  },
+  "scene_acceptance": {
+    "passed": true,
+    "frames_checked": 31,
+    "animated_entities": [
+      1,
+      2,
+      3,
+      104,
+      105,
+      304,
+      305
+    ],
+    "cars": 4,
+    "streetcars": 3,
+    "vehicle_aabb_overlaps": [],
+    "stop_line_clearance_failures": [],
+    "max_rigid_error": 7.62939453125e-06,
+    "static_generators_cook_delta": [
+      0,
+      0
+    ],
+    "cameras_preserved": true,
+    "frame": 61.0,
+    "fps": 24.0,
+    "controls": {
+      "copyinput": 1,
+      "cacheinput": 0,
+      "town_folder": 0,
+      "streets": 4,
+      "block_size": 55.9,
+      "road_width": 6.74,
+      "main_road_width": 11.19,
+      "sidewalk": 2.86,
+      "corner_clear": 9.92,
+      "lot_spacing": 8.99,
+      "seed": 1139,
+      "max_floors": 7
+    },
+    "scope": "sampled vehicle AABBs and six-metre intersection clearance; static rest of street unchanged"
+  },
+  "live_fixture": {
+    "passed": true,
+    "restored": true,
+    "nested_keyed_restore": true,
+    "fractional_repeated_frames": [
+      1,
+      13,
+      25,
+      13,
+      1.5
+    ],
+    "repeated_frame_checks": 1,
+    "static_rejection_reasons": [
+      {
+        "code": "NO_MOTION"
+      }
+    ],
+    "late_control_binding_accepted": true
+  },
+  "rejected_candidates": [
+    {
+      "finding": "Clockwise Houdini card winding is correct; reversing it was wrong.",
+      "normal_mismatches": 5543,
+      "candidate_applied": false
+    },
+    {
+      "finding": "New control referenced before it existed left stale VEX binding.",
+      "acceptance_reason": "NO_MOTION",
+      "fixed_by": "animation.control refreshes source identity"
+    },
+    {
+      "finding": "Park cone point normals conflicted with surface normals.",
+      "normal_mismatches": 108,
+      "fixed_by": "inline VEX capture/stage/apply"
+    }
+  ],
+  "limits": [
+    "Approach-and-stop animation, not a seamless traffic simulation.",
+    "Collision checks use sampled vehicle AABBs; no continuous collision guarantee.",
+    "Procedural deterministic SOPs; stateful simulations require cache/preroll design.",
+    "Motion assumes stable point ordering.",
+    "Scene header/inline edits are live and uncommitted by user instruction; tooling is versioned.",
+    "Full-town film preceded orphan-point-count hash hardening; updated hash passed portable test and live fixture."
+  ],
+  "portable_verification": {
+    "command": "python -X utf8 -m pytest -q",
+    "passed": 755,
+    "skipped": 12,
+    "median_ms": {
+      "test_bulk_million_point_budget": 16.2459,
+      "test_dispatch_latency_budget": 6.819,
+      "test_million_point_motion_budget": 30.9298
+    },
+    "million_point_motion_budget_ms": 250,
+    "encoding_note": "Windows default cp1252 fails four existing UTF-8 documentation tests; use -X utf8 as in CI."
+  }
+}

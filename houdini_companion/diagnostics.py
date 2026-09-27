@@ -36,6 +36,12 @@ def point_checks(buffer):
     return {"nonfinite_point_count": len(invalid), "nonfinite_points": invalid[:20].tolist()}
 
 
+def topology_hash(point_count, primitive_topology):
+    """Include unreferenced points as well as ordered primitive connectivity."""
+    data = str(point_count).encode() + b"\n" + primitive_topology
+    return hashlib.sha256(data).hexdigest()
+
+
 def semantic_hash(geo, topology):
     """Hash topology and all scalar/tuple attributes, excluding serialization metadata."""
     h = hashlib.sha256()
@@ -114,6 +120,10 @@ def audit(hou, geometry_path, checkpoint=lambda: None):
                 "topology_policy": "surface cards allowed; no watertightness or self-intersection claim",
             }
             return {
+                "topology_sha256": topology_hash(
+                    checks["points_checked"],
+                    "\n".join(checked.primStringAttribValues("audit_topology")).encode()
+                ),
                 "semantic_sha256": semantic_hash(
                     g, "\n".join(checked.primStringAttribValues("audit_topology")).encode()
                 ),

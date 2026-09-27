@@ -87,7 +87,9 @@ def fingerprint(hou, node, limit=256):
                     evaluated = str(evaluated)
                 if isinstance(evaluated, float) and not math.isfinite(evaluated):
                     evaluated = str(evaluated)
-                parameters.append((parm.name(), raw, evaluated))
+                parameters.append(
+                    (parm.name(), raw, evaluated, [k.asCode() for k in parm.keyframes()])
+                )
                 if isinstance(evaluated, str):
                     files.update(source_files(hou, evaluated))
                     if len(evaluated) < 2048 and "\n" not in evaluated:
@@ -142,6 +144,7 @@ def fingerprint(hou, node, limit=256):
             pending.append(parent)
     state = {
         "frame": hou.frame(),
+        "fps": hou.fps(),
         "take": hou.takes.currentTake().name(),
         "nodes": sorted(nodes, key=lambda n: n["id"]),
         "files": sorted(files.values(), key=lambda f: f["path"]),
@@ -151,6 +154,7 @@ def fingerprint(hou, node, limit=256):
         "node_id": node.sessionId(),
         "path": node.path(),
         "frame": state["frame"],
+        "fps": state["fps"],
         "dependencies": len(nodes),
         "dependency_paths": [n["path"] for n in nodes],
         "sources": state["files"],

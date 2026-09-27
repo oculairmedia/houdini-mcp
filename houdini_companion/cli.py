@@ -7,9 +7,28 @@ import json
 import sys
 from pathlib import Path
 
+from .agent_output import compact_job, scoped_catalog
 from .client import Client
 from .core import OPERATIONS, CompanionError, atomic_json
 from .registry import load_registry
+from .temporal import frame_list
+
+
+class AgentParser(argparse.ArgumentParser):
+    def error(self, message):
+        raise CompanionError("ARGUMENT", message)
+
+
+def recipe(path, inline=None):
+    return json.loads(
+        (
+            sys.stdin.read()
+            if path == "-"
+            else Path(path).read_text(encoding="utf-8-sig")
+            if path
+            else inline
+        ).lstrip("\ufeff")
+    )
 
 
 def install(prefs, repository=None):
@@ -38,8 +57,8 @@ def install(prefs, repository=None):
     }
 
 
-def main(argv=None):
-    parser = argparse.ArgumentParser(prog="houdini-agent", description=__doc__)
+def _main(argv=None):
+    parser = AgentParser(prog="houdini-agent", description=__doc__)
     parser.add_argument(
         "--pid", type=int, help="Choose a Houdini process when multiple sessions exist"
     )
@@ -47,6 +66,10 @@ def main(argv=None):
     commands.add_parser("doctor")
     p = commands.add_parser("schema")
     p.add_argument("--live", action="store_true", help="Include enabled external plugins")
+    p.add_argument(
+        "--command", dest="operation_filter", help="Filter operation names, e.g. timeline.*"
+    )
+    p.add_argument("--effects", help="Comma-separated effects, e.g. read,artifacts")
     p = commands.add_parser("install")
     p.add_argument("--prefs", required=True)
     p = commands.add_parser("inspect")
@@ -81,7 +104,29 @@ def main(argv=None):
     p.add_argument("job_id")
     p.add_argument("name")
     p.add_argument("--out", required=True)
+    p = commands.add_parser("time")
+    p.add_argument("action", choices=["inspect", "sample"])
+    p.add_argument("--path")
+    p.add_argument(
+        "--frames", help="Comma list or inclusive start:end:step; fractional frames allowed"
+    )
+    p.add_argument("--views", default="persp")
+    p.add_argument("--resolution", type=int, default=480)
+    p.add_argument("--require-motion", action="store_true")
+    p.add_argument("--max-cook-ms", type=float)
+    p.add_argument("--max-speed", type=float)
+    p.add_argument("--wait", type=float, default=0)
+    p = commands.add_parser("animate")
+    data = p.add_mutually_exclusive_group(required=True)
+    data.add_argument("--file", help="Keyframe recipe JSON; use - for stdin")
+    data.add_argument("--json")
+    p.add_argument("--request-id")
+    p.add_argument("--wait", type=float, default=0)
     commands.add_parser("stop")
+    for command in commands.choices.values():
+        command.add_argument(
+            "--compact", action="store_true", help="Return a bounded agent receipt"
+        )
     args = parser.parse_args(argv)
     try:
         if args.command == "install":
@@ -126,6 +171,11 @@ def main(argv=None):
             }
             if args.live:
                 result = {"version": 1, **Client(pid=args.pid).call("schema")}
+            if args.operation_filter or args.effects or args.compact:
+                result = {
+                    "version": 1,
+                    **scoped_catalog(result, args.operation_filter, args.effects, args.compact),
+                }
         else:
             client = Client(pid=args.pid)
             if args.command == "doctor":
@@ -145,10 +195,28 @@ def main(argv=None):
                     args.wait,
                 )
             elif args.command == "submit":
-                params = json.loads(
-                    Path(args.file).read_text(encoding="utf-8") if args.file else args.json
-                )
+                params = recipe(args.file, args.json)
                 result = client.run(args.operation, params, args.wait, args.request_id)
+            elif args.command == "animate":
+                result = client.run(
+                    "animation.keyframes", recipe(args.file, args.json), args.wait, args.request_id
+                )
+            elif args.command == "time":
+                params = {"path": args.path} if args.path else {}
+                if args.action == "sample":
+                    if not args.path or not args.frames:
+                        raise CompanionError("ARGUMENT", "time sample requires --path and --frames")
+                    params.update(
+                        frames=frame_list(args.frames),
+                        views=args.views.split(","),
+                        resolution=args.resolution,
+                        require_motion=args.require_motion,
+                    )
+                    if args.max_cook_ms is not None:
+                        params["max_cook_ms"] = args.max_cook_ms
+                    if args.max_speed is not None:
+                        params["max_speed"] = args.max_speed
+                result = client.run("timeline." + args.action, params, args.wait)
             elif args.command == "run":
                 result = client.run(
                     "execute",
@@ -182,7 +250,14 @@ def main(argv=None):
             "interrupted",
         }
         if isinstance(result, dict) and isinstance(result.get("result"), dict):
-            failed = failed or result["result"].get("accepted") is False
+            body = result["result"]
+            failed = (
+                failed
+                or body.get("accepted") is False
+                or body.get("accepted_basic_checks") is False
+            )
+        if args.compact and args.command != "schema":
+            result = compact_job(result)
         print(json.dumps({"ok": not failed, "result": result}, allow_nan=False))
         return 1 if failed else 0
     except (CompanionError, OSError, ValueError) as exc:
@@ -192,6 +267,14 @@ def main(argv=None):
             else {"code": type(exc).__name__, "message": str(exc)}
         )
         print(json.dumps({"ok": False, "error": error}))
+        return 1
+
+
+def main(argv=None):
+    try:
+        return _main(argv)
+    except CompanionError as exc:
+        print(json.dumps({"ok": False, "error": exc.as_dict()}))
         return 1
 
 

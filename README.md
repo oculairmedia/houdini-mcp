@@ -152,7 +152,87 @@ The supported schema subset covers objects/properties/required fields, arrays,
 primitive types, enums, numeric bounds and length bounds. It does not support
 `$ref`, combinators or arbitrary JSON Schema keywords.
 
-### Performance regression checks
+### Agent-native animation and temporal review
+
+The CLI supports scoped discovery and small job receipts, inspired by
+[Blender CLI](https://github.com/renezander030/blender-cli). The same registered
+operations are available through MCP; Houdini semantics stay in embedded plugins.
+
+```powershell
+houdini-agent schema --live --command 'animation.*' --compact
+houdini-agent schema --command 'timeline.*' --effects read,artifacts --compact
+houdini-agent time inspect --path /obj/town/road_generator/ANIMATE_STREET_LIFE --wait 1 --compact
+houdini-agent animate --file keys.json --wait 1 --compact
+houdini-agent time sample --path /obj/town/OUT --frames 1,49,97,145,193,240,97.5,1 --require-motion --max-cook-ms 500 --resolution 640 --wait 1 --compact
+houdini-agent job wait JOB_ID --timeout 30 --compact
+```
+
+`submit --file -` and `animate --file -` accept JSON on stdin. Recipes accept
+UTF-8 with or without a BOM. Argument errors and rejected acceptance gates return
+JSON and a nonzero exit status. A running receipt gives the exact continuation
+command; a timeout does not cancel or resubmit it. New runtimes provide bounded
+waits for existing jobs, with two wait slots; older runtimes use polling backoff.
+
+An animation recipe addresses scalar numeric parameters by absolute path:
+
+```json
+{"tracks":[{"path":"/obj/geo1/transform1/tx",
+ "keys":[{"frame":1,"value":0},{"frame":49,"value":4}],
+ "interpolation":"linear"}],
+ "expected":{"/obj/geo1/transform1":"token from timeline.inspect"}}
+```
+
+`animation.control` adds a new named float control to an explicitly guarded node.
+It refreshes wrangle source identity when needed so a previously missing `chf()`
+binding does not remain constant. `animation.keyframes` validates the entire
+batch before mutation, replaces channels using batched HOM keyframes, and returns
+an `animation_id`. Use `animation.restore` with that ID to restore original keys,
+extrapolation and constant values while rejecting subsequent channel/FPS edits.
+Journals retain original channel code for manual recovery; restore handles are
+session scoped. The contract supports linear/constant scalar channels and does
+not change timeline ranges, FPS, or save the HIP. This is handled rollback,
+not crash-atomic recovery.
+
+`timeline.sample` evaluates 2–32 explicit frames through `geometryAtFrame`,
+including fractional frames and repeat samples. It records frame, seconds, FPS,
+cook counts, initial access cost, per-frame timings, complete polygon diagnostics,
+position changes and ordered topology hashes. Camera framing spans the sampled
+bounds and stays fixed; an optional `focus` box supports detailed reviews. Output
+includes a labeled contact sheet, individual images, frozen geometry and a hashed
+`sequence.json` manifest. The original time/playback state is restored on handled
+failure or cancellation. Artist cameras are not edited.
+
+Acceptance can require motion, stable topology, a geometry-evaluation budget and
+maximum sampled average point speed. Repeated frames test determinism. Motion
+comparison assumes stable point ordering; it does not prove continuous collision
+freedom or semantic point identity. Known DOP/solver inputs are rejected: arbitrary
+stateful simulations need an explicit cache/preroll contract. The render budget
+is 32 million pixels. Render, audit and geometry timing are distinct; a cached
+access is not presented as forced regeneration.
+
+Inline VEX candidates can also use the iteration workflow: pass `snippet` to
+`iteration.stage` instead of `files`. Existing quoted-include restrictions and
+guarded apply/restore remain in effect. No scene-specific Python is needed for
+channel authoring, inline VEX review, or multi-frame acceptance.
+
+Run the live disposable acceptance fixture with:
+
+```powershell
+python scripts/verify_companion_temporal.py
+```
+
+It exercises moving and static controls, fractional/repeated frames, channel
+restoration, and a wrangle compiled before its new control exists. Portable CI
+tests cover output bounds, schema filtering, frame limits, failure restoration,
+long-job request counts, and a 250 ms million-point motion-analysis budget.
+
+[Recorded temporal iteration evidence](benchmarks/live-temporal-2026-09-27.json)
+includes a 31-frame town review, seven moving vehicles, complete geometry checks,
+static-generator cook counts, transport request counts and rejected candidates.
+The scene motion approaches and stops before intersections; it is not a seamless
+traffic simulation. Scene edits remain live until the artist saves the HIP.
+
+### Iteration performance regression checks
 
 The iteration plugin replaces custom staging scripts for built-in attribute
 wrangles with trusted VEX and quoted source includes. A typical capture request
