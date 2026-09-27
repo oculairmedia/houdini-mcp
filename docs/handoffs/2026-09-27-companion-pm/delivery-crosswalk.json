@@ -1,0 +1,629 @@
+{
+  "date": "2026-09-27",
+  "epic": "houdini-mcp-vzp",
+  "backfill_bead": "houdini-mcp-vzp.14",
+  "authority": "Beads/Dolt",
+  "huly": {
+    "status": "deprecated",
+    "reason": "Explicit user correction 2026-09-27; no active Huly mapping required."
+  },
+  "policy": "Record completed work against existing backfill bead and epic. No duplicate implementation issues or closure of broader overlapping work.",
+  "milestones": [
+    {
+      "commit": "10cfd38baa68c612fd8882e9db1fd74c04aeba61",
+      "url": "https://github.com/oculairmedia/houdini-mcp/commit/10cfd38baa68c612fd8882e9db1fd74c04aeba61",
+      "title": "Persistent companion foundation",
+      "status": "implemented_pushed",
+      "tracking_record": "houdini-mcp-vzp.14",
+      "github_issues": []
+    },
+    {
+      "commit": "71ff0e7f3d27df1add0e6f6c22c03b20c4fbe108",
+      "url": "https://github.com/oculairmedia/houdini-mcp/commit/71ff0e7f3d27df1add0e6f6c22c03b20c4fbe108",
+      "title": "Plugin API and programmatic review/performance gates",
+      "status": "implemented_pushed",
+      "tracking_record": "houdini-mcp-vzp.14",
+      "github_issues": []
+    },
+    {
+      "commit": "1f9153b2d2abc000b9e4bd362c195a043b18be24",
+      "url": "https://github.com/oculairmedia/houdini-mcp/commit/1f9153b2d2abc000b9e4bd362c195a043b18be24",
+      "title": "Guarded iteration and native audits",
+      "status": "implemented_pushed",
+      "tracking_record": "houdini-mcp-vzp.14",
+      "github_issues": [
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        26,
+        27,
+        28,
+        29
+      ]
+    },
+    {
+      "commit": "4efb7232859378d106e7375075cb366d25b5078c",
+      "url": "https://github.com/oculairmedia/houdini-mcp/commit/4efb7232859378d106e7375075cb366d25b5078c",
+      "title": "Agent-native CLI and temporal animation",
+      "status": "implemented_pushed",
+      "tracking_record": "houdini-mcp-vzp.14",
+      "github_issues": [
+        30,
+        31,
+        32,
+        33,
+        34,
+        35,
+        36,
+        37
+      ]
+    }
+  ],
+  "github_issues": [
+    {
+      "number": 19,
+      "title": "feature: reusable guarded capture, stage, compare, apply and restore",
+      "url": "https://github.com/oculairmedia/houdini-mcp/issues/19",
+      "github_state": "CLOSED",
+      "implementation_status": "implemented_pushed",
+      "beads_record": "houdini-mcp-vzp.14",
+      "commit": "1f9153b2d2abc000b9e4bd362c195a043b18be24",
+      "evidence": "https://github.com/oculairmedia/houdini-mcp/blob/1f9153b2d2abc000b9e4bd362c195a043b18be24/benchmarks/live-iteration-2026-09-27.json",
+      "partial_overlap_beads": [
+        {
+          "id": "houdini-mcp-vzp.2",
+          "status": "open",
+          "closure_implied": false
+        },
+        {
+          "id": "houdini-mcp-vzp.4",
+          "status": "open",
+          "closure_implied": false
+        }
+      ]
+    },
+    {
+      "number": 20,
+      "title": "bug: scene and external source edits lack coordinated recovery",
+      "url": "https://github.com/oculairmedia/houdini-mcp/issues/20",
+      "github_state": "CLOSED",
+      "implementation_status": "implemented_pushed",
+      "beads_record": "houdini-mcp-vzp.14",
+      "commit": "1f9153b2d2abc000b9e4bd362c195a043b18be24",
+      "evidence": "https://github.com/oculairmedia/houdini-mcp/blob/1f9153b2d2abc000b9e4bd362c195a043b18be24/benchmarks/live-iteration-2026-09-27.json",
+      "partial_overlap_beads": [
+        {
+          "id": "houdini-mcp-vzp.2",
+          "status": "open",
+          "closure_implied": false
+        }
+      ]
+    },
+    {
+      "number": 21,
+      "title": "bug: geometry validation is slow and incomplete on large scenes",
+      "url": "https://github.com/oculairmedia/houdini-mcp/issues/21",
+      "github_state": "CLOSED",
+      "implementation_status": "implemented_pushed",
+      "beads_record": "houdini-mcp-vzp.14",
+      "commit": "1f9153b2d2abc000b9e4bd362c195a043b18be24",
+      "evidence": "https://github.com/oculairmedia/houdini-mcp/blob/1f9153b2d2abc000b9e4bd362c195a043b18be24/benchmarks/live-iteration-2026-09-27.json",
+      "partial_overlap_beads": [
+        {
+          "id": "houdini-mcp-vzp.4",
+          "status": "open",
+          "closure_implied": false
+        },
+        {
+          "id": "houdini-mcp-vzp.11",
+          "status": "open",
+          "closure_implied": false
+        }
+      ]
+    },
+    {
+      "number": 22,
+      "title": "bug: review renders hide detail and produce depth precision artifacts",
+      "url": "https://github.com/oculairmedia/houdini-mcp/issues/22",
+      "github_state": "CLOSED",
+      "implementation_status": "implemented_pushed",
+      "beads_record": "houdini-mcp-vzp.14",
+      "commit": "1f9153b2d2abc000b9e4bd362c195a043b18be24",
+      "evidence": "https://github.com/oculairmedia/houdini-mcp/blob/1f9153b2d2abc000b9e4bd362c195a043b18be24/benchmarks/live-iteration-2026-09-27.json",
+      "partial_overlap_beads": [
+        {
+          "id": "houdini-mcp-vzp.4",
+          "status": "open",
+          "closure_implied": false
+        }
+      ]
+    },
+    {
+      "number": 23,
+      "title": "bug: cached geometry access is mislabeled as cook performance",
+      "url": "https://github.com/oculairmedia/houdini-mcp/issues/23",
+      "github_state": "CLOSED",
+      "implementation_status": "implemented_pushed",
+      "beads_record": "houdini-mcp-vzp.14",
+      "commit": "1f9153b2d2abc000b9e4bd362c195a043b18be24",
+      "evidence": "https://github.com/oculairmedia/houdini-mcp/blob/1f9153b2d2abc000b9e4bd362c195a043b18be24/benchmarks/live-iteration-2026-09-27.json",
+      "partial_overlap_beads": [
+        {
+          "id": "houdini-mcp-vzp.11",
+          "status": "open",
+          "closure_implied": false
+        }
+      ]
+    },
+    {
+      "number": 24,
+      "title": "feature: repeatable live iteration acceptance and performance gates",
+      "url": "https://github.com/oculairmedia/houdini-mcp/issues/24",
+      "github_state": "CLOSED",
+      "implementation_status": "implemented_pushed",
+      "beads_record": "houdini-mcp-vzp.14",
+      "commit": "1f9153b2d2abc000b9e4bd362c195a043b18be24",
+      "evidence": "https://github.com/oculairmedia/houdini-mcp/blob/1f9153b2d2abc000b9e4bd362c195a043b18be24/benchmarks/live-iteration-2026-09-27.json",
+      "partial_overlap_beads": [
+        {
+          "id": "houdini-mcp-vzp.3",
+          "status": "open",
+          "closure_implied": false
+        },
+        {
+          "id": "houdini-mcp-vzp.11",
+          "status": "open",
+          "closure_implied": false
+        }
+      ]
+    },
+    {
+      "number": 25,
+      "title": "bug: same-subnet staging must restore sibling display and render flags",
+      "url": "https://github.com/oculairmedia/houdini-mcp/issues/25",
+      "github_state": "CLOSED",
+      "implementation_status": "implemented_pushed",
+      "beads_record": "houdini-mcp-vzp.14",
+      "commit": "1f9153b2d2abc000b9e4bd362c195a043b18be24",
+      "evidence": "https://github.com/oculairmedia/houdini-mcp/blob/1f9153b2d2abc000b9e4bd362c195a043b18be24/benchmarks/live-iteration-2026-09-27.json",
+      "partial_overlap_beads": [
+        {
+          "id": "houdini-mcp-vzp.2",
+          "status": "open",
+          "closure_implied": false
+        }
+      ]
+    },
+    {
+      "number": 26,
+      "title": "perf: reuse immutable staged VEX sources across identical retries",
+      "url": "https://github.com/oculairmedia/houdini-mcp/issues/26",
+      "github_state": "CLOSED",
+      "implementation_status": "implemented_pushed",
+      "beads_record": "houdini-mcp-vzp.14",
+      "commit": "1f9153b2d2abc000b9e4bd362c195a043b18be24",
+      "evidence": "https://github.com/oculairmedia/houdini-mcp/blob/1f9153b2d2abc000b9e4bd362c195a043b18be24/benchmarks/live-iteration-2026-09-27.json",
+      "partial_overlap_beads": [
+        {
+          "id": "houdini-mcp-vzp.11",
+          "status": "open",
+          "closure_implied": false
+        }
+      ]
+    },
+    {
+      "number": 27,
+      "title": "bug: geometry equivalence must ignore bgeo serialization timestamps",
+      "url": "https://github.com/oculairmedia/houdini-mcp/issues/27",
+      "github_state": "CLOSED",
+      "implementation_status": "implemented_pushed",
+      "beads_record": "houdini-mcp-vzp.14",
+      "commit": "1f9153b2d2abc000b9e4bd362c195a043b18be24",
+      "evidence": "https://github.com/oculairmedia/houdini-mcp/blob/1f9153b2d2abc000b9e4bd362c195a043b18be24/benchmarks/live-iteration-2026-09-27.json",
+      "partial_overlap_beads": [
+        {
+          "id": "houdini-mcp-vzp.4",
+          "status": "open",
+          "closure_implied": false
+        }
+      ]
+    },
+    {
+      "number": 28,
+      "title": "perf: promote reviewed VEX revision without compiling it again on apply",
+      "url": "https://github.com/oculairmedia/houdini-mcp/issues/28",
+      "github_state": "CLOSED",
+      "implementation_status": "implemented_pushed",
+      "beads_record": "houdini-mcp-vzp.14",
+      "commit": "1f9153b2d2abc000b9e4bd362c195a043b18be24",
+      "evidence": "https://github.com/oculairmedia/houdini-mcp/blob/1f9153b2d2abc000b9e4bd362c195a043b18be24/benchmarks/live-iteration-2026-09-27.json",
+      "partial_overlap_beads": [
+        {
+          "id": "houdini-mcp-vzp.11",
+          "status": "open",
+          "closure_implied": false
+        }
+      ]
+    },
+    {
+      "number": 29,
+      "title": "Review: fit automatic cameras to projected geometry and freeze paired framing",
+      "url": "https://github.com/oculairmedia/houdini-mcp/issues/29",
+      "github_state": "CLOSED",
+      "implementation_status": "implemented_pushed",
+      "beads_record": "houdini-mcp-vzp.14",
+      "commit": "1f9153b2d2abc000b9e4bd362c195a043b18be24",
+      "evidence": "https://github.com/oculairmedia/houdini-mcp/blob/1f9153b2d2abc000b9e4bd362c195a043b18be24/benchmarks/live-iteration-2026-09-27.json",
+      "partial_overlap_beads": [
+        {
+          "id": "houdini-mcp-vzp.4",
+          "status": "open",
+          "closure_implied": false
+        }
+      ]
+    },
+    {
+      "number": 30,
+      "title": "Agent CLI: scoped schemas, stdin recipes and compact actionable job receipts",
+      "url": "https://github.com/oculairmedia/houdini-mcp/issues/30",
+      "github_state": "CLOSED",
+      "implementation_status": "implemented_pushed",
+      "beads_record": "houdini-mcp-vzp.14",
+      "commit": "4efb7232859378d106e7375075cb366d25b5078c",
+      "evidence": "https://github.com/oculairmedia/houdini-mcp/blob/4efb7232859378d106e7375075cb366d25b5078c/benchmarks/live-temporal-2026-09-27.json",
+      "partial_overlap_beads": [
+        {
+          "id": "houdini-mcp-vzp.9",
+          "status": "open",
+          "closure_implied": false
+        }
+      ]
+    },
+    {
+      "number": 31,
+      "title": "Timeline: explicit frame/FPS context and frame-safe geometry sampling",
+      "url": "https://github.com/oculairmedia/houdini-mcp/issues/31",
+      "github_state": "CLOSED",
+      "implementation_status": "implemented_pushed",
+      "beads_record": "houdini-mcp-vzp.14",
+      "commit": "4efb7232859378d106e7375075cb366d25b5078c",
+      "evidence": "https://github.com/oculairmedia/houdini-mcp/blob/4efb7232859378d106e7375075cb366d25b5078c/benchmarks/live-temporal-2026-09-27.json",
+      "partial_overlap_beads": [
+        {
+          "id": "houdini-mcp-vzp.4",
+          "status": "open",
+          "closure_implied": false
+        }
+      ]
+    },
+    {
+      "number": 32,
+      "title": "Animation: guarded typed keyframe batches with exact recovery",
+      "url": "https://github.com/oculairmedia/houdini-mcp/issues/32",
+      "github_state": "CLOSED",
+      "implementation_status": "implemented_pushed",
+      "beads_record": "houdini-mcp-vzp.14",
+      "commit": "4efb7232859378d106e7375075cb366d25b5078c",
+      "evidence": "https://github.com/oculairmedia/houdini-mcp/blob/4efb7232859378d106e7375075cb366d25b5078c/benchmarks/live-temporal-2026-09-27.json",
+      "partial_overlap_beads": [
+        {
+          "id": "houdini-mcp-vzp.2",
+          "status": "open",
+          "closure_implied": false
+        }
+      ]
+    },
+    {
+      "number": 33,
+      "title": "Temporal review: fixed-camera sequence evidence and motion acceptance gates",
+      "url": "https://github.com/oculairmedia/houdini-mcp/issues/33",
+      "github_state": "CLOSED",
+      "implementation_status": "implemented_pushed",
+      "beads_record": "houdini-mcp-vzp.14",
+      "commit": "4efb7232859378d106e7375075cb366d25b5078c",
+      "evidence": "https://github.com/oculairmedia/houdini-mcp/blob/4efb7232859378d106e7375075cb366d25b5078c/benchmarks/live-temporal-2026-09-27.json",
+      "partial_overlap_beads": [
+        {
+          "id": "houdini-mcp-vzp.3",
+          "status": "open",
+          "closure_implied": false
+        },
+        {
+          "id": "houdini-mcp-vzp.4",
+          "status": "open",
+          "closure_implied": false
+        }
+      ]
+    },
+    {
+      "number": 34,
+      "title": "Town animation wave: separate moving traffic from static generator and repair street normals",
+      "url": "https://github.com/oculairmedia/houdini-mcp/issues/34",
+      "github_state": "CLOSED",
+      "implementation_status": "live_scene_complete_source_uncommitted_hip_not_saved",
+      "beads_record": "houdini-mcp-vzp.14",
+      "commit": "4efb7232859378d106e7375075cb366d25b5078c",
+      "evidence": "https://github.com/oculairmedia/houdini-mcp/blob/4efb7232859378d106e7375075cb366d25b5078c/benchmarks/live-temporal-2026-09-27.json",
+      "partial_overlap_beads": []
+    },
+    {
+      "number": 35,
+      "title": "Animation controls: invalidate stale VEX bindings when adding referenced channels",
+      "url": "https://github.com/oculairmedia/houdini-mcp/issues/35",
+      "github_state": "CLOSED",
+      "implementation_status": "implemented_pushed",
+      "beads_record": "houdini-mcp-vzp.14",
+      "commit": "4efb7232859378d106e7375075cb366d25b5078c",
+      "evidence": "https://github.com/oculairmedia/houdini-mcp/blob/4efb7232859378d106e7375075cb366d25b5078c/benchmarks/live-temporal-2026-09-27.json",
+      "partial_overlap_beads": [
+        {
+          "id": "houdini-mcp-vzp.6",
+          "status": "open",
+          "closure_implied": false
+        }
+      ]
+    },
+    {
+      "number": 36,
+      "title": "Agent job continuation: reduce polling and keep live discovery aligned with dispatch",
+      "url": "https://github.com/oculairmedia/houdini-mcp/issues/36",
+      "github_state": "CLOSED",
+      "implementation_status": "implemented_pushed",
+      "beads_record": "houdini-mcp-vzp.14",
+      "commit": "4efb7232859378d106e7375075cb366d25b5078c",
+      "evidence": "https://github.com/oculairmedia/houdini-mcp/blob/4efb7232859378d106e7375075cb366d25b5078c/benchmarks/live-temporal-2026-09-27.json",
+      "partial_overlap_beads": [
+        {
+          "id": "houdini-mcp-vzp.9",
+          "status": "open",
+          "closure_implied": false
+        },
+        {
+          "id": "houdini-mcp-vzp.11",
+          "status": "open",
+          "closure_implied": false
+        }
+      ]
+    },
+    {
+      "number": 37,
+      "title": "Iteration: support inline VEX candidates through the guarded review workflow",
+      "url": "https://github.com/oculairmedia/houdini-mcp/issues/37",
+      "github_state": "CLOSED",
+      "implementation_status": "implemented_pushed",
+      "beads_record": "houdini-mcp-vzp.14",
+      "commit": "4efb7232859378d106e7375075cb366d25b5078c",
+      "evidence": "https://github.com/oculairmedia/houdini-mcp/blob/4efb7232859378d106e7375075cb366d25b5078c/benchmarks/live-temporal-2026-09-27.json",
+      "partial_overlap_beads": [
+        {
+          "id": "houdini-mcp-vzp.2",
+          "status": "open",
+          "closure_implied": false
+        },
+        {
+          "id": "houdini-mcp-vzp.4",
+          "status": "open",
+          "closure_implied": false
+        }
+      ]
+    }
+  ],
+  "broader_work_kept_open": [
+    {
+      "id": "houdini-mcp-vzp.9",
+      "title": "Houdini-side companion process: secure event channel, reconnect, and capability negotiation",
+      "status": "open",
+      "remaining_scope": "Outbound authenticated gateway integration, reconnect and live event acceptance remain; local HTTP does not fulfill these."
+    },
+    {
+      "id": "houdini-mcp-9sx",
+      "title": "Hosted: Houdini plugin WebSocket client",
+      "status": "open",
+      "remaining_scope": "Outbound WebSocket plugin lifecycle/integration."
+    },
+    {
+      "id": "houdini-mcp-6pt",
+      "title": "Hosted: WebSocket gateway service",
+      "status": "open",
+      "remaining_scope": "Hosted multi-session gateway."
+    },
+    {
+      "id": "houdini-mcp-vzp.3",
+      "title": "Headless/live real-Houdini acceptance harness with JSON CI report",
+      "status": "open",
+      "remaining_scope": "Complete actual-MCP save/reload/undo/preflight live harness."
+    },
+    {
+      "id": "houdini-mcp-vzp.11",
+      "title": "Structured operations telemetry, scene revisions, and performance budgets",
+      "status": "open",
+      "remaining_scope": "All-tool correlated telemetry and redacted diagnostic bundle."
+    },
+    {
+      "id": "houdini-mcp-vzp.2",
+      "title": "Transactional scene edits: undo blocks, checkpoints, rollback, and audit log",
+      "status": "open",
+      "remaining_scope": "All-mutator transaction policy and live replay acceptance."
+    },
+    {
+      "id": "houdini-mcp-028",
+      "title": "Integrate transaction manager across mutating MCP wrappers + live undo/replay acceptance",
+      "status": "open",
+      "remaining_scope": "Legacy wrapper integration/live undo/checkpoint blockers."
+    },
+    {
+      "id": "houdini-mcp-vzp.4",
+      "title": "review_scene composite observation packet (viewport + network + diff + errors)",
+      "status": "open",
+      "remaining_scope": "Full composite viewport/network/diff packet."
+    },
+    {
+      "id": "houdini-mcp-vzp.6",
+      "title": "Intent-level procedural operations that preserve editable Houdini networks",
+      "status": "open",
+      "remaining_scope": "Three production recipes with golden and live replay criteria."
+    }
+  ],
+  "followups": [
+    {
+      "id": "houdini-mcp-vzp.13",
+      "title": "Reconcile Windows Beads checkout with authoritative Dolt tracker",
+      "priority": 1,
+      "status_at_pm_publication": "open",
+      "dependencies": [
+        {
+          "id": "houdini-mcp-vzp",
+          "type": "parent-child"
+        }
+      ],
+      "acceptance_at_pm_publication": "Windows bd ready/status work without bypass, authoritative records and 62 historical export records are reconciled with no loss; supported sync workflow and version documented; duplicate mappings recorded; no scene/HIP mutation.",
+      "active_scope_note": null
+    },
+    {
+      "id": "houdini-mcp-vzp.14",
+      "title": "Backfill shipped local companion milestones and GitHub #19-37",
+      "priority": 1,
+      "status_at_pm_publication": "open",
+      "dependencies": [
+        {
+          "id": "houdini-mcp-vzp",
+          "type": "parent-child"
+        },
+        {
+          "id": "houdini-mcp-vzp.13",
+          "type": "blocks"
+        }
+      ],
+      "acceptance_at_pm_publication": "Return GitHub\u2194Beads\u2194Huly mapping, commit/evidence links and completed-vs-open status for four milestones/#19-37; list partial overlaps and unsupported claims explicitly; preserve unsaved HIP/uncommitted town files.",
+      "active_scope_note": "Huly mapping superseded by explicit user instruction; active mapping is GitHub/Beads."
+    },
+    {
+      "id": "houdini-mcp-vzp.15",
+      "title": "Verify companion restart and installation in disposable Houdini session",
+      "priority": 1,
+      "status_at_pm_publication": "open",
+      "dependencies": [
+        {
+          "id": "houdini-mcp-vzp",
+          "type": "parent-child"
+        }
+      ],
+      "acceptance_at_pm_publication": "Repeatable fresh-process live report includes version/capability catalog, session/scene identity, archived job and stale-session tests, no duplicate callback/listener or mutation replay, cleanup; no artist scene/HIP changes.",
+      "active_scope_note": null
+    },
+    {
+      "id": "houdini-mcp-vzp.16",
+      "title": "Package reviewed scene and VEX sources portably without changing artist files",
+      "priority": 1,
+      "status_at_pm_publication": "open",
+      "dependencies": [
+        {
+          "id": "houdini-mcp-vzp",
+          "type": "parent-child"
+        },
+        {
+          "id": "houdini-mcp-vzp.14",
+          "type": "blocks"
+        }
+      ],
+      "acceptance_at_pm_publication": "Manifest maps all referenced source bytes/hashes and inline snippets; isolated export/reopen/relink yields equivalent geometry and no missing references; no writes to artist HIP or canonical town files without separate approval.",
+      "active_scope_note": null
+    },
+    {
+      "id": "houdini-mcp-vzp.17",
+      "title": "Fault-inject companion recovery and artifact retention",
+      "priority": 1,
+      "status_at_pm_publication": "open",
+      "dependencies": [
+        {
+          "id": "houdini-mcp-vzp.14",
+          "type": "blocks"
+        },
+        {
+          "id": "houdini-mcp-vzp",
+          "type": "parent-child"
+        }
+      ],
+      "acceptance_at_pm_publication": "Fault-injection fixtures expose partial recovery and uncertain outcomes, preserve referenced sources, enforce bounded retention with active/restore exceptions, verify no duplicate mutation after reconnect; no false crash-atomic claims.",
+      "active_scope_note": null
+    },
+    {
+      "id": "houdini-mcp-vzp.18",
+      "title": "Review staged animated candidate before live apply",
+      "priority": 2,
+      "status_at_pm_publication": "open",
+      "dependencies": [
+        {
+          "id": "houdini-mcp-vzp",
+          "type": "parent-child"
+        }
+      ],
+      "acceptance_at_pm_publication": "Disposable live-Houdini fixture proves staged multiframe review, stable camera and time restoration, stale/rejected inputs leave target unchanged, accepted exact revision applies once and produces aligned geometry/image evidence; unit contracts pass.",
+      "active_scope_note": null
+    },
+    {
+      "id": "houdini-mcp-vzp.19",
+      "title": "Exercise external plugin lifecycle in fresh Houdini process",
+      "priority": 2,
+      "status_at_pm_publication": "open",
+      "dependencies": [
+        {
+          "id": "houdini-mcp-vzp.15",
+          "type": "blocks"
+        },
+        {
+          "id": "houdini-mcp-vzp",
+          "type": "parent-child"
+        }
+      ],
+      "acceptance_at_pm_publication": "Opt-in disposable live test and portable registry tests verify load/failure/reload without leaked listeners, versioned catalog parity and clear error results; no artist session restart.",
+      "active_scope_note": null
+    },
+    {
+      "id": "houdini-mcp-vzp.20",
+      "title": "Benchmark complete agent edit-review cycle with truthful phase timings",
+      "priority": 2,
+      "status_at_pm_publication": "open",
+      "dependencies": [
+        {
+          "id": "houdini-mcp-vzp",
+          "type": "parent-child"
+        },
+        {
+          "id": "houdini-mcp-vzp.11",
+          "type": "related"
+        }
+      ],
+      "acceptance_at_pm_publication": "Repeatable fixture emits bounded per-phase JSON and comparable warm/cold metrics, links artifacts to job/revision, flags meaningful regressions and distinguishes whole-town from street-only measurements.",
+      "active_scope_note": null
+    },
+    {
+      "id": "houdini-mcp-vzp.21",
+      "title": "Scope artist-directed next animated town wave",
+      "priority": 2,
+      "status_at_pm_publication": "open",
+      "dependencies": [
+        {
+          "id": "houdini-mcp-vzp.18",
+          "type": "related"
+        },
+        {
+          "id": "houdini-mcp-vzp",
+          "type": "parent-child"
+        }
+      ],
+      "acceptance_at_pm_publication": "Artist chooses scope and authorizes reversible fixture/live workflow; accepted frames have visual and semantic motion evidence, separation/clearance and time restoration checks, and no unauthorized save/commit of town sources.",
+      "active_scope_note": null
+    }
+  ],
+  "scene_note": "GitHub #34 initial winding hypothesis was rejected; clockwise cards were correct. Tree normal fixes and bounded stop motion passed. HIP and town source persistence are separate.",
+  "previously_closed_core": {
+    "id": "houdini-mcp-xu4",
+    "status": "closed",
+    "reason": "Already closed upstream for sans-I/O core PR #14; unchanged here."
+  }
+}

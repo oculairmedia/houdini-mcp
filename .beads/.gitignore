@@ -26,8 +26,33 @@ beads.left.meta.json
 beads.right.jsonl
 beads.right.meta.json
 
-# Keep JSONL exports and config (source of truth for git)
+# Keep historical JSONL exports and shared configuration in Git
 !issues.jsonl
 !interactions.jsonl
 !metadata.json
 !config.json
+
+# Added by bd (missing required patterns)
+.env
+redirect
+last-touched
+bd.sock.startlock
+.sync.lock
+export-state/
+export-state.json
+last_pull
+dolt/
+embeddeddolt/
+proxieddb/
+ephemeral.sqlite3
+dolt-server.pid
+dolt-server.log
+dolt-server.lock
+dolt-server.port
+dolt-server.activity
+daemon.*
+*.lock
+*.corrupt.backup/
+.beads-credential-key
+proxied_server_client_info.json
+backup/

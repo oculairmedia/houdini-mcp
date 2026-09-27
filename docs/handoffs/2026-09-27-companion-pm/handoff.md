@@ -1,5 +1,14 @@
 # PM takeover: persistent Houdini companion
 
+**Update after PM publication and Windows reconciliation:** Huly is deprecated by
+explicit user instruction. Active tracking is Beads/Dolt. The Linux PM published
+`houdini-mcp-vzp.13`–`.21` to Dolt `origin/main`; Windows now has a working clone.
+Read [Windows operation](../../windows-beads.md),
+[reconciliation evidence](windows-reconciliation.json) and the
+[GitHub↔Beads delivery mapping](delivery-crosswalk.json) before the dated snapshot
+below. Earlier Huly requirements and statements that the beads are unpublished
+are superseded. Linux PM Beads is 1.2.2; verified Windows Beads is 1.1.0.
+
 **Remote PM entry point:** This committed packet is self-contained for project-management intake. Windows paths below identify the artist's host; they are not expected to exist on the PM's machine. Use the adjacent JSON exports and benchmark records for reconciliation. Live renders and the unsaved scene remain on the artist's host. The implementation snapshot is commit `4efb723`; this packet is a later documentation-only commit.
 
 - [Proposed Beads intake](beads-intake.json)

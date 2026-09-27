@@ -1,24 +1,23 @@
 <!-- VIBESYNC:project-info:START -->
 # Agent Instructions
 
-## Huly Integration
+## Project Tracking
 
 - **Project Code**: `HDMCP`
 - **Project Name**: Houdini MCP Server
 - **Letta Agent ID**: `agent-0a0867cb-09a4-4a9d-ad97-884773b7cbbc`
 
-## Workflow Instructions
-
-1. **Before starting work**: Search Huly for related issues using `huly-mcp` with project code `HDMCP`
-2. **Issue references**: All issues for this project use the format `HDMCP-XXX` (e.g., `HDMCP-123`)
-3. **On task completion**: Report to this project's Letta agent via `matrix-identity-bridge` using `talk_to_agent`
-4. **Memory**: Store important discoveries in Graphiti with `graphiti-mcp_add_memory`
+Huly is deprecated (user confirmed 2026-09-27). Use the authoritative Beads/Dolt
+tracker for active issues. Historical `huly:HDMCP-*` labels are provenance only;
+do not require Huly access, create new Huly mappings or block work on Huly sync.
+Read the assigned Bead and its dependencies before implementation. Store important
+discoveries in Graphiti when its connector is available.
 <!-- VIBESYNC:project-info:END -->
 
 <!-- VIBESYNC:reporting-hierarchy:START -->
 ## PM Agent Communication
 
-**Project PM Agent:** `Huly - Houdini MCP Server` (agent-0a0867cb-09a4-4a9d-ad97-884773b7cbbc)
+**Project PM Agent:** Letta agent `agent-0a0867cb-09a4-4a9d-ad97-884773b7cbbc` (legacy display name `Huly - Houdini MCP Server`; Huly tracking is deprecated).
 
 ### Reporting Hierarchy
 
@@ -68,41 +67,26 @@ You (Developer Agent - experienced)
 <!-- VIBESYNC:beads-instructions:START -->
 ## Beads Issue Tracking
 
-This project uses **bd** (beads) for issue tracking. Run `bd onboard` to get started.
-
-### Quick Reference
-
-```bash
-bd ready              # Find available work
-bd show <id>          # View issue details
-bd update <id> --status in_progress  # Claim work
-bd close <id>         # Complete work
-bd sync               # Sync with git
-```
-
-### Beads Sync Flow (Hybrid System)
-
-Beads uses a **hybrid sync** approach for reliability:
-
-#### Automatic Sync (Real-time)
-
-- `bd create`, `bd update`, `bd close` write to SQLite DB
-- File watcher detects DB changes automatically
-- Syncs to Huly within ~30-60 seconds
-
-#### Git Persistence (`bd sync`)
-
-- `bd sync` exports to JSONL and commits to git
-- Required for cross-machine persistence
-- Run before ending session to ensure changes are saved
-
-### Best Practice
+The authoritative tracker is Dolt. Read [Windows Beads operation](docs/windows-beads.md)
+for the verified Windows setup, non-destructive bootstrap and reconciliation evidence.
+The checked-in 62-record `.beads/issues.jsonl` is historical; preserve it and do not
+import it over the remote. Do not run `bd init` to replace a missing database.
 
 ```bash
-bd create "New task"   # Auto-syncs to Huly
-bd close some-issue    # Auto-syncs to Huly
-bd sync                # Git backup (recommended before session end)
+bd dolt pull                         # Fetch issue history (separate from Git code)
+bd ready                             # Ready work, respecting recorded dependencies
+bd show <id>                         # Read acceptance criteria
+bd update <id> --status in_progress
+bd comments add <id> -f evidence.txt
+bd close <id>                        # Only when its full acceptance criteria pass
+bd dolt commit -m "Describe changes" # If effective auto-commit left pending writes
+bd dolt push                         # Publish issue data; Git push is separate
 ```
+
+Windows Beads 1.1.0 does not support `bd sync`. Inspect `bd context`, the effective
+commit policy and `bd vc status`; do not assume Linux uses the same backend mode.
+Do not force-push divergent tracker history. Huly is deprecated; retained Huly
+labels are historical provenance and are not part of the active sync workflow.
 <!-- VIBESYNC:beads-instructions:END -->
 
 <!-- VIBESYNC:bookstack-docs:START -->
@@ -129,7 +113,7 @@ bd sync                # Git backup (recommended before session end)
 4. **PUSH TO REMOTE** - This is MANDATORY:
    ```bash
    git pull --rebase
-   bd sync
+   bd dolt push  # Commit pending issue changes first if needed
    git push
    git status  # MUST show "up to date with origin"
    ```
@@ -175,7 +159,7 @@ proposing structural or language changes:
 
 # Agent Instructions
 
-This project uses **bd** (beads) for issue tracking. Run `bd onboard` to get started.
+This project uses **bd** with an authoritative Dolt tracker. See [Windows Beads operation](docs/windows-beads.md) before setup or recovery.
 
 ## Quick Reference
 
@@ -184,7 +168,8 @@ bd ready              # Find available work
 bd show <id>          # View issue details
 bd update <id> --status in_progress  # Claim work
 bd close <id>         # Complete work
-bd sync               # Sync with git
+bd dolt pull          # Fetch issue data
+bd dolt push          # Publish issue data separately from Git
 ```
 
 ## Landing the Plane (Session Completion)
@@ -199,7 +184,7 @@ bd sync               # Sync with git
 4. **PUSH TO REMOTE** - This is MANDATORY:
    ```bash
    git pull --rebase
-   bd sync
+   bd dolt push  # Commit pending issue changes first if needed
    git push
    git status  # MUST show "up to date with origin"
    ```
