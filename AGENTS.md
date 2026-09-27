@@ -83,7 +83,8 @@ bd dolt commit -m "Describe changes" # If effective auto-commit left pending wri
 bd dolt push                         # Publish issue data; Git push is separate
 ```
 
-Windows Beads 1.1.0 does not support `bd sync`. Inspect `bd context`, the effective
+Windows Beads is pinned to 1.2.2 to match the Linux PM; use the Dolt commands above
+for synchronization. Inspect `bd context`, the effective
 commit policy and `bd vc status`; do not assume Linux uses the same backend mode.
 Do not force-push divergent tracker history. Huly is deprecated; retained Huly
 labels are historical provenance and are not part of the active sync workflow.

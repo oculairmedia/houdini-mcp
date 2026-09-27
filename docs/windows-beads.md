@@ -12,7 +12,7 @@ work around a missing local database.
 
 | Setting | Value |
 | --- | --- |
-| Windows Beads | 1.1.0, build `8e4e59d39`, `C:\Users\Emmanuel\bin\bd.exe` |
+| Windows Beads | 1.2.2, build `6c124203e`, `C:\Users\Emmanuel\bin\bd.exe` |
 | Linux PM Beads (PM-reported) | 1.2.2, build `6c124203e` |
 | Windows Dolt CLI | 2.0.1, `C:\Program Files\Dolt\bin\dolt.exe` |
 | Backend | Embedded Dolt, database `beads` |
@@ -27,6 +27,22 @@ Linux PM or switch its backend. The installed command help refers generally to
 SQL-server mode, but `bd context` reports this installation's embedded mode.
 `schema_version: 1` in JSON command output is not evidence of the SQL migration
 version. The Linux PM reported recovery to schema v53 separately.
+
+Windows was upgraded from 1.1.0 to 1.2.2 on 2026-09-27 to match the Linux PM.
+The official Windows archive was verified against its release SHA-256 checksum
+before installation. The old executable, full local `.beads` directory and full
+issue exports are backed up outside the repository at
+`C:\Users\Emmanuel\AppData\Local\beads\upgrades\1.2.2-1790552394248`.
+Installed `bd status` and `bd ready` passed; all 87 complete exported issue records
+were identical before and after, and the Dolt commit remained
+`5ia3kgfdbp7omk7rc74pe50jsqr0e0n5`. The historical export and both artist town
+headers retained their hashes. The reconciliation JSON preserves the original
+1.1.0 measurements rather than rewriting that historical evidence.
+
+Do not independently upgrade this shared tracker to 1.3: its schema migration
+requires coordination with the Linux PM. See the upstream
+[upgrade guide](https://github.com/gastownhall/beads/blob/main/docs/getting-started/upgrading.md)
+and [installed release](https://github.com/gastownhall/beads/releases/tag/v1.2.2).
 
 Bootstrap rewrites local `.beads/metadata.json` to select Dolt and may update
 `.beads/last-touched`. Those host-generated changes are intentionally excluded
@@ -78,10 +94,9 @@ updated the remote. Resolve divergent history normally; do not force-push or
 flatten it. Keep Git code commits and Dolt issue commits separate. Always pass an
 issue ID: commands that use a last-touched default can target the wrong record.
 
-`bd sync` is unsupported in Windows Beads 1.1.0. Do not assume a SQLite watcher
-automatically updates Huly. Huly, BookStack and Matrix/Letta require their own
-available connectors and explicit verification. Beads labels alone do not prove
-the current state of the Huly issue.
+Use `bd dolt pull` and `bd dolt push` for tracker synchronization. Huly is
+deprecated; retained Huly labels are historical provenance only. BookStack and
+Matrix/Letta require their own available connectors and explicit verification.
 
 `bd sql` is not implemented in this installed embedded mode. Prefer supported
 Beads commands. The installed Dolt CLI can inspect the database directly when no
