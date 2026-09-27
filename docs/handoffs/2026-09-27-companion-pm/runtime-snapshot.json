@@ -1,0 +1,1030 @@
+{
+  "captured_date": "2026-09-27",
+  "head": "4efb7232859378d106e7375075cb366d25b5078c",
+  "branch": "spike/persistent-houdini-companion",
+  "health": {
+    "version": 1,
+    "session_id": "5180bafc38524ee6ac827871de525c5e",
+    "scene_id": "bd23d988c56e4b6f928301150db2571d",
+    "accepting": true,
+    "active_job": null,
+    "queued": 0,
+    "ui_last_tick_age_s": 0.009,
+    "operations": {
+      "inspect": "read",
+      "validate_observation": "read",
+      "batch": "scene",
+      "undo": "scene",
+      "snapshot": "artifacts",
+      "preview": "preview",
+      "apply_preview": "scene",
+      "discard_preview": "preview",
+      "execute": "code",
+      "query.batch": "read",
+      "query.graph": "read",
+      "query.parameters": "read",
+      "query.node_types": "read",
+      "query.geometry": "read",
+      "review.accept": "artifacts",
+      "review.compare": "read",
+      "iteration.capture": "artifacts",
+      "iteration.stage": "preview",
+      "iteration.apply": "scene",
+      "iteration.restore": "scene",
+      "iteration.release": "preview",
+      "animation.control": "scene",
+      "animation.keyframes": "scene",
+      "animation.restore": "scene",
+      "timeline.inspect": "read",
+      "timeline.sample": "artifacts"
+    },
+    "capabilities": {
+      "houdini": "20.5.278",
+      "pid": 314936,
+      "ui": true,
+      "transport": "hwebserver-http",
+      "renderer": "opengl",
+      "preview_scope": "built-in leaf SOP, frozen direct inputs, quoted source includes",
+      "python_execution": "trusted, unsandboxed",
+      "cancellation": "queued immediately; running at phase boundaries",
+      "artifact_root": "C:\\Users\\Emmanuel\\.houdini-companion\\artifacts\\c2cc4d2118ce4b0890939a518f49afa3",
+      "bounded_job_wait": true
+    }
+  },
+  "schema": {
+    "version": 1,
+    "plugin_api": 1,
+    "plugins": [
+      {
+        "name": "query",
+        "version": "0.2.0",
+        "requires": []
+      },
+      {
+        "name": "scene",
+        "version": "0.2.0",
+        "requires": [
+          "query"
+        ]
+      },
+      {
+        "name": "review",
+        "version": "0.2.0",
+        "requires": [
+          "scene"
+        ]
+      },
+      {
+        "name": "execution",
+        "version": "0.2.0",
+        "requires": [
+          "review"
+        ]
+      },
+      {
+        "name": "introspection",
+        "version": "0.2.0",
+        "requires": [
+          "query"
+        ]
+      },
+      {
+        "name": "acceptance",
+        "version": "0.2.0",
+        "requires": [
+          "review"
+        ]
+      },
+      {
+        "name": "iteration",
+        "version": "0.3.0",
+        "requires": [
+          "review"
+        ]
+      },
+      {
+        "name": "animation",
+        "version": "0.1.0",
+        "requires": []
+      },
+      {
+        "name": "timeline",
+        "version": "0.1.0",
+        "requires": [
+          "review"
+        ]
+      }
+    ],
+    "operations": {
+      "inspect": "read",
+      "validate_observation": "read",
+      "batch": "scene",
+      "undo": "scene",
+      "snapshot": "artifacts",
+      "preview": "preview",
+      "apply_preview": "scene",
+      "discard_preview": "preview",
+      "execute": "code",
+      "query.batch": "read",
+      "query.graph": "read",
+      "query.parameters": "read",
+      "query.node_types": "read",
+      "query.geometry": "read",
+      "review.accept": "artifacts",
+      "review.compare": "read",
+      "iteration.capture": "artifacts",
+      "iteration.stage": "preview",
+      "iteration.apply": "scene",
+      "iteration.restore": "scene",
+      "iteration.release": "preview",
+      "animation.control": "scene",
+      "animation.keyframes": "scene",
+      "animation.restore": "scene",
+      "timeline.inspect": "read",
+      "timeline.sample": "artifacts"
+    },
+    "parameters": {
+      "inspect": {
+        "type": "object",
+        "properties": {
+          "path": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "geometry": {
+            "type": "boolean"
+          }
+        },
+        "required": [],
+        "additionalProperties": false
+      },
+      "validate_observation": {
+        "type": "object",
+        "properties": {
+          "path": {
+            "type": "string"
+          },
+          "expected": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "path",
+          "expected"
+        ],
+        "additionalProperties": false
+      },
+      "batch": {
+        "type": "object",
+        "properties": {
+          "actions": {
+            "type": "array"
+          },
+          "expected": {
+            "type": "object"
+          },
+          "output": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "feedback": {
+            "type": "boolean"
+          },
+          "views": {
+            "type": "array"
+          },
+          "resolution": {
+            "type": "integer",
+            "minimum": 128,
+            "maximum": 1600
+          }
+        },
+        "required": [
+          "actions"
+        ],
+        "additionalProperties": false
+      },
+      "undo": {
+        "type": "object",
+        "properties": {
+          "job_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "job_id"
+        ],
+        "additionalProperties": false
+      },
+      "snapshot": {
+        "type": "object",
+        "properties": {
+          "path": {
+            "type": "string"
+          },
+          "expected": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "focus": {
+            "type": [
+              "array",
+              "null"
+            ]
+          },
+          "views": {
+            "type": "array"
+          },
+          "resolution": {
+            "type": "integer",
+            "minimum": 128,
+            "maximum": 1600
+          }
+        },
+        "required": [
+          "path"
+        ],
+        "additionalProperties": false
+      },
+      "preview": {
+        "type": "object",
+        "properties": {
+          "path": {
+            "type": "string"
+          },
+          "expected": {
+            "type": "string"
+          },
+          "values": {
+            "type": "object"
+          },
+          "views": {
+            "type": "array"
+          },
+          "resolution": {
+            "type": "integer",
+            "minimum": 128,
+            "maximum": 1600
+          }
+        },
+        "required": [
+          "path",
+          "expected",
+          "values"
+        ],
+        "additionalProperties": false
+      },
+      "apply_preview": {
+        "type": "object",
+        "properties": {
+          "preview_id": {
+            "type": "string"
+          },
+          "feedback": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "preview_id"
+        ],
+        "additionalProperties": false
+      },
+      "discard_preview": {
+        "type": "object",
+        "properties": {
+          "preview_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "preview_id"
+        ],
+        "additionalProperties": false
+      },
+      "execute": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "maxLength": 256000
+          },
+          "expected": {
+            "type": "object"
+          },
+          "output": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "feedback": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "code"
+        ],
+        "additionalProperties": false
+      },
+      "query.batch": {
+        "type": "object",
+        "properties": {
+          "queries": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 16,
+            "items": {
+              "type": "object",
+              "properties": {
+                "operation": {
+                  "type": "string"
+                },
+                "params": {
+                  "type": "object"
+                }
+              },
+              "required": [
+                "operation",
+                "params"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": [
+          "queries"
+        ],
+        "additionalProperties": false
+      },
+      "query.graph": {
+        "type": "object",
+        "properties": {
+          "path": {
+            "type": "string",
+            "minLength": 1
+          },
+          "depth": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 8
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 256
+          }
+        },
+        "required": [],
+        "additionalProperties": false
+      },
+      "query.parameters": {
+        "type": "object",
+        "properties": {
+          "path": {
+            "type": "string",
+            "minLength": 1
+          },
+          "pattern": {
+            "type": "string"
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 256
+          }
+        },
+        "required": [
+          "path"
+        ],
+        "additionalProperties": false
+      },
+      "query.node_types": {
+        "type": "object",
+        "properties": {
+          "category": {
+            "type": "string"
+          },
+          "pattern": {
+            "type": "string"
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 256
+          }
+        },
+        "required": [],
+        "additionalProperties": false
+      },
+      "query.geometry": {
+        "type": "object",
+        "properties": {
+          "path": {
+            "type": "string",
+            "minLength": 1
+          },
+          "offset": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 50000
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 256
+          },
+          "attributes": {
+            "type": "array",
+            "maxItems": 16,
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "path"
+        ],
+        "additionalProperties": false
+      },
+      "review.accept": {
+        "type": "object",
+        "properties": {
+          "path": {
+            "type": "string",
+            "minLength": 1
+          },
+          "expected": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "requirements": {
+            "type": "object",
+            "properties": {
+              "min_points": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "min_primitives": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "max_warnings": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "required_point_attributes": {
+                "type": "array",
+                "maxItems": 32,
+                "items": {
+                  "type": "string"
+                }
+              },
+              "min_coverage": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1
+              }
+            },
+            "required": [],
+            "additionalProperties": false
+          },
+          "views": {
+            "type": "array"
+          },
+          "resolution": {
+            "type": "integer",
+            "minimum": 128,
+            "maximum": 1600
+          }
+        },
+        "required": [
+          "path"
+        ],
+        "additionalProperties": false
+      },
+      "review.compare": {
+        "type": "object",
+        "properties": {
+          "before_job": {
+            "type": "string",
+            "minLength": 1
+          },
+          "after_job": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "before_job",
+          "after_job"
+        ],
+        "additionalProperties": false
+      },
+      "iteration.capture": {
+        "type": "object",
+        "properties": {
+          "path": {
+            "type": "string",
+            "minLength": 1
+          },
+          "guards": {
+            "type": "array",
+            "maxItems": 16,
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "cameras": {
+            "type": "array",
+            "maxItems": 6,
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "views": {
+            "type": "array",
+            "maxItems": 6,
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "resolution": {
+            "type": "integer",
+            "minimum": 128,
+            "maximum": 1600
+          }
+        },
+        "required": [
+          "path"
+        ],
+        "additionalProperties": false
+      },
+      "iteration.stage": {
+        "type": "object",
+        "properties": {
+          "capture_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "files": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 16,
+            "items": {
+              "type": "object",
+              "properties": {
+                "path": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "content": {
+                  "type": "string",
+                  "maxLength": 1048576
+                }
+              },
+              "required": [
+                "path",
+                "content"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "snippet": {
+            "type": "string",
+            "maxLength": 256000
+          },
+          "benchmark_samples": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 10
+          }
+        },
+        "required": [
+          "capture_id"
+        ],
+        "additionalProperties": false
+      },
+      "iteration.apply": {
+        "type": "object",
+        "properties": {
+          "stage_id": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "stage_id"
+        ],
+        "additionalProperties": false
+      },
+      "iteration.restore": {
+        "type": "object",
+        "properties": {
+          "apply_id": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "apply_id"
+        ],
+        "additionalProperties": false
+      },
+      "iteration.release": {
+        "type": "object",
+        "properties": {},
+        "required": [],
+        "additionalProperties": false
+      },
+      "animation.control": {
+        "type": "object",
+        "properties": {
+          "path": {
+            "type": "string",
+            "minLength": 1
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1
+          },
+          "label": {
+            "type": "string",
+            "minLength": 1
+          },
+          "expected": {
+            "type": "string",
+            "minLength": 1
+          },
+          "value": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "path",
+          "name",
+          "label",
+          "expected"
+        ],
+        "additionalProperties": false
+      },
+      "animation.keyframes": {
+        "type": "object",
+        "properties": {
+          "tracks": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "path": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "keys": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "frame": {
+                        "type": "number"
+                      },
+                      "value": {
+                        "type": "number"
+                      }
+                    },
+                    "required": [
+                      "frame",
+                      "value"
+                    ],
+                    "additionalProperties": false
+                  },
+                  "minItems": 1,
+                  "maxItems": 256
+                },
+                "interpolation": {
+                  "type": "string",
+                  "enum": [
+                    "linear",
+                    "constant"
+                  ]
+                }
+              },
+              "required": [
+                "path",
+                "keys"
+              ],
+              "additionalProperties": false
+            },
+            "minItems": 1,
+            "maxItems": 64
+          },
+          "expected": {
+            "type": "object"
+          }
+        },
+        "required": [
+          "tracks",
+          "expected"
+        ],
+        "additionalProperties": false
+      },
+      "animation.restore": {
+        "type": "object",
+        "properties": {
+          "animation_id": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "animation_id"
+        ],
+        "additionalProperties": false
+      },
+      "timeline.inspect": {
+        "type": "object",
+        "properties": {
+          "path": {
+            "type": "string",
+            "minLength": 1
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 128
+          }
+        },
+        "required": [],
+        "additionalProperties": false
+      },
+      "timeline.sample": {
+        "type": "object",
+        "properties": {
+          "focus": {
+            "type": "array",
+            "minItems": 2,
+            "maxItems": 2,
+            "items": {
+              "type": "array",
+              "minItems": 3,
+              "maxItems": 3,
+              "items": {
+                "type": "number"
+              }
+            }
+          },
+          "path": {
+            "type": "string",
+            "minLength": 1
+          },
+          "frames": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            },
+            "minItems": 2,
+            "maxItems": 32
+          },
+          "expected": {
+            "type": "string",
+            "minLength": 1
+          },
+          "views": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "front",
+                "back",
+                "left",
+                "right",
+                "top",
+                "persp"
+              ]
+            },
+            "minItems": 1,
+            "maxItems": 3
+          },
+          "resolution": {
+            "type": "integer",
+            "minimum": 128,
+            "maximum": 1200
+          },
+          "require_motion": {
+            "type": "boolean"
+          },
+          "require_stable_topology": {
+            "type": "boolean"
+          },
+          "max_cook_ms": {
+            "type": "number",
+            "minimum": 0
+          },
+          "max_speed": {
+            "type": "number",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "path",
+          "frames"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "contracts": {
+      "inspect": {
+        "plugin": "query",
+        "effect": "read",
+        "description": "inspect",
+        "execution": "houdini_ui_thread",
+        "result": "JSON object"
+      },
+      "validate_observation": {
+        "plugin": "query",
+        "effect": "read",
+        "description": "validate_observation",
+        "execution": "houdini_ui_thread",
+        "result": "JSON object"
+      },
+      "batch": {
+        "plugin": "scene",
+        "effect": "scene",
+        "description": "batch",
+        "execution": "houdini_ui_thread",
+        "result": "JSON object"
+      },
+      "undo": {
+        "plugin": "scene",
+        "effect": "scene",
+        "description": "undo",
+        "execution": "houdini_ui_thread",
+        "result": "JSON object"
+      },
+      "snapshot": {
+        "plugin": "review",
+        "effect": "artifacts",
+        "description": "snapshot",
+        "execution": "houdini_ui_thread",
+        "result": "JSON object"
+      },
+      "preview": {
+        "plugin": "review",
+        "effect": "preview",
+        "description": "Preview a leaf SOP with frozen direct inputs and immutable quoted includes.\n\n        References beyond direct inputs and parameter animation are rejected. This\n        intentionally excludes arbitrary subnet/simulation/asset cloning.\n        ",
+        "execution": "houdini_ui_thread",
+        "result": "JSON object"
+      },
+      "apply_preview": {
+        "plugin": "review",
+        "effect": "scene",
+        "description": "apply_preview",
+        "execution": "houdini_ui_thread",
+        "result": "JSON object"
+      },
+      "discard_preview": {
+        "plugin": "review",
+        "effect": "preview",
+        "description": "discard_preview",
+        "execution": "houdini_ui_thread",
+        "result": "JSON object"
+      },
+      "execute": {
+        "plugin": "execution",
+        "effect": "code",
+        "description": "execute",
+        "execution": "houdini_ui_thread",
+        "result": "JSON object"
+      },
+      "query.batch": {
+        "plugin": "introspection",
+        "effect": "read",
+        "description": "Execute up to 16 read operations in one UI dispatch; no recursive batches.",
+        "execution": "houdini_ui_thread",
+        "result": "JSON object"
+      },
+      "query.graph": {
+        "plugin": "introspection",
+        "effect": "read",
+        "description": "Bounded nodes and connections without full parameter fingerprints.",
+        "execution": "houdini_ui_thread",
+        "result": "JSON object"
+      },
+      "query.parameters": {
+        "plugin": "introspection",
+        "effect": "read",
+        "description": "Filter parameter metadata and values.",
+        "execution": "houdini_ui_thread",
+        "result": "JSON object"
+      },
+      "query.node_types": {
+        "plugin": "introspection",
+        "effect": "read",
+        "description": "Discover installed node types.",
+        "execution": "houdini_ui_thread",
+        "result": "JSON object"
+      },
+      "query.geometry": {
+        "plugin": "introspection",
+        "effect": "read",
+        "description": "Sample bounded point attributes from cooked geometry.",
+        "execution": "houdini_ui_thread",
+        "result": "JSON object"
+      },
+      "review.accept": {
+        "plugin": "acceptance",
+        "effect": "artifacts",
+        "description": "Render and evaluate hash-bound evidence against declared requirements.",
+        "execution": "houdini_ui_thread",
+        "result": "JSON object"
+      },
+      "review.compare": {
+        "plugin": "acceptance",
+        "effect": "read",
+        "description": "Compare two retained geometry review results.",
+        "execution": "houdini_ui_thread",
+        "result": "JSON object"
+      },
+      "iteration.capture": {
+        "plugin": "iteration",
+        "effect": "artifacts",
+        "description": "capture",
+        "execution": "houdini_ui_thread",
+        "result": "JSON object"
+      },
+      "iteration.stage": {
+        "plugin": "iteration",
+        "effect": "preview",
+        "description": "stage",
+        "execution": "houdini_ui_thread",
+        "result": "JSON object"
+      },
+      "iteration.apply": {
+        "plugin": "iteration",
+        "effect": "scene",
+        "description": "apply",
+        "execution": "houdini_ui_thread",
+        "result": "JSON object"
+      },
+      "iteration.restore": {
+        "plugin": "iteration",
+        "effect": "scene",
+        "description": "restore",
+        "execution": "houdini_ui_thread",
+        "result": "JSON object"
+      },
+      "iteration.release": {
+        "plugin": "iteration",
+        "effect": "preview",
+        "description": "release",
+        "execution": "houdini_ui_thread",
+        "result": "JSON object"
+      },
+      "animation.control": {
+        "plugin": "animation",
+        "effect": "scene",
+        "description": "Add a named scalar animation control; never replace existing parameters.",
+        "execution": "houdini_ui_thread",
+        "result": "JSON object"
+      },
+      "animation.keyframes": {
+        "plugin": "animation",
+        "effect": "scene",
+        "description": "Replace numeric channels with explicit linear/constant keys; no range/FPS changes.",
+        "execution": "houdini_ui_thread",
+        "result": "JSON object"
+      },
+      "animation.restore": {
+        "plugin": "animation",
+        "effect": "scene",
+        "description": "Restore a prior keyframe batch only if its channels are still unchanged.",
+        "execution": "houdini_ui_thread",
+        "result": "JSON object"
+      },
+      "timeline.inspect": {
+        "plugin": "timeline",
+        "effect": "read",
+        "description": "Current time context and bounded animated channel readback.",
+        "execution": "houdini_ui_thread",
+        "result": "JSON object"
+      },
+      "timeline.sample": {
+        "plugin": "timeline",
+        "effect": "artifacts",
+        "description": "Audit and render explicit frames with fixed framing and a temporal acceptance receipt.",
+        "execution": "houdini_ui_thread",
+        "result": "JSON object"
+      }
+    }
+  }
+}

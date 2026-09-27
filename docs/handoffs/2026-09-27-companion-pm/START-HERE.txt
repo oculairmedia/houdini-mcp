@@ -1,0 +1,7 @@
+PM takeover request
+
+Read handoff.md completely. Reconcile the authoritative HDMCP Huly/Beads/Letta state with this packet, restore the supported tracking workflow, and map all shipped work to completed records before creating follow-ups. Use beads-intake.json as a proposed intake, not an automatic import or a set of actual Beads IDs.
+
+Return a GitHub-to-Beads-to-Huly crosswalk, prioritized dependency graph, owners and next ready task. Preserve the artist live scene and local uncommitted source. Do not save/restart/rebuild it as part of project-management intake.
+
+The packet contains no companion authentication descriptor. Local Windows paths are host-specific; all tooling commits and benchmark evidence are also on the pushed GitHub spike branch.
