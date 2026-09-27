@@ -51,7 +51,27 @@ def image_metrics(path):
     }
 
 
-def render_snapshot(hou, geometry_path, directory, views, resolution, checkpoint, focus=None):
+def projected_window(position_buffer, inverse_camera, tan_half_fov, margin=0.8):
+    """Fit actual point projections; bbox corners overestimate sparse tall scenes."""
+    import numpy as np
+
+    points = np.frombuffer(position_buffer, dtype=np.float32).reshape(-1, 3)
+    matrix = np.asarray(inverse_camera).reshape(4, 4)
+    camera = points @ matrix[:3, :3] + matrix[3, :3]
+    if not len(points) or not np.isfinite(camera).all() or np.any(camera[:, 2] >= 0):
+        raise CompanionError(
+            "INVALID_FRAMING", "Automatic framing requires finite points ahead of camera"
+        )
+    projected = camera[:, :2] / (-camera[:, 2, None] * tan_half_fov)
+    lo, hi = projected.min(axis=0), projected.max(axis=0)
+    center = (lo + hi) / 4  # Camera window offsets use full aperture units.
+    size = max(float(max(hi - lo)) / (2 * margin), 0.01)
+    return float(center[0]), float(center[1]), size
+
+
+def render_snapshot(
+    hou, geometry_path, directory, views, resolution, checkpoint, focus=None, cameras=None
+):
     directions = {
         "front": (0, 0.1, -1),
         "back": (0, 0.1, 1),
@@ -60,11 +80,12 @@ def render_snapshot(hou, geometry_path, directory, views, resolution, checkpoint
         "top": (0.001, 1, 0.001),
         "persp": (1, 0.65, -1),
     }
-    if not views or len(views) > 6 or any(v not in directions for v in views):
+    cameras = cameras or {}
+    if not views or len(views) > 6 or any(v not in directions and v not in cameras for v in views):
         raise CompanionError("INVALID_VIEWS", "Choose 1–6 front/back/left/right/top/persp views")
     if not isinstance(resolution, int) or not 128 <= resolution <= 1600:
         raise CompanionError("INVALID_RESOLUTION", "Resolution must be 128–1600")
-    created, images = [], []
+    created, images, recipes = [], [], {}
     started = time.perf_counter()
 
     def own(parent, kind):
@@ -82,6 +103,11 @@ def render_snapshot(hou, geometry_path, directory, views, resolution, checkpoint
             file.parm("file").set(str(geometry_path))
             file.setDisplayFlag(True)
             file.setRenderFlag(True)
+            material = own(hou.node("/mat"), "principledshader::2.0")
+            material.parmTuple("basecolor").set((1, 1, 1))
+            material.parm("reflect").set(0)
+            material.parm("rough").set(1)
+            geo.parm("shop_materialpath").set(material.path())
             bounds = file.geometry().boundingBox()
             lo, hi = bounds.minvec(), bounds.maxvec()
             if focus is not None:
@@ -104,6 +130,19 @@ def render_snapshot(hou, geometry_path, directory, views, resolution, checkpoint
             radius = max(0.01, (hi - lo).length() / 2)
             cam = own(obj, "cam")
             cam.parm("focal").set(35)
+            camera_defaults = {
+                p: cam.parm(p).eval()
+                for p in (
+                    "focal",
+                    "aperture",
+                    "projection",
+                    "aspect",
+                    "winx",
+                    "winy",
+                    "winsizex",
+                    "winsizey",
+                )
+            }
             lights = []
             for rot, intensity in [
                 ((-40, 35, 0), 0.9),
@@ -127,7 +166,8 @@ def render_snapshot(hou, geometry_path, directory, views, resolution, checkpoint
                 "res2": resolution,
                 "shadingmode": 6,
                 "hqlighting": 1,
-                "shadows": 1,
+                # Neutral geometry inspection must not bury errors in shadow maps.
+                "shadows": 0,
                 "ambocclusion": 0,
                 "backfacecull": 1,
                 "usegeocolor": 1,
@@ -141,7 +181,10 @@ def render_snapshot(hou, geometry_path, directory, views, resolution, checkpoint
                     rop.parm(name).set(value)
             for view in views:
                 checkpoint()
-                direction = hou.Vector3(directions[view]).normalized()
+                for name, value in camera_defaults.items():
+                    cam.parm(name).set(value)
+                rop.parm("res2").set(resolution)
+                direction = hou.Vector3(directions.get(view, directions["persp"])).normalized()
                 forward = -direction
                 right = forward.cross(hou.Vector3((0, 1, 0))).normalized()
                 up = right.cross(forward).normalized()
@@ -164,14 +207,48 @@ def render_snapshot(hou, geometry_path, directory, views, resolution, checkpoint
                         0,
                     )
                 )
-                cam.parm("near").set(max(0.001, radius * 0.001))
-                cam.parm("far").set(max(100, radius * 20))
+                cam.parm("near").set(max(0.01, radius * 0.002))
+                cam.parm("far").set(max(10, (eye - hou.Vector3(target)).length() + radius * 4))
+                if view in cameras:
+                    recipe = cameras[view]
+                    cam.setWorldTransform(hou.Matrix4(recipe["transform"]))
+                    for name, value in recipe["parms"].items():
+                        cam.parm(name).set(value)
+                    rop.parm("res2").set(max(1, round(resolution / recipe.get("output_aspect", 1))))
+                elif focus is None:
+                    winx, winy, size = projected_window(
+                        file.geometry().pointFloatAttribValuesAsString("P"),
+                        cam.worldTransform().inverted().asTuple(),
+                        tan_half_fov,
+                    )
+                    cam.parm("winx").set(winx)
+                    cam.parm("winy").set(winy)
+                    cam.parm("winsizex").set(size)
+                    cam.parm("winsizey").set(size)
+                cam.parm("resx").set(resolution)
+                cam.parm("resy").set(rop.parm("res2").eval())
+                recipes[view] = {
+                    "transform": list(cam.worldTransform().asTuple()),
+                    "parms": {p: cam.parm(p).eval() for p in camera_defaults},
+                    "output_aspect": resolution / rop.parm("res2").eval(),
+                }
                 path = Path(directory) / f"{view}.png"
                 rop.parm("picture").set(str(path))
                 rop.render()
                 if rop.errors():
                     raise CompanionError("RENDER_FAILED", "; ".join(rop.errors()))
-                images.append({**artifact(path, "image"), "view": view, **image_metrics(path)})
+                images.append(
+                    {
+                        **artifact(path, "image"),
+                        "view": view,
+                        **image_metrics(path),
+                        "camera": {
+                            "transform": list(cam.worldTransform().asTuple()),
+                            "near": cam.parm("near").eval(),
+                            "far": cam.parm("far").eval(),
+                        },
+                    }
+                )
         finally:
             for node in reversed(created):
                 try:
@@ -180,9 +257,11 @@ def render_snapshot(hou, geometry_path, directory, views, resolution, checkpoint
                     pass
     return {
         "images": images,
+        "camera_recipes": recipes,
         "render_ms": round((time.perf_counter() - started) * 1000, 2),
         "coordinates": "SOP local space",
         "renderer": "opengl",
         "backface_culling": True,
         "focus": focus,
+        "lighting_profile": "neutral diffuse diagnostic, specular and shadows disabled",
     }

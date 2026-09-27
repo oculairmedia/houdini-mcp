@@ -63,7 +63,13 @@ def test_builtin_contracts_reject_nested_invalid_review_requirements():
         )
     with pytest.raises(CompanionError):
         registry.validate("query.geometry", {"path": "/obj/geo/box", "limit": 1000000})
-    assert len(registry.effects()) == 16
+    assert set(registry.effects()) >= {
+        "iteration.capture",
+        "iteration.stage",
+        "iteration.apply",
+        "iteration.restore",
+        "iteration.release",
+    }
 
 
 def test_plugin_result_must_be_json_object():

@@ -38,6 +38,7 @@ dev = [
     "pytest>=7.0.0",
     "pytest-cov>=4.0.0",
     "pytest-benchmark>=4.0.0",
+    "numpy>=1.24",
     "pytest-asyncio>=0.23.0",
     # Property-based / stateful tests (outbound WSS state-machine core,
     # execute_code safety-rail evasion fuzzing).

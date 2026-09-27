@@ -25,8 +25,12 @@ class Handlers(BasePlugin):
         before = check_expected(hou, node, expected) if expected else fingerprint(hou, node)
         self.ledger.phase(job["job_id"], "cooking")
         started = time.perf_counter()
-        frozen = node.geometry().freeze()
+        count_before = node.cookCount()
+        geometry = node.geometry()
         cook_ms = round((time.perf_counter() - started) * 1000, 2)
+        count_after = node.cookCount()
+        freeze_started = time.perf_counter()
+        frozen = geometry.freeze()
         if node.errors():
             raise CompanionError("COOK_FAILED", "; ".join(node.errors()))
         if fingerprint(hou, node)["token"] != before["token"]:
@@ -35,12 +39,23 @@ class Handlers(BasePlugin):
         directory.mkdir(parents=True, exist_ok=True)
         geometry_path = directory / "geometry.bgeo.sc"
         frozen.saveToFile(str(geometry_path))
+        freeze_ms = (time.perf_counter() - freeze_started) * 1000
         self.ledger.phase(job["job_id"], "diagnostics")
+        diagnostics_started = time.perf_counter()
+        summary = geometry_summary(frozen)
+        diagnostics_ms = (time.perf_counter() - diagnostics_started) * 1000
         result = {
             "observation": before,
-            "geometry": geometry_summary(frozen),
+            "geometry": summary,
             "geometry_artifact": artifact(geometry_path, "geometry"),
             "cook_ms": cook_ms,
+            "timings": {
+                "geometry_access_ms": cook_ms,
+                "freeze_ms": freeze_ms,
+                "diagnostics_ms": diagnostics_ms,
+                "cook_count_delta": count_after - count_before,
+                "classification": "cook_ms is a compatibility alias for geometry access; may reuse cache",
+            },
             "errors": list(node.errors()),
             "warnings": list(node.warnings()),
         }
@@ -58,6 +73,8 @@ class Handlers(BasePlugin):
             )
         )
         result["stale"] = fingerprint(hou, node)["token"] != before["token"]
+        result["timings"]["render_ms"] = result["render_ms"]
+        result["timings"]["total_ms"] = (time.perf_counter() - started) * 1000
         checks = result["geometry"]["checks"]
         result["verification"] = (
             "issues_found"

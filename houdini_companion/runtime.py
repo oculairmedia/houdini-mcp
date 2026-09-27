@@ -266,6 +266,12 @@ class Runtime:
         directories = []
         with self.ledger.lock:
             protected = set(self.operations.previews) | {self.ledger.active}
+            protected.update(self.operations.state.get("iteration", {}))
+            protected.update(
+                v["source_cache"]
+                for v in self.operations.state.get("iteration", {}).values()
+                if "source_cache" in v
+            )
             protected.update(
                 j for j, v in self.ledger.jobs.items() if v["state"] in {"queued", "running"}
             )
@@ -288,7 +294,13 @@ class Runtime:
                 for path in directory.iterdir():
                     if (
                         path.is_file()
-                        and path.name != "job.json"
+                        and path.name
+                        not in {
+                            "job.json",
+                            "transaction.json",
+                            "stage-transaction.json",
+                            "iteration.json",
+                        }
                         and path.resolve().parent == directory.resolve()
                     ):
                         path.unlink()
@@ -336,6 +348,7 @@ def reload_runtime():
 
     from . import (
         core,
+        diagnostics,
         errors,
         observation,
         operations,
@@ -343,9 +356,10 @@ def reload_runtime():
         registry,
         rendering,
         schema,
+        transactions,
         watchers,
     )
-    from .plugins import acceptance, execution, introspection, query, review, scene
+    from .plugins import acceptance, execution, introspection, iteration, query, review, scene
 
     stop()
     for module in (
@@ -355,6 +369,8 @@ def reload_runtime():
         core,
         observation,
         rendering,
+        diagnostics,
+        transactions,
         plugins,
         query,
         scene,
@@ -362,6 +378,7 @@ def reload_runtime():
         execution,
         introspection,
         acceptance,
+        iteration,
         operations,
         watchers,
     ):

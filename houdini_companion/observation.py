@@ -113,6 +113,16 @@ def fingerprint(hou, node, limit=256):
             ],
             "child_count": len(current.children()),
         }
+        manifest = current.userData("houdini_companion_sources")
+        if manifest:
+            import json
+
+            try:
+                authoring = json.loads(manifest)["authoring_snippet"]
+            except (ValueError, KeyError, TypeError) as exc:
+                raise CompanionError("INVALID_SOURCE_MANIFEST", current.path()) from exc
+            record["companion_sources"] = manifest
+            files.update(source_files(hou, authoring))
         if hasattr(current, "isBypassed"):
             record["bypass"] = current.isBypassed()
         nodes.append(record)

@@ -86,8 +86,8 @@ they create and clean up owned fixtures without saving the HIP.
 
 `houdini-agent schema --live` describes the active plugin versions, operation
 owners, effects and parameter contracts. Offline `schema` lists shipped plugins.
-The built-in plugins are query, scene, review, execution, introspection and
-acceptance. Existing operation names remain compatible.
+The built-in plugins are query, scene, review, execution, introspection,
+acceptance and iteration. Existing operation names remain compatible.
 
 | Operation | Result |
 | --- | --- |
@@ -98,6 +98,11 @@ acceptance. Existing operation names remain compatible.
 | `query.batch` | Up to 16 read operations in one UI dispatch |
 | `review.accept` | Rendered feedback, explicit acceptance checks and an evidence hash |
 | `review.compare` | Point/primitive deltas, bounds and geometry hashes for retained reviews |
+| `iteration.capture` | Frozen inputs, source backups, guard tokens and baseline images |
+| `iteration.stage` | Candidate evaluation, complete polygon checks and paired images |
+| `iteration.apply` | Guarded source/parameter application with a recovery journal |
+| `iteration.restore` | Guarded restoration of original source bytes and node snippet |
+| `iteration.release` | Release session handles when their restore capability is no longer needed |
 
 For example, pass this JSON to `submit query.batch --file queries.json --wait 30`:
 
@@ -148,6 +153,95 @@ primitive types, enums, numeric bounds and length bounds. It does not support
 `$ref`, combinators or arbitrary JSON Schema keywords.
 
 ### Performance regression checks
+
+The iteration plugin replaces custom staging scripts for built-in attribute
+wrangles with trusted VEX and quoted source includes. A typical capture request
+passed to `houdini-agent submit iteration.capture --file capture.json --wait 30` is:
+
+```json
+{"path":"/obj/town/building_generator/GENERATE_BUILDINGS",
+ "guards":["/obj/town/TOWN_CONTROLS"],
+ "cameras":["/obj/town_oblique_cam","/obj/town_street_cam"],
+ "views":["camera_0","camera_1","persp"],"resolution":1100}
+```
+
+Pass its `capture_id` to `iteration.stage`, with `files` containing objects with
+`path` (a captured include) and `content` (candidate UTF-8 text). Optional
+`benchmark_samples: 3` measures regeneration by changing an input detail
+attribute on a disposable input. Stage temporarily binds the target node to
+frozen inputs and candidate code, then restores its original code and connections
+before returning. This keeps relative channel references and Houdini's node-local
+compiled cache, avoiding a second compile on apply. A `stage-transaction.json`
+records recovery state before preview. This is a transient scene mutation, not
+an isolated process or crash-atomic preview; handled failures restore state. Sibling
+display/render flags are restored, including on failure. Unchanged sources use
+content-addressed paths without timestamp churn; modified cache files fail closed.
+Apply promotes the exact compiled source revision. The runtime snippet references
+that immutable revision under `%USERPROFILE%/.houdini-companion/sources`, while
+the editable include files are updated separately. A node source manifest retains
+the editable snippet and fingerprints both sets of dependencies. Later captures
+continue to target editable includes. Persistent revisions are not artifact-pruned;
+do not delete them while a scene references them. External source edits require
+another staged apply (or explicitly restoring the authored snippet); they do not
+silently mutate an already reviewed runtime revision.
+
+Inspect `before`, `after`, `accepted_basic_checks` and the actual images. Apply
+with `{"stage_id":"..."}` to `iteration.apply`; restore with its `apply_id` to
+`iteration.restore`. These are available through the generic CLI and MCP submit
+interfaces and the live schema. A client timeout returns the running job: wait
+on that job instead of resubmitting it. No operation saves the HIP.
+
+Full iteration diagnostics use bulk point buffers and a native parallel VEX
+polygon pass. Results enumerate coverage, exclusions and bounded examples;
+checks allow surface cards and make no watertightness/self-intersection claim.
+Mesh comparison hashes ordered primitive topology and point/vertex/primitive
+tuple attributes plus detail attributes. It excludes groups and file metadata
+(bgeo embeds timestamps); array attributes currently fail explicitly. Byte
+hashes remain available for artifact integrity. NumPy comes with Houdini and is
+a development dependency for portable regression tests.
+
+Review cameras preserve captured transforms, lens settings and output aspect.
+Scale-aware clipping and an owned diffuse material remove depth stripes and
+specular glare; diagnostic lights disable shadows. Artist cameras, materials
+and lights are not edited. These are geometry review images, not final lighting.
+Automatic views fit projected geometry points, avoiding empty space caused by
+sparse tall bounding boxes. Capture freezes those camera recipes so before/after
+images use identical framing. Explicit focus boxes retain their requested bounds.
+
+Timings distinguish geometry access, freeze, diagnostics, render and total time.
+Cook counters reveal cached access. A first candidate access combines VEX
+compilation and cooking; no compiler-only timing is inferred. Invalidated
+regeneration samples exclude initial compilation and include input processing.
+
+Source writes use expected hashes, atomic replacement per file, and a durable
+`transaction.json` containing original bytes and snippets. Handled failures
+restore files and parameters; a competing edit is preserved and reported as
+`ROLLBACK_FAILED`. This is not atomic across a process crash. Journals survive
+artifact pruning for manual recovery, while automatic restore handles are
+session/scene scoped. Use `iteration.restore` for coordinated restoration;
+ordinary Houdini undo cannot restore external files. This contract does not
+discover arbitrary VEX file/network reads or undeclared scene dependencies.
+
+Live verification and a matched-asset audit performance gate:
+
+```powershell
+python scripts/verify_companion_iteration.py
+python scripts/benchmark_companion_geometry.py frozen.bgeo.sc --output audit.json
+```
+
+The fixture exercises nested-subnet capture, failed-preview recovery, candidate
+application, full audit, stable paired framing, recapture of editable sources,
+invalidated regeneration and source restoration. The audit benchmark compares
+the previous complete Python checks with native checks on the same asset and
+injects known defects. Its gate requires at least 2x speedup and a native median
+under 2 seconds. CI separately enforces a 250 ms million-point buffer budget,
+transaction failure behavior, semantic comparison and immutable-source contracts.
+
+[Recorded Windows/Houdini 20.5 measurements](benchmarks/live-iteration-2026-09-27.json)
+include four town improvement cycles: a matched-asset full audit fell from
+14.52 seconds to a 199 ms median (73x), and the final reviewed apply took
+2.00 seconds after eliminating duplicate compilation. A new VEX candidate still
+required about 51 seconds for its first compile and cook on that scene.
 
 Short operations reuse HTTP connections and cached session identity. A bounded
 server wait can return the completed job in the submit response, avoiding a
