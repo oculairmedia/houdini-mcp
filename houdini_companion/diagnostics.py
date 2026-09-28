@@ -122,7 +122,7 @@ def audit(hou, geometry_path, checkpoint=lambda: None):
             return {
                 "topology_sha256": topology_hash(
                     checks["points_checked"],
-                    "\n".join(checked.primStringAttribValues("audit_topology")).encode()
+                    "\n".join(checked.primStringAttribValues("audit_topology")).encode(),
                 ),
                 "semantic_sha256": semantic_hash(
                     g, "\n".join(checked.primStringAttribValues("audit_topology")).encode()
