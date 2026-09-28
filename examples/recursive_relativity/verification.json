@@ -1,0 +1,211 @@
+{
+  "houdini": "20.5.278",
+  "date_local": "2026-09-27",
+  "passed": true,
+  "points": 87696,
+  "primitives": 21924,
+  "generations": 6,
+  "sampled_frames": [
+    1,
+    41,
+    81,
+    121,
+    161,
+    201,
+    241
+  ],
+  "closed_solids_accepted": true,
+  "degenerate_polygons": [
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0
+  ],
+  "inward_components": [
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0
+  ],
+  "loop": {
+    "accepted": true,
+    "reasons": [],
+    "matched": 87696,
+    "born_count": 0,
+    "died_count": 0,
+    "born_ids": [],
+    "died_ids": [],
+    "max_displacement": 2.870939869592737e-06,
+    "tolerance": 0.001,
+    "scope": "Declared point identity at two sampled times; no continuous-path proof",
+    "frames": [
+      1,
+      241
+    ],
+    "state_receipt": {
+      "restored": true,
+      "failures": [],
+      "before": {
+        "time": {
+          "frame": 73.0,
+          "fps": 24.0,
+          "frame_range": [
+            1.0,
+            240.0
+          ],
+          "playback_range": [
+            1.0,
+            240.0
+          ],
+          "playing": false
+        },
+        "cameras": {}
+      },
+      "after": {
+        "time": {
+          "frame": 73.0,
+          "fps": 24.0,
+          "frame_range": [
+            1.0,
+            240.0
+          ],
+          "playback_range": [
+            1.0,
+            240.0
+          ],
+          "playing": false
+        },
+        "cameras": {}
+      }
+    }
+  },
+  "motion": {
+    "accepted": false,
+    "reasons": [
+      "POSITION_JUMP"
+    ],
+    "matched": 87696,
+    "born_count": 0,
+    "died_count": 0,
+    "born_ids": [],
+    "died_ids": [],
+    "max_displacement": 2.4988293358100226,
+    "tolerance": 0,
+    "scope": "Declared point identity at two sampled times; no continuous-path proof",
+    "frames": [
+      1,
+      41
+    ],
+    "state_receipt": {
+      "restored": true,
+      "failures": [],
+      "before": {
+        "time": {
+          "frame": 73.0,
+          "fps": 24.0,
+          "frame_range": [
+            1.0,
+            240.0
+          ],
+          "playback_range": [
+            1.0,
+            240.0
+          ],
+          "playing": false
+        },
+        "cameras": {}
+      },
+      "after": {
+        "time": {
+          "frame": 73.0,
+          "fps": 24.0,
+          "frame_range": [
+            1.0,
+            240.0
+          ],
+          "playback_range": [
+            1.0,
+            240.0
+          ],
+          "playing": false
+        },
+        "cameras": {}
+      }
+    }
+  },
+  "deterministic": true,
+  "projected_seam_errors": [
+    2.2737367544323206e-13,
+    2.2737367544323206e-13,
+    0.0,
+    2.2737367544323206e-13,
+    1.1368683772161603e-13,
+    2.2737367544323206e-13
+  ],
+  "loop_image_differences": [
+    {
+      "mean_absolute_difference": 0.0,
+      "changed_pixel_fraction": 0.0
+    },
+    {
+      "mean_absolute_difference": 2.836782861292665e-09,
+      "changed_pixel_fraction": 0.0
+    }
+  ],
+  "artist_preservation": {
+    "hip": "E:/PROJECTS/houdini building generator/recursive_courtyard_demo.hip",
+    "camera_digest": "030b8695ce3e12833416739f03da07da9ae56b7ad3a61f39624e61ad153357d9",
+    "time": {
+      "frame": 73.0,
+      "fps": 24.0,
+      "frame_range": [
+        1.0,
+        240.0
+      ],
+      "playback_range": [
+        1.0,
+        240.0
+      ],
+      "playing": false
+    },
+    "hip_saved": false,
+    "old_camera_definitions_changed": false
+  },
+  "intentional_presentation": {
+    "new_object": "/obj/recursive_relativity",
+    "viewport_camera": "/obj/relativity_views/impossible",
+    "other_view": "/obj/relativity_views/reveal"
+  },
+  "scope": "Six finite nested generations; projected illusion, not a physically connected impossible staircase. Sampled solid/orientation checks do not prove all-time self-intersection freedom.",
+  "orthographic_fix": {
+    "bead": "houdini-mcp-vzp.30",
+    "disposable_acceptance": "C:\\Users\\Emmanuel\\.houdini-companion\\workflow-orthographic-01\\report.json",
+    "passed": true
+  },
+  "review": {
+    "frames": 61,
+    "views": 2,
+    "images": 122,
+    "median_frame_ms": 852.31,
+    "browser": {
+      "passed": true,
+      "frames": 61,
+      "views": 2,
+      "checks": [
+        "image decode",
+        "synchronized scrubbing",
+        "play and pause",
+        "artist labels"
+      ],
+      "page_errors": []
+    },
+    "local_index": "C:\\Users\\Emmanuel\\.houdini-companion\\recursive-relativity\\review-1790558893463528800\\index.html"
+  },
+  "source_sha256": "ac104c7838ad0e0a8db52145ad08b59f983474afc99c6f541932ae7c82c704ee"
+}

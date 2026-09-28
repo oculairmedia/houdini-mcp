@@ -13,6 +13,8 @@ CAMERA_PARMS = (
     "sy",
     "sz",
     "focal",
+    "projection",
+    "orthowidth",
     "aperture",
     "near",
     "far",

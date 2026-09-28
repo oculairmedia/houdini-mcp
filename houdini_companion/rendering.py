@@ -136,6 +136,7 @@ def render_snapshot(
                     "focal",
                     "aperture",
                     "projection",
+                    "orthowidth",
                     "aspect",
                     "winx",
                     "winy",

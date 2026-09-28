@@ -110,6 +110,7 @@ def start(ctx, job, path, frames, cameras, resolution=640):
                         "focal",
                         "aperture",
                         "projection",
+                        "orthowidth",
                         "aspect",
                         "winx",
                         "winy",

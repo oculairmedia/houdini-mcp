@@ -127,10 +127,14 @@ def main():
         cam.parmTuple("t").set((3 + i, 2, 4))
         cam.parmTuple("r").set((-20, 35 + i * 5, 0))
         cams.append(cam.path())
+    hou.node(cams[0]).parm("projection").set("ortho")
+    hou.node(cams[0]).parm("orthowidth").set(6)
     before = time_state(hou)
     sequence = run("render.start", path=path, frames=[1, 1.01, 3, 4], cameras=cams, resolution=256)
     rid = sequence["render_id"]
     folder = Path(sequence["manifest"]).parent
+    recipe = json.loads((folder / "render-sequence.json").read_text())["recipes"]["view0"]
+    assert recipe["parms"]["orthowidth"] == 6
     one = run("render.step", render_id=rid)
     assert one["completed"] == 1
     first = (folder / "frame-0000-view0.png").stat().st_mtime_ns
