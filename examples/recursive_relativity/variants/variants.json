@@ -1,0 +1,42 @@
+[
+  {
+    "slug": "gothic_vertigo",
+    "title": "Gothic Vertigo",
+    "description": "Pointed vaults, tall finials and an ivory-and-slate recursive cathedral.",
+    "ratio": 0.55,
+    "twist": -4,
+    "width": 20
+  },
+  {
+    "slug": "clockwork_helix",
+    "title": "Clockwork Helix",
+    "description": "Brass wheels and spokes form a tightly wound mechanical stair universe.",
+    "ratio": 0.58,
+    "twist": 28,
+    "width": 19
+  },
+  {
+    "slug": "library_of_babel",
+    "title": "Library of Babel",
+    "description": "Book-lined passages alternate into a hexagonal recursive library.",
+    "ratio": 0.53,
+    "twist": 60,
+    "width": 18
+  },
+  {
+    "slug": "hanging_gardens",
+    "title": "Hanging Gardens",
+    "description": "Mossy stair terraces support branching trees in three directions of gravity.",
+    "ratio": 0.55,
+    "twist": -20,
+    "width": 20
+  },
+  {
+    "slug": "fractured_neon",
+    "title": "Fractured Neon",
+    "description": "Floating checker steps and luminous diamond gates dissolve into a vortex.",
+    "ratio": 0.59,
+    "twist": 42,
+    "width": 18
+  }
+]
