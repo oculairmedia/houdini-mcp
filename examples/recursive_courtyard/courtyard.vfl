@@ -1,0 +1,149 @@
+// A bounded window into a self-similar city. Local coordinates avoid precision
+// loss as the virtual camera descends to arbitrarily small architectural scales.
+function vector place(vector p; float s,z) { return p*s + set(0,0,z); }
+function void face(vector a,b,c,d,col; int generation,part) {
+    int pp[];
+    // Houdini's polygon convention is clockwise when viewed from outside.
+    vector corners[]=array(d,c,b,a);
+    foreach(vector v; corners) append(pp,addpoint(0,v));
+    int pr=addprim(0,"poly",pp);
+    setprimattrib(0,"Cd",pr,col);
+    setprimattrib(0,"generation",pr,generation);
+    setprimattrib(0,"part",pr,part);
+}
+function void block(vector c,dim,col; float s,z; int gen,part) {
+    vector lo=c-dim*.5, hi=c+dim*.5;
+    vector p[];
+    append(p,place(set(lo.x,lo.y,lo.z),s,z));
+    append(p,place(set(hi.x,lo.y,lo.z),s,z));
+    append(p,place(set(hi.x,hi.y,lo.z),s,z));
+    append(p,place(set(lo.x,hi.y,lo.z),s,z));
+    append(p,place(set(lo.x,lo.y,hi.z),s,z));
+    append(p,place(set(hi.x,lo.y,hi.z),s,z));
+    append(p,place(set(hi.x,hi.y,hi.z),s,z));
+    append(p,place(set(lo.x,hi.y,hi.z),s,z));
+    face(p[0],p[3],p[2],p[1],col,gen,part);
+    face(p[4],p[5],p[6],p[7],col,gen,part);
+    face(p[0],p[4],p[7],p[3],col,gen,part);
+    face(p[1],p[2],p[6],p[5],col,gen,part);
+    face(p[0],p[1],p[5],p[4],col,gen,part);
+    face(p[3],p[7],p[6],p[2],col,gen,part);
+}
+function void arch(vector c; float radius,thick,depth; vector col; int pieces;
+                   float s,z; int gen,part) {
+    for(int j=0;j<pieces;j++) {
+        float a=M_PI*j/pieces+.006, b=M_PI*(j+1)/pieces-.006;
+        vector p[];
+        float depths[]=array(-depth*.5,depth*.5);
+        foreach(float zz; depths) {
+            append(p,place(c+set(radius*cos(a),radius*sin(a),zz),s,z));
+            append(p,place(c+set((radius+thick)*cos(a),(radius+thick)*sin(a),zz),s,z));
+            append(p,place(c+set((radius+thick)*cos(b),(radius+thick)*sin(b),zz),s,z));
+            append(p,place(c+set(radius*cos(b),radius*sin(b),zz),s,z));
+        }
+        vector shade=col*(.9+.1*(j%3));
+        face(p[0],p[3],p[2],p[1],shade,gen,part);
+        face(p[4],p[5],p[6],p[7],shade,gen,part);
+        face(p[0],p[1],p[5],p[4],shade,gen,part);
+        face(p[3],p[7],p[6],p[2],shade,gen,part);
+        face(p[1],p[2],p[6],p[5],shade,gen,part);
+        face(p[0],p[4],p[7],p[3],shade,gen,part);
+    }
+}
+
+float u=chf("journey"), q=chf("ratio"), span=14;
+int origin=int(floor(u));
+vector sand=set(.58,.39,.22), pale=set(.82,.65,.40);
+vector teal=set(.028,.15,.17), gold=set(.68,.37,.09);
+vector dark=set(.018,.036,.045), red=set(.55,.035,.025);
+for(int k=origin-4;k<=origin+8;k++) {
+    float s=pow(q,k-u), z=span*(1-s)/(1-q);
+    int detail=clamp(k+1,0,3);
+    // Courtyard slabs meet exactly at the next generation's threshold.
+    block(set(0,-.17,7),set(20,.3,14),sand*.65,s,z,k,0);
+    int tiles=14+detail*7;
+    float pitch=14.0/tiles;
+    for(int iz=0;iz<tiles;iz++) for(int ix=-3;ix<3;ix++) {
+        vector color=((ix+iz)%2==0)?pale*.70:teal*1.5;
+        block(set((ix+.5)*pitch,.004,(iz+.5)*pitch),set(pitch*.94,.02,pitch*.94),color,s,z,k,1);
+    }
+    // Paired portal piers, a deep segmented arch, and three nested archivolts.
+    for(int side=-1;side<=1;side+=2) {
+        block(set(side*2.02,1.5,0),set(.65,3,.9),pale,s,z,k,2);
+        block(set(side*2.02,.16,0),set(.93,.32,1.15),sand,s,z,k,2);
+        block(set(side*2.02,2.9,0),set(.92,.25,1.1),gold,s,z,k,2);
+        block(set(side*5.72,4,0),set(6.76,8,1),sand,s,z,k,3);
+        block(set(side*5.8,7.85,0),set(7.2,.25,1.3),pale,s,z,k,3);
+        block(set(side*5.8,8.08,0),set(7.35,.14,1.42),teal,s,z,k,3);
+        block(set(side*5.8,.24,0),set(7,.4,1.15),teal,s,z,k,3);
+        for(int storey=0;storey<2;storey++) for(int w=0;w<3;w++) {
+            float xx=side*(3.3+w*2.15), yy=1.3+storey*3.1;
+            block(set(xx,yy+1,-.53),set(1.05,2,.06),dark,s,z,k,4);
+            arch(set(xx,yy+1.95,-.60),.52,.14,.2,pale,10,s,z,k,4);
+            block(set(xx,yy-.04,-.69),set(1.4,.16,.45),pale,s,z,k,4);
+            for(int bar=0;bar<3+detail;bar++)
+                block(set(xx-.43+bar*.86/(2+detail),yy+.7,-.62),set(.04,1.45,.07),teal*2,s,z,k,4);
+        }
+        // Side buildings and colonnades make the interior a real courtyard.
+        block(set(side*8.5,4.2,7.4),set(2.4,8.4,12.6),sand*(side<0?.9:1.1),s,z,k,5);
+        block(set(side*8.5,8.43,7.4),set(2.8,.25,12.9),teal,s,z,k,5);
+        for(int bay=0;bay<5;bay++) {
+            float zz=2+bay*2.5;
+            block(set(side*6.65,1.65,zz),set(.3,3.3,.3),pale,s,z,k,5);
+            block(set(side*6.65,.13,zz),set(.5,.25,.5),gold,s,z,k,5);
+            block(set(side*7.25,3.35,zz),set(1.65,.25,2.5),pale,s,z,k,5);
+            for(int floor=0;floor<2;floor++) {
+                block(set(side*7.26,4.3+floor*2.4,zz),set(.06,1.7,1.2),dark,s,z,k,5);
+                block(set(side*7.20,3.45+floor*2.4,zz),set(.2,.12,1.5),pale,s,z,k,5);
+            }
+        }
+        // Low planters leave the central walking corridor unobstructed.
+        for(int planter=0;planter<2;planter++) {
+            float zz=4+planter*6;
+            block(set(side*4.9,.35,zz),set(1.3,.7,1.3),pale,s,z,k,6);
+            block(set(side*4.9,1.0,zz),set(1.08,.75,1.08),set(.12,.25,.09),s,z,k,6);
+            block(set(side*4.9,1.48,zz),set(.72,.5,.72),set(.19,.31,.1),s,z,k,6);
+        }
+    }
+    arch(set(0,3,0),1.7,.48,.9,pale,18+detail*6,s,z,k,2);
+    arch(set(0,3,-.52),2.2,.10,.12,gold,24,s,z,k,2);
+    arch(set(0,3,-.58),2.34,.10,.13,teal*2,28,s,z,k,2);
+    // Solid spandrel above the curved opening, rather than a rectangular gap.
+    for(int segment=0;segment<32;segment++) {
+        float a=M_PI*segment/32, b=M_PI*(segment+1)/32;
+        vector p[];
+        float zs[]=array(-.44,.44);
+        foreach(float zz; zs) {
+            append(p,place(set(2.18*cos(a),3+2.18*sin(a),zz),s,z));
+            append(p,place(set(2.18*cos(a),6,zz),s,z));
+            append(p,place(set(2.18*cos(b),6,zz),s,z));
+            append(p,place(set(2.18*cos(b),3+2.18*sin(b),zz),s,z));
+        }
+        face(p[0],p[3],p[2],p[1],sand,k,3);
+        face(p[4],p[5],p[6],p[7],sand,k,3);
+        face(p[0],p[1],p[5],p[4],sand,k,3);
+        face(p[3],p[7],p[6],p[2],sand,k,3);
+        face(p[1],p[2],p[6],p[5],sand,k,3);
+        face(p[0],p[4],p[7],p[3],sand,k,3);
+    }
+    block(set(0,6.95,0),set(4.8,2.1,1),sand,s,z,k,3);
+    block(set(0,8.1,0),set(5.2,.22,1.3),pale,s,z,k,3);
+    // The same red banner anchors recognition at every scale.
+    block(set(-3.0,6.05,-.86),set(.48,1.65,.08),red,s,z,k,7);
+    block(set(-3.0,6.92,-.87),set(.7,.065,.09),gold,s,z,k,7);
+    for(int t=0;t<5+detail*4;t++) {
+        float xx=-2.0+4.0*t/(4+detail*4);
+        block(set(xx,6.3,-.56),set(.09,.55,.12),teal,s,z,k,8);
+    }
+    // Nested coffers above the arch, an explicit self-subdivision motif.
+    int grid=2+detail*2;
+    for(int gy=0;gy<2;gy++) for(int gx=0;gx<grid;gx++) {
+        float size=3.8/grid;
+        block(set(-1.9+(gx+.5)*size,7.05+gy*.42,-.54),set(size*.82,.3,.08),teal,s,z,k,8);
+        block(set(-1.9+(gx+.5)*size,7.05+gy*.42,-.60),set(size*.48,.14,.08),gold,s,z,k,8);
+    }
+}
+setdetailattrib(0,"journey",u);
+setdetailattrib(0,"virtual_scale",pow(q,u));
+setdetailattrib(0,"active_generation",origin);
+setdetailattrib(0,"resident_generations",13);

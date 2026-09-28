@@ -1,0 +1,508 @@
+{
+  "passed": true,
+  "samples": [
+    {
+      "frame": 1,
+      "points": 187296,
+      "primitives": 46824,
+      "cook_and_clearance_ms": 378.97
+    },
+    {
+      "frame": 5,
+      "points": 187296,
+      "primitives": 46824,
+      "cook_and_clearance_ms": 162.57
+    },
+    {
+      "frame": 9,
+      "points": 187296,
+      "primitives": 46824,
+      "cook_and_clearance_ms": 332.89
+    },
+    {
+      "frame": 13,
+      "points": 187296,
+      "primitives": 46824,
+      "cook_and_clearance_ms": 175.48
+    },
+    {
+      "frame": 15.399,
+      "points": 187296,
+      "primitives": 46824,
+      "cook_and_clearance_ms": 355.51
+    },
+    {
+      "frame": 15.401,
+      "points": 192480,
+      "primitives": 48120,
+      "cook_and_clearance_ms": 183.32
+    },
+    {
+      "frame": 17,
+      "points": 192480,
+      "primitives": 48120,
+      "cook_and_clearance_ms": 357.8
+    },
+    {
+      "frame": 21,
+      "points": 192480,
+      "primitives": 48120,
+      "cook_and_clearance_ms": 171.35
+    },
+    {
+      "frame": 25,
+      "points": 192480,
+      "primitives": 48120,
+      "cook_and_clearance_ms": 282.18
+    },
+    {
+      "frame": 29,
+      "points": 192480,
+      "primitives": 48120,
+      "cook_and_clearance_ms": 179.81
+    },
+    {
+      "frame": 33,
+      "points": 192480,
+      "primitives": 48120,
+      "cook_and_clearance_ms": 336.02
+    },
+    {
+      "frame": 37,
+      "points": 192480,
+      "primitives": 48120,
+      "cook_and_clearance_ms": 167.79
+    },
+    {
+      "frame": 41,
+      "points": 192480,
+      "primitives": 48120,
+      "cook_and_clearance_ms": 279.09
+    },
+    {
+      "frame": 45,
+      "points": 192480,
+      "primitives": 48120,
+      "cook_and_clearance_ms": 171.89
+    },
+    {
+      "frame": 49,
+      "points": 192480,
+      "primitives": 48120,
+      "cook_and_clearance_ms": 365.92
+    },
+    {
+      "frame": 53,
+      "points": 192480,
+      "primitives": 48120,
+      "cook_and_clearance_ms": 357.88
+    },
+    {
+      "frame": 57,
+      "points": 192480,
+      "primitives": 48120,
+      "cook_and_clearance_ms": 166.7
+    },
+    {
+      "frame": 61,
+      "points": 192480,
+      "primitives": 48120,
+      "cook_and_clearance_ms": 185.34
+    },
+    {
+      "frame": 65,
+      "points": 192480,
+      "primitives": 48120,
+      "cook_and_clearance_ms": 298.99
+    },
+    {
+      "frame": 69,
+      "points": 192480,
+      "primitives": 48120,
+      "cook_and_clearance_ms": 166.82
+    },
+    {
+      "frame": 73,
+      "points": 192480,
+      "primitives": 48120,
+      "cook_and_clearance_ms": 353.28
+    },
+    {
+      "frame": 77,
+      "points": 192480,
+      "primitives": 48120,
+      "cook_and_clearance_ms": 181.08
+    },
+    {
+      "frame": 81,
+      "points": 192480,
+      "primitives": 48120,
+      "cook_and_clearance_ms": 344.45
+    },
+    {
+      "frame": 85,
+      "points": 192480,
+      "primitives": 48120,
+      "cook_and_clearance_ms": 173.79
+    },
+    {
+      "frame": 87.399,
+      "points": 192480,
+      "primitives": 48120,
+      "cook_and_clearance_ms": 343.76
+    },
+    {
+      "frame": 87.401,
+      "points": 197664,
+      "primitives": 49416,
+      "cook_and_clearance_ms": 186.08
+    },
+    {
+      "frame": 89,
+      "points": 197664,
+      "primitives": 49416,
+      "cook_and_clearance_ms": 292.71
+    },
+    {
+      "frame": 93,
+      "points": 197664,
+      "primitives": 49416,
+      "cook_and_clearance_ms": 315.64
+    },
+    {
+      "frame": 97,
+      "points": 197664,
+      "primitives": 49416,
+      "cook_and_clearance_ms": 180.46
+    },
+    {
+      "frame": 101,
+      "points": 197664,
+      "primitives": 49416,
+      "cook_and_clearance_ms": 182.58
+    },
+    {
+      "frame": 105,
+      "points": 197664,
+      "primitives": 49416,
+      "cook_and_clearance_ms": 343.75
+    },
+    {
+      "frame": 109,
+      "points": 197664,
+      "primitives": 49416,
+      "cook_and_clearance_ms": 201.63
+    },
+    {
+      "frame": 113,
+      "points": 197664,
+      "primitives": 49416,
+      "cook_and_clearance_ms": 344.05
+    },
+    {
+      "frame": 117,
+      "points": 197664,
+      "primitives": 49416,
+      "cook_and_clearance_ms": 172.41
+    },
+    {
+      "frame": 121,
+      "points": 197664,
+      "primitives": 49416,
+      "cook_and_clearance_ms": 329.84
+    },
+    {
+      "frame": 125,
+      "points": 197664,
+      "primitives": 49416,
+      "cook_and_clearance_ms": 341.99
+    },
+    {
+      "frame": 129,
+      "points": 197664,
+      "primitives": 49416,
+      "cook_and_clearance_ms": 175.47
+    },
+    {
+      "frame": 133,
+      "points": 197664,
+      "primitives": 49416,
+      "cook_and_clearance_ms": 171.87
+    },
+    {
+      "frame": 137,
+      "points": 197664,
+      "primitives": 49416,
+      "cook_and_clearance_ms": 282.46
+    },
+    {
+      "frame": 141,
+      "points": 197664,
+      "primitives": 49416,
+      "cook_and_clearance_ms": 343.18
+    },
+    {
+      "frame": 145,
+      "points": 197664,
+      "primitives": 49416,
+      "cook_and_clearance_ms": 187.28
+    },
+    {
+      "frame": 149,
+      "points": 197664,
+      "primitives": 49416,
+      "cook_and_clearance_ms": 279.29
+    },
+    {
+      "frame": 153,
+      "points": 197664,
+      "primitives": 49416,
+      "cook_and_clearance_ms": 171.57
+    },
+    {
+      "frame": 157,
+      "points": 197664,
+      "primitives": 49416,
+      "cook_and_clearance_ms": 178.82
+    },
+    {
+      "frame": 159.399,
+      "points": 197664,
+      "primitives": 49416,
+      "cook_and_clearance_ms": 358.05
+    },
+    {
+      "frame": 159.401,
+      "points": 202848,
+      "primitives": 50712,
+      "cook_and_clearance_ms": 195.7
+    },
+    {
+      "frame": 161,
+      "points": 202848,
+      "primitives": 50712,
+      "cook_and_clearance_ms": 289.54
+    },
+    {
+      "frame": 165,
+      "points": 202848,
+      "primitives": 50712,
+      "cook_and_clearance_ms": 374.52
+    },
+    {
+      "frame": 169,
+      "points": 202848,
+      "primitives": 50712,
+      "cook_and_clearance_ms": 199.43
+    },
+    {
+      "frame": 173,
+      "points": 202848,
+      "primitives": 50712,
+      "cook_and_clearance_ms": 365.82
+    },
+    {
+      "frame": 177,
+      "points": 202848,
+      "primitives": 50712,
+      "cook_and_clearance_ms": 187.99
+    },
+    {
+      "frame": 181,
+      "points": 202848,
+      "primitives": 50712,
+      "cook_and_clearance_ms": 355.99
+    },
+    {
+      "frame": 185,
+      "points": 202848,
+      "primitives": 50712,
+      "cook_and_clearance_ms": 184.4
+    },
+    {
+      "frame": 189,
+      "points": 202848,
+      "primitives": 50712,
+      "cook_and_clearance_ms": 369.61
+    },
+    {
+      "frame": 193,
+      "points": 202848,
+      "primitives": 50712,
+      "cook_and_clearance_ms": 184.17
+    },
+    {
+      "frame": 197,
+      "points": 202848,
+      "primitives": 50712,
+      "cook_and_clearance_ms": 367.03
+    },
+    {
+      "frame": 201,
+      "points": 202848,
+      "primitives": 50712,
+      "cook_and_clearance_ms": 186.94
+    },
+    {
+      "frame": 205,
+      "points": 202848,
+      "primitives": 50712,
+      "cook_and_clearance_ms": 342.78
+    },
+    {
+      "frame": 209,
+      "points": 202848,
+      "primitives": 50712,
+      "cook_and_clearance_ms": 188.54
+    },
+    {
+      "frame": 213,
+      "points": 202848,
+      "primitives": 50712,
+      "cook_and_clearance_ms": 184.21
+    },
+    {
+      "frame": 217,
+      "points": 202848,
+      "primitives": 50712,
+      "cook_and_clearance_ms": 355.18
+    },
+    {
+      "frame": 221,
+      "points": 202848,
+      "primitives": 50712,
+      "cook_and_clearance_ms": 188.13
+    },
+    {
+      "frame": 225,
+      "points": 202848,
+      "primitives": 50712,
+      "cook_and_clearance_ms": 347.55
+    },
+    {
+      "frame": 229,
+      "points": 202848,
+      "primitives": 50712,
+      "cook_and_clearance_ms": 192.0
+    },
+    {
+      "frame": 231.399,
+      "points": 202848,
+      "primitives": 50712,
+      "cook_and_clearance_ms": 363.66
+    },
+    {
+      "frame": 231.401,
+      "points": 208032,
+      "primitives": 52008,
+      "cook_and_clearance_ms": 215.88
+    },
+    {
+      "frame": 233,
+      "points": 208032,
+      "primitives": 52008,
+      "cook_and_clearance_ms": 384.81
+    },
+    {
+      "frame": 237,
+      "points": 208032,
+      "primitives": 52008,
+      "cook_and_clearance_ms": 371.51
+    },
+    {
+      "frame": 240,
+      "points": 208032,
+      "primitives": 52008,
+      "cook_and_clearance_ms": 215.26
+    }
+  ],
+  "sample_count": 69,
+  "collision_count": 0,
+  "clearance_radius": 0.3,
+  "clearance_heights": [
+    0.3,
+    1.1,
+    1.65,
+    2.05
+  ],
+  "geometry_checks": {
+    "nonfinite_point_count": 0,
+    "nonfinite_points": [],
+    "points_checked": 192480,
+    "primitives_visited": 48120,
+    "polygons_checked": 48120,
+    "excluded_non_polygons": 0,
+    "zero_area_count": 0,
+    "zero_area_primitives": [],
+    "normal_mismatch_count": 0,
+    "normal_mismatch_primitives": [],
+    "point_normals_available": false,
+    "complete": true,
+    "scope": "all point positions and closed polygons; point N alignment when present",
+    "topology_policy": "surface cards allowed; no watertightness or self-intersection claim"
+  },
+  "bad_outward_winding": 0,
+  "deterministic_repeat": true,
+  "distant_generations": [
+    {
+      "journey": 10.25,
+      "points": 218400,
+      "max_coordinate": 313.4598083496094
+    },
+    {
+      "journey": 100.25,
+      "points": 218400,
+      "max_coordinate": 313.4598083496094
+    },
+    {
+      "journey": 1000.25,
+      "points": 218400,
+      "max_coordinate": 313.4598083496094
+    }
+  ],
+  "artist_state_preserved": true,
+  "scope": "Sampled walking clearance and full polygon audit at frame 40; not watertightness or arbitrary self-intersection certification.",
+  "date": "2026-09-27",
+  "source_sha256": "d8f7822f6c4cbe0be885cdeea06a9a4d6a79b7bec506593c3225a2e55185f4c3",
+  "post_render_state": {
+    "artist_state_preserved": true,
+    "frame": 33.0,
+    "demo_geometry_hidden": true
+  },
+  "renders": {
+    "forward": {
+      "frames": 240,
+      "seconds": 10,
+      "resolution": [
+        1280,
+        720
+      ],
+      "render_seconds": 120.34
+    },
+    "backward": {
+      "frames": 96,
+      "seconds": 4,
+      "resolution": [
+        1280,
+        720
+      ],
+      "render_seconds": 46.7
+    },
+    "blank_frames": 0,
+    "visual_review_frames": [
+      1,
+      40,
+      160
+    ],
+    "visual_review_backward_frames": [
+      120
+    ]
+  },
+  "limitations": [
+    "Finite window of 13 generations; not infinite resident polygons.",
+    "Ornament complexity caps after the first few generations.",
+    "Separate prototype, not integrated into original city.",
+    "Artist evaluation pending.",
+    "Browser automation failed to initialize; player HTTP checked, UI interaction unverified."
+  ]
+}
