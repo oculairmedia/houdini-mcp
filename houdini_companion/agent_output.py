@@ -74,6 +74,23 @@ def compact_job(job):
         "hip_saved",
         "verification",
         "source_paths",
+        "build_id",
+        "root",
+        "output",
+        "promoted",
+        "render_id",
+        "save_id",
+        "verification_id",
+        "completed",
+        "total",
+        "complete",
+        "paused",
+        "next_operation",
+        "rendered_frame",
+        "index",
+        "hip",
+        "active_hip",
+        "state_receipt",
     }
     if body:
         result["result"] = {k: v for k, v in body.items() if k in keep}

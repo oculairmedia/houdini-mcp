@@ -95,7 +95,7 @@ def test_channel_restore_continues_after_failure_and_reports_it():
 def test_scoped_schema_is_small_and_effect_filtered():
     catalog = load_registry().catalog()
     small = scoped_catalog(catalog, "timeline.*", "read", True)
-    assert list(small["operations"]) == ["timeline.inspect"]
+    assert set(small["operations"]) == {"timeline.inspect", "timeline.boundary"}
     assert len(json.dumps(small)) < len(json.dumps(catalog)) / 10
     with pytest.raises(CompanionError):
         scoped_catalog(catalog, effects="delete")

@@ -279,6 +279,10 @@ class Runtime:
         with self.ledger.lock:
             protected = set(self.operations.previews) | {self.ledger.active}
             protected.update(self.operations.state.get("iteration", {}))
+            protected.update(self.operations.state.get("builds", {}))
+            protected.update(self.operations.state.get("render_sequences", {}))
+            protected.update(self.operations.state.get("deliverables", {}))
+            protected.update(self.operations.state.get("save_verifiers", {}))
             protected.update(
                 v["source_cache"]
                 for v in self.operations.state.get("iteration", {}).values()
@@ -361,15 +365,20 @@ def reload_runtime():
     import sys
 
     from . import (
+        continuity,
         core,
         diagnostics,
         errors,
+        geometry_profiles,
         observation,
         operations,
         plugins,
         registry,
         rendering,
+        review_player,
+        saved_scene,
         schema,
+        state_guard,
         temporal,
         transactions,
         watchers,
@@ -377,10 +386,15 @@ def reload_runtime():
     from .plugins import (
         acceptance,
         animation,
+        boundary,
+        build,
+        delivery,
         execution,
         introspection,
         iteration,
+        publication,
         query,
+        render_sequence,
         review,
         scene,
         timeline,
@@ -397,6 +411,11 @@ def reload_runtime():
         diagnostics,
         transactions,
         temporal,
+        state_guard,
+        geometry_profiles,
+        continuity,
+        saved_scene,
+        review_player,
         plugins,
         query,
         scene,
@@ -407,6 +426,11 @@ def reload_runtime():
         iteration,
         animation,
         timeline,
+        build,
+        render_sequence,
+        publication,
+        delivery,
+        boundary,
         operations,
         watchers,
     ):

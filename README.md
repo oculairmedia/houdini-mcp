@@ -4,6 +4,10 @@ An MCP (Model Context Protocol) server for controlling SideFX Houdini via `hrpyc
 
 ## Persistent companion (Windows / Houdini 20.5)
 
+The [build/review/delivery workflow](docs/companion-workflow.md) adds hidden staged
+builds, geometry profiles, resumable frame jobs, synchronized review players,
+explicit save/show, isolated reopen verification and temporal boundary checks.
+
 The optional companion lives inside the interactive Houdini session. The
 `houdini-agent` CLI and `companion_*` MCP tools share its tracked job queue,
 observations, previews, undo records and rendered feedback. Closing an agent or

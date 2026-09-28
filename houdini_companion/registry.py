@@ -155,6 +155,11 @@ BUILTINS = (
     "iteration",
     "animation",
     "timeline",
+    "build",
+    "render_sequence",
+    "publication",
+    "delivery",
+    "boundary",
 )
 
 
