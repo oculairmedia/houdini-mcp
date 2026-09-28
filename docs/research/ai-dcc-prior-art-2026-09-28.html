@@ -1,0 +1,563 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>AI in 3D applications — research review</title><style>
+:root{color-scheme:light;--ink:#182834;--muted:#526575;--line:#d8e1e7;--accent:#076a70;--paper:#fff;--wash:#f2f6f7}
+*{box-sizing:border-box}html{scroll-behavior:smooth;scroll-padding-top:24px}body{margin:0;background:var(--wash);color:var(--ink);font:17px/1.7 system-ui,-apple-system,"Segoe UI",sans-serif}a{color:var(--accent);text-decoration-thickness:1px;text-underline-offset:3px}a:hover{color:#014348}aside{position:fixed;inset:0 auto 0 0;width:292px;background:#142c38;color:#dbe9eb;padding:28px 22px;overflow:auto}aside .brand{font-size:13px;letter-spacing:.13em;text-transform:uppercase;color:#72d4c7}aside h2{font-size:25px;line-height:1.2;color:white;margin:12px 0}aside p{font-size:13px;color:#a6bbc5}nav a{display:block;text-decoration:none;color:#d4e4e9;font-size:13px;line-height:1.45;padding:7px 8px;border-radius:5px}nav a:hover{background:#284752;color:white}nav .level-3{padding-left:18px;color:#acc9d2;font-size:12px}main{margin-left:292px;padding:48px clamp(24px,4vw,72px) 80px;max-width:1530px}.meta{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:24px}.meta span{background:#dcefe9;color:#22584d;padding:5px 12px;border-radius:99px;font-size:12px;font-weight:650;letter-spacing:.02em}article{min-width:0;overflow-wrap:anywhere;background:var(--paper);padding:clamp(24px,4vw,58px);border:1px solid var(--line);border-radius:14px;box-shadow:0 10px 30px #18324207}h1{font-size:clamp(30px,3.4vw,44px);line-height:1.16;letter-spacing:-.035em;margin:0 0 22px;max-width:850px}h2{font-size:27px;line-height:1.3;letter-spacing:-.02em;margin:48px 0 18px;padding-top:18px;border-top:1px solid var(--line)}h3{font-size:21px;line-height:1.4;margin:32px 0 14px}p{margin:0 0 18px;max-width:940px}strong{font-weight:670}code{font:14px/1.4 ui-monospace,Consolas,monospace;background:#edf3f5;padding:2px 5px;border-radius:4px;overflow-wrap:anywhere}.table-wrap{overflow:auto;margin:24px 0 30px;border:1px solid var(--line);border-radius:9px}table{border-collapse:collapse;width:100%;min-width:650px;font-size:13px;line-height:1.5}th{text-align:left;background:#e9f1f3;font-weight:700;color:#264650}th,td{padding:12px 14px;border-bottom:1px solid var(--line);vertical-align:top}td{min-width:120px}tr:nth-child(even){background:#f8fafb}tr:last-child td{border-bottom:0}footer{font-size:12px;color:var(--muted);padding:20px 2px}button{background:transparent;border:1px solid #7698a5;color:#d4e4e9;border-radius:6px;padding:7px 10px;cursor:pointer}aside .files a{font-size:12px;color:#85daca;margin-right:12px}#progress{height:3px;position:fixed;top:0;left:292px;width:0;background:#20a49d;z-index:10}
+@media(max-width:950px){aside{position:static;width:auto;padding:22px}aside nav{max-height:230px;overflow:auto}nav .level-3{display:none}main{margin:0;padding:24px 14px}#progress{left:0}article{padding:24px 20px}body{font-size:16px}h2{font-size:24px}}@media print{aside,#progress,.meta{display:none}main{margin:0;padding:0;max-width:none}article{border:0;box-shadow:none;padding:0}body{font-size:10pt;background:white}.table-wrap{overflow:visible}table{min-width:0;font-size:8pt}td{min-width:0}h2,h3{break-after:avoid}tr{break-inside:avoid}a{color:inherit}}
+</style></head><body><div id="progress"></div><aside><div class="brand">Houdini companion · research</div><h2>AI inside 3D tools</h2><p>Philosophies, tooling and sensing<br>28 September 2026</p><div class="files"><a href="ai-dcc-prior-art-2026-09-28.md">Markdown</a><a href="ai-dcc-prior-art-2026-09-28.sources.json">Source manifest</a></div><p><button onclick="window.print()">Print / save PDF</button></p><nav aria-label="Report contents"><a class="level-2" href="#what-i-would-take-from-this-research">What I would take from this research</a><a class="level-2" href="#scope-and-evidence-method">Scope and evidence method</a><a class="level-2" href="#eight-philosophies">Eight philosophies</a><a class="level-2" href="#what-sensing-means-here">What “sensing” means here</a><a class="level-2" href="#comparison-at-a-glance">Comparison at a glance</a><a class="level-2" href="#implementation-profiles">Implementation profiles</a><a class="level-3" href="#1-blender-cli-an-agent-facing-command-contract">1. Blender CLI — an agent-facing command contract</a><a class="level-3" href="#2-cli-anything-s-blender-harness-a-recipe-not-a-live-scene-proxy">2. CLI-Anything&#x27;s Blender harness — a recipe, not a live scene proxy</a><a class="level-3" href="#3-mcp-for-blender-a-persistent-bridge-with-richer-trajectories">3. MCP for Blender — a persistent bridge with richer trajectories</a><a class="level-3" href="#4-blendergpt-the-useful-early-baseline">4. BlenderGPT — the useful early baseline</a><a class="level-3" href="#5-houdini-agent-a-host-specific-assistant-and-semantic-toolkit">5. Houdini-Agent — a host-specific assistant and semantic toolkit</a><a class="level-3" href="#6-dcc-mcp-modular-infrastructure-across-hosts">6. DCC-MCP — modular infrastructure across hosts</a><a class="level-3" href="#7-maya-mcp-semantics-knowledge-and-imaging-policy">7. Maya MCP — semantics, knowledge and imaging policy</a><a class="level-3" href="#8-rhinomcp-editable-cad-and-grasshopper-graphs">8. RhinoMCP — editable CAD and Grasshopper graphs</a><a class="level-3" href="#9-freecad-mcp-explicit-execution-modes-and-honest-timeouts">9. FreeCAD MCP — explicit execution modes and honest timeouts</a><a class="level-3" href="#10-community-unreal-mcp-native-editor-dispatch">10. Community Unreal MCP — native editor dispatch</a><a class="level-3" href="#11-epic-s-unreal-mcp-separate-the-tool-registry-from-transport">11. Epic&#x27;s Unreal MCP — separate the tool registry from transport</a><a class="level-3" href="#12-unity-mcp-combine-visual-and-runtime-feedback">12. Unity MCP — combine visual and runtime feedback</a><a class="level-3" href="#13-scenario-s-blender-plugin-durable-external-jobs-and-staged-import">13. Scenario&#x27;s Blender plugin — durable external jobs and staged import</a><a class="level-3" href="#14-blenderalchemy-render-candidates-compare-retain-the-best">14. BlenderAlchemy — render candidates, compare, retain the best</a><a class="level-3" href="#15-ll3m-modular-programs-and-separate-critique-from-verification">15. LL3M — modular programs and separate critique from verification</a><a class="level-3" href="#16-scenecraft-relational-intent-becomes-spatial-constraints">16. SceneCraft — relational intent becomes spatial constraints</a><a class="level-3" href="#17-ezblender-domain-specialists-and-local-repair">17. EZBlender — domain specialists and local repair</a><a class="level-3" href="#18-3d-gpt-language-drives-an-existing-procedural-generator">18. 3D-GPT — language drives an existing procedural generator</a><a class="level-3" href="#19-nvidia-usd-code-and-chatusd-query-stage-context-explicitly">19. NVIDIA USD Code and ChatUSD — query stage context explicitly</a><a class="level-3" href="#20-blender-agent-studio-staged-quality-and-evidence-caveats">20. Blender Agent Studio — staged quality and evidence caveats</a><a class="level-2" href="#benchmark-references">Benchmark references</a><a class="level-3" href="#21-blendergym-controlled-graphics-editing-fixtures">21. BlenderGym — controlled graphics editing fixtures</a><a class="level-3" href="#22-blender-videobench-an-animated-executable-result-under-a-budget">22. Blender-VideoBench — an animated executable result under a budget</a><a class="level-2" href="#findings-that-should-shape-our-harness">Findings that should shape our harness</a><a class="level-3" href="#the-observation-should-identify-the-state-it-describes">The observation should identify the state it describes</a><a class="level-3" href="#make-cheap-feedback-frequent-and-expensive-feedback-deliberate">Make cheap feedback frequent and expensive feedback deliberate</a><a class="level-3" href="#treat-review-as-a-decision-with-evidence">Treat review as a decision with evidence</a><a class="level-3" href="#cancellation-undo-and-recovery-need-different-words">Cancellation, undo and recovery need different words</a><a class="level-3" href="#a-plugin-is-more-than-a-list-of-tools">A plugin is more than a list of tools</a><a class="level-3" href="#exact-editable-artifacts-beat-an-attractive-screenshot-alone">Exact editable artifacts beat an attractive screenshot alone</a><a class="level-2" href="#time-aware-sensing-for-the-recursive-city">Time-aware sensing for the recursive city</a><a class="level-2" href="#how-this-maps-to-our-existing-work">How this maps to our existing work</a><a class="level-2" href="#proposed-evaluation-protocol">Proposed evaluation protocol</a><a class="level-2" href="#source-inventory-and-limits">Source inventory and limits</a></nav></aside><main><div class="meta"><span>20 systems + 2 benchmarks</span><span>8 hosts</span><span>22 pinned repositories</span><span>Static research · no live trials</span></div><article><h1 id="ai-working-inside-3d-applications-control-tooling-and-sensing">AI working inside 3D applications: control, tooling and sensing</h1>
+<p>Research snapshot: <strong>28 September 2026</strong>. Prepared for Emmanuel and the Houdini companion project. Tracking: <code>houdini-mcp-vzp.32</code>.</p>
+<h2 id="what-i-would-take-from-this-research">What I would take from this research</h2>
+<p>My recommendation is to combine three ideas: a persistent companion that owns the artist's live state, a CLI that exposes repeatable operations and evidence, and a review loop that checks both geometry and rendered appearance. The interesting advances are in the feedback contract, rather than in MCP versus CLI alone.</p>
+<p>The most useful references for our next iteration are <strong>Blender CLI</strong> for command contracts and saved-artifact verification; <strong>DCC-MCP and Epic's Toolset Registry</strong> for modular discovery; <strong>BlenderAlchemy and LL3M</strong> for visual correction; <strong>Blender Agent Studio</strong> for staged quality gates; and <strong>Blender-VideoBench</strong> for time-aware, executable evaluation. These are my assessments, not results of a comparative runtime test. Their evidence is examined below.</p>
+<p>Several distinctions materially change the comparison. A screenshot tool does not establish that an agent actually critiques its output. Animation tools do not establish that motion is reviewed. A successful script, a valid mesh, an attractive image, and a portable editable scene are different outcomes. Our harness should produce evidence for each outcome we require.</p>
+<h2 id="scope-and-evidence-method">Scope and evidence method</h2>
+<p>This report covers <strong>20 implementations or research systems and two benchmark references</strong>, across Blender, Houdini, Maya, Rhino/Grasshopper, FreeCAD, Unreal, Unity and Omniverse/USD. Game editors are included because their editor automation, runtime tests and camera workflows are relevant to DCC integration. Text-to-mesh services are discussed where they connect to an editable DCC workflow; this is not a survey of every generative 3D model.</p>
+<p>I read primary project documentation, selected implementation files and research papers. Twenty-two Git repositories were pinned to commit IDs, including the four repositories grouped under DCC-MCP. The companion <a href="ai-dcc-prior-art-2026-09-28.sources.json">source manifest</a> records commits, retrieved paths and content hashes. Retrieval is not a whole-repository audit. No third-party agent was installed or exercised in our live scene, and no upstream performance result was reproduced here.</p>
+<p><strong>Evidence labels used below:</strong> “documented” means a primary source describes the feature; “code inspected” means a selected implementation path supports it; “paper reports” and “maintainer reports” remain their results. “Implication” is my interpretation. “Not established” means the reviewed evidence does not settle the question, rather than proving a feature absent. Repository recency and popularity are not reliability scores.</p>
+<h2 id="eight-philosophies">Eight philosophies</h2>
+<p>These categories are my classification; individual projects can occupy several.</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Philosophy</th>
+<th>The central idea</th>
+<th>Main advantage</th>
+<th>Main trade-off</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Prompt to script</td>
+<td>Generate Python and execute it in the host</td>
+<td>Very broad API reach with a small bridge</td>
+<td>Weak quality guarantees unless observation and repair are added</td>
+</tr>
+<tr>
+<td>Persistent editor bridge</td>
+<td>Keep a listener inside the running application</td>
+<td>Direct access to unsaved state and artist context</td>
+<td>Identity, UI-thread scheduling, recovery and listener lifecycle matter</td>
+</tr>
+<tr>
+<td>Process-based CLI</td>
+<td>Operate on saved files through supervised host processes</td>
+<td>Repeatability, machine-readable results and process isolation</td>
+<td>Startup cost; saved files cannot stand in for unsaved live state</td>
+</tr>
+<tr>
+<td>Domain recipe compiler</td>
+<td>Generate a constrained procedural description</td>
+<td>Smaller search space and reproducible builds</td>
+<td>Recipe coverage limits arbitrary scene editing</td>
+</tr>
+<tr>
+<td>Perceptual search</td>
+<td>Render candidates and select or repair using vision</td>
+<td>Appearance becomes part of the loop</td>
+<td>Render and model costs; visual plausibility is not geometric proof</td>
+</tr>
+<tr>
+<td>Modular control plane</td>
+<td>Discover typed skills independently of transport</td>
+<td>Host adapters and plugins can share a stable contract</td>
+<td>A registry still needs real host-specific sensing and lifecycle tests</td>
+</tr>
+<tr>
+<td>External generation into DCC</td>
+<td>Generate assets remotely, then prepare and import</td>
+<td>Access to image, texture and mesh generation</td>
+<td>Cost, provenance, uncertain submissions and import compatibility</td>
+</tr>
+<tr>
+<td>Evaluation sandbox</td>
+<td>Require executable artifacts under a common budget</td>
+<td>Comparable measurements and reproducible fixtures</td>
+<td>Benchmark success does not establish live artist-session reliability</td>
+</tr>
+</tbody>
+</table></div>
+<h2 id="what-sensing-means-here">What “sensing” means here</h2>
+<p><strong>Structured sensing</strong> includes scene hierarchy, evaluated dimensions, attributes, topology, constraints and object identity. <strong>Visual sensing</strong> includes viewport images, diagnostic views and authored-camera renders. <strong>Diagnostic sensing</strong> includes exceptions, cook times, logs, compiler results and runtime tests. <strong>Temporal sensing</strong> includes sampled frame state, video and motion-specific checks. <strong>Provenance sensing</strong> connects observations to exact sources, revisions, jobs and exported artifacts.</p>
+<p>API retrieval and documentation search help an agent choose commands; they do not observe the current scene. Likewise, recording a trajectory for telemetry is different from returning it to the agent for immediate correction.</p>
+<h2 id="comparison-at-a-glance">Comparison at a glance</h2>
+<p>The rows summarize reviewed paths. “Controls” in the time column means the system can edit animation; it does not imply motion acceptance. Profiles provide evidence links and qualifications.</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Example</th>
+<th>Host and execution</th>
+<th>Tooling philosophy</th>
+<th>Sensing setup</th>
+<th>Time / feedback emphasis</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1. Blender CLI</td>
+<td>Fresh headless Blender</td>
+<td>Typed JSON CLI plus bpy escape</td>
+<td>Multiview, mesh health, export readback, camera calibration</td>
+<td>Keyframes and export checks; artifact acceptance</td>
+</tr>
+<tr>
+<td>2. CLI-Anything Blender</td>
+<td>JSON recipe → Blender render</td>
+<td>Domain compiler and stateful CLI</td>
+<td>Real preview bundles and trajectory records</td>
+<td>Preview-session history; live editor state is separate</td>
+</tr>
+<tr>
+<td>3. MCP for Blender</td>
+<td>Embedded add-on + external MCP</td>
+<td>Persistent API bridge</td>
+<td>Scene/object inspection, viewport, bounded before/after telemetry</td>
+<td>Trajectory capture; critic loop not established</td>
+</tr>
+<tr>
+<td>4. BlenderGPT</td>
+<td>In-editor add-on</td>
+<td>Prompt → generated bpy</td>
+<td>Execution exceptions in inspected path</td>
+<td>No automatic visual critic established</td>
+</tr>
+<tr>
+<td>5. Houdini-Agent</td>
+<td>Standalone UI + embedded bridge</td>
+<td>Agent modes, registry and Houdini skills</td>
+<td>Context, viewport, geometry analysis, cook profiling</td>
+<td>Host access; durable temporal acceptance not established</td>
+</tr>
+<tr>
+<td>6. DCC-MCP</td>
+<td>Shared core + host adapters</td>
+<td>Versioned skills and progressive discovery</td>
+<td>Structured probes, artifacts, viewport validity checks</td>
+<td>Jobs/checkpoints and adapter examples</td>
+</tr>
+<tr>
+<td>7. Maya MCP</td>
+<td>MCP → Maya command bridge</td>
+<td>Typed operations plus retrieval</td>
+<td>Scene snapshot, playblast, turntable, color policy</td>
+<td>Keyframes/tangents and captured sequences</td>
+</tr>
+<tr>
+<td>8. RhinoMCP</td>
+<td>Python MCP → C# plugin</td>
+<td>Rhino and Grasshopper operations</td>
+<td>Objects, layers, viewport and graph state</td>
+<td>Parametric solution state; motion review not established</td>
+</tr>
+<tr>
+<td>9. FreeCAD MCP</td>
+<td>GUI, background or isolated process</td>
+<td>Explicit execution modes</td>
+<td>Object properties, screenshots, FEM results</td>
+<td>Async status and timeout semantics</td>
+</tr>
+<tr>
+<td>10. Community Unreal MCP</td>
+<td>Python → native editor plugin</td>
+<td>Actor and Blueprint bridge</td>
+<td>Actor state, screenshot, compile response</td>
+<td>Editor manipulation; runtime acceptance separate</td>
+</tr>
+<tr>
+<td>11. Epic Unreal MCP</td>
+<td>In-editor HTTP MCP</td>
+<td>Reflection-based Toolset Registry</td>
+<td>Editor/Slate inspection and automation tests</td>
+<td>Serial game-thread execution</td>
+</tr>
+<tr>
+<td>12. Unity MCP</td>
+<td>Editor package + external server</td>
+<td>Focused tool groups</td>
+<td>Scene/assets, screenshots, tests, profiler/logs</td>
+<td>Animation controls and runtime tools</td>
+</tr>
+<tr>
+<td>13. Scenario Blender plugin</td>
+<td>Local MCP + remote APIs</td>
+<td>Generation jobs and staged imports</td>
+<td>Scene details, still references, job provenance</td>
+<td>Image/video generation lanes; still capture has limits</td>
+</tr>
+<tr>
+<td>14. BlenderAlchemy</td>
+<td>Rendered code candidates</td>
+<td>Vision-guided search and selection</td>
+<td>Candidate renders and pairwise evaluation</td>
+<td>Iterative appearance refinement</td>
+</tr>
+<tr>
+<td>15. LL3M</td>
+<td>Modular Blender code</td>
+<td>Planner/coder/critic/verifier</td>
+<td>Adaptive multiview and before/after verification</td>
+<td>Localized edits; public hosted server discontinued</td>
+</tr>
+<tr>
+<td>16. SceneCraft</td>
+<td>Relational scene generation</td>
+<td>Constraints plus visual feedback</td>
+<td>Layout constraints and render critique</td>
+<td>Iterative spatial refinement</td>
+</tr>
+<tr>
+<td>17. EZBlender</td>
+<td>Semantic domain agents</td>
+<td>Local propose/verify/refine</td>
+<td>Render feedback and benchmark scoring</td>
+<td>Local repair; reported latency study</td>
+</tr>
+<tr>
+<td>18. 3D-GPT</td>
+<td>Infinigen procedural tools</td>
+<td>Tool selection and parameter assignment</td>
+<td>Tool documentation and procedural representation</td>
+<td>Procedural generation; partial public implementation</td>
+</tr>
+<tr>
+<td>19. USD Code / ChatUSD</td>
+<td>USD service + Kit integration</td>
+<td>Knowledge, code and scene-query nodes</td>
+<td>Explicit stage queries; immediate visualization</td>
+<td>Stage editing; image critic not established</td>
+</tr>
+<tr>
+<td>20. Blender Agent Studio</td>
+<td>Saved scene + headless tools</td>
+<td>Skills and staged delivery gates</td>
+<td>Fixed views, dimensions, overlays, fresh export reopen</td>
+<td>Animation workflows and bounded render budgets</td>
+</tr>
+<tr>
+<td>21. BlenderGym</td>
+<td>Research benchmark</td>
+<td>Start-to-goal graphics editing</td>
+<td>Target/render comparisons</td>
+<td>Five editing families; not a live companion</td>
+</tr>
+<tr>
+<td>22. Blender-VideoBench</td>
+<td>Fresh Blender sandbox</td>
+<td>Budgeted programmatic reconstruction</td>
+<td>Source frames, rendered video, independent scoring</td>
+<td>Animated executable result and temporal metrics</td>
+</tr>
+</tbody>
+</table></div>
+<h2 id="implementation-profiles">Implementation profiles</h2>
+<h3 id="1-blender-cli-an-agent-facing-command-contract">1. Blender CLI — an agent-facing command contract</h3>
+<p><strong>Philosophy:</strong> Treat Blender as a reproducible executable asset processor. The reviewed v0.6.0 launches background Blender for operations, rather than requiring an installed resident add-on. It exposes structured JSON commands, batching, schemas with effects, and an arbitrary-bpy path. Documented sensing includes Workbench multiview contact sheets, blank-image signals, mesh checks, camera reprojection and format-aware export readback. Acceptance binds evidence to source/specification/snapshot hashes. Detached jobs have supervision, timeouts and process-tree cleanup. Upstream smoke-test results are maintainer reports, not our verification. <a href="https://github.com/renezander030/blender-cli/blob/6d042220b4229e5594d5df509a479634eb04b181/README.md">Pinned project documentation</a>, <a href="https://github.com/renezander030/blender-cli/blob/6d042220b4229e5594d5df509a479634eb04b181/blender-cli">command implementation</a>.</p>
+<p><strong>Implication:</strong> Borrow its result envelopes, exact artifact checks and explicit failure states. Fresh processes suit disposable acceptance fixtures; our artist's unsaved Houdini session still needs a persistent companion. An AST guard is not a general sandbox.</p>
+<h3 id="2-cli-anything-s-blender-harness-a-recipe-not-a-live-scene-proxy">2. CLI-Anything's Blender harness — a recipe, not a live scene proxy</h3>
+<p>This is a separate project from Blender CLI. Its JSON scene project can be edited without Blender installed, then compiled into bpy for rendering. The harness documents a REPL and JSON results. The inspected preview path produces real hero and Workbench images; poll-mode preview stores session state, immutable bundles and trajectory history. The recipe is the authored representation, rather than a transparent reflection of every arbitrary existing Blender scene. <a href="https://github.com/HKUDS/CLI-Anything/blob/34f519533bc175d2fe287ab8316b0dd99bb9cc43/blender/agent-harness/cli_anything/blender/README.md">Pinned harness guide</a>, <a href="https://github.com/HKUDS/CLI-Anything/blob/34f519533bc175d2fe287ab8316b0dd99bb9cc43/blender/agent-harness/cli_anything/blender/core/preview.py">preview implementation</a>.</p>
+<p><strong>Implication:</strong> This is a useful philosophy for our recursive architecture demos: preserve a small declarative recipe, then compile and review it. Keep recipe authority distinct from the complete artist scene so a regeneration cannot silently erase unrelated work.</p>
+<h3 id="3-mcp-for-blender-a-persistent-bridge-with-richer-trajectories">3. MCP for Blender — a persistent bridge with richer trajectories</h3>
+<p>Formerly named BlenderMCP, this project connects an external MCP server to a Blender add-on over TCP. It provides scene/object information, viewport images, Python execution and asset-provider integrations. The inspected trajectory module records before/after state and bounded scene summaries, supports older-add-on fallbacks, and can rate-limit optional image capture. Its trajectory upload is Supabase-based, not a local JSONL archive. The README distinguishes default minimal usage telemetry from consent-dependent content capture and documents an all-telemetry disable option. <a href="https://github.com/ahujasid/mcp-for-blender/blob/41a184322db3ccdcb2fdbc1f6994afe71bf9163c/README.md">Pinned README</a>, <a href="https://github.com/ahujasid/mcp-for-blender/blob/41a184322db3ccdcb2fdbc1f6994afe71bf9163c/src/blender_mcp/trajectory.py">trajectory implementation</a>.</p>
+<p><strong>Implication:</strong> Bounded deltas are valuable for reducing repeated scene dumps. Telemetry is not evidence that the active agent sees, judges and repairs every image. For our companion, local review receipts should be explicit outputs with defined retention, rather than depending on an analytics backend.</p>
+<h3 id="4-blendergpt-the-useful-early-baseline">4. BlenderGPT — the useful early baseline</h3>
+<p>The 2023 add-on translates conversational requests into Blender Python. The inspected operator executes the generated code and displays execution errors, with Blender undo integration. That path does not establish an automatic render/critique cycle. Later papers may use modified BlenderGPT baselines; those should not be attributed to the original add-on. <a href="https://github.com/gd3kr/BlenderGPT/blob/3fbc3bd3f169d904f8bf8a067807c4a71d3d3b4b/README.md">Pinned README</a>, <a href="https://github.com/gd3kr/BlenderGPT/blob/3fbc3bd3f169d904f8bf8a067807c4a71d3d3b4b/__init__.py">operator implementation</a>.</p>
+<p><strong>Implication:</strong> A small script bridge is sufficient to demonstrate API reach. It is insufficient as a delivery contract: success says the code ran, not that proportions, topology, lighting or motion match the request. Treat this as historical prior art, rather than a current compatibility recommendation.</p>
+<h3 id="5-houdini-agent-a-host-specific-assistant-and-semantic-toolkit">5. Houdini-Agent — a host-specific assistant and semantic toolkit</h3>
+<p>Its current architecture uses a standalone Qt/QML application and Houdini bridge, with Agent/Ask/Plan modes, a central tool registry, mode guards and extension hooks. The inspected bridge handles scene context, tool execution and undo requests through JSON-line TCP, dispatching host work through Houdini's main-thread mechanism. Documentation lists viewport capture, attribute/bounds/connectivity analysis, dependency inspection and cook profiling. <a href="https://github.com/Kazama-Suichiku/Houdini-Agent/blob/73c5d2ca3d48e97208b09c036defc1271f58d34d/README.md">Pinned README</a>, <a href="https://github.com/Kazama-Suichiku/Houdini-Agent/blob/73c5d2ca3d48e97208b09c036defc1271f58d34d/houdini_agent/bridge/server.py">bridge</a>, <a href="https://github.com/Kazama-Suichiku/Houdini-Agent/blob/73c5d2ca3d48e97208b09c036defc1271f58d34d/houdini_agent/utils/tool_registry.py">registry</a>.</p>
+<p><strong>Implication:</strong> This is the closest reference for useful Houdini semantics and read-versus-write modes. Separate those semantics from the chosen model/chat UI. The reviewed paths do not establish durable job recovery, portable source packaging or exact pre-apply temporal acceptance; those need their own contracts and tests.</p>
+<h3 id="6-dcc-mcp-modular-infrastructure-across-hosts">6. DCC-MCP — modular infrastructure across hosts</h3>
+<p>The core describes a Rust-first control plane with Python bindings, CLI/MCP/REST access, versioned skills, effects, jobs, artifacts, checkpoints and policies. Progressive discovery separates listing/searching/describing from loading and calling skills. Host adapters provide the actual DCC operations; this is infrastructure, not itself a model or artistic planner. The Maya adapter distinguishes process, dispatcher and DCC readiness. <a href="https://github.com/dcc-mcp/dcc-mcp-core/blob/7b8a76afe9c1a87e032f60be86982a4bc01efe28/README.md">Pinned core</a>, <a href="https://github.com/dcc-mcp/dcc-mcp-maya/blob/7178b242d0b1417469de39a0c964c398acc538d5/README.md">Maya adapter</a>.</p>
+<p>The inspected Houdini viewport script checks image dimensions and rejects black or single-color captures while reporting viewport/display/camera context; a headless host can report capture unavailability. The Blender adapter documents matched beauty and evaluated-wireframe examples. These checks make a screenshot result more informative, but they do not prove artistic correctness. <a href="https://github.com/dcc-mcp/dcc-mcp-houdini/blob/890d53d984cf871f894a691b82187fa7d44ac698/src/dcc_mcp_houdini/skills/houdini-render/scripts/capture_viewport.py">Houdini capture implementation</a>, <a href="https://github.com/dcc-mcp/dcc-mcp-blender/blob/cf520d0ce18c5084757e06ac704caffe94c5f344/README.md">Blender adapter</a>.</p>
+<p><strong>Implication:</strong> Borrow stable plugin interfaces, progressive discovery, readiness distinctions and capture validity. A Rust implementation elsewhere is not evidence that rewriting our Python host core would improve performance. Our existing ADR requires measured justification for a language/process change.</p>
+<h3 id="7-maya-mcp-semantics-knowledge-and-imaging-policy">7. Maya MCP — semantics, knowledge and imaging policy</h3>
+<p>This project exposes typed Maya operations through a Python MCP server and Maya command bridge: modeling, materials, transforms, animation, snapshots, playblasts and turntables. It documents retrieval using semantic and lexical search, validated learned patterns, and a dockable assistant. The inspected color policy manages review view transforms. Its Arnold still workflow can export an ASS scene and invoke external <code>kick</code>, separating expensive rendering from the GUI rendering path. <a href="https://github.com/abrahamADSK/maya-mcp/blob/a9f0af10ad327a052a12b8b7cfc4aa812be265e2/README.md">Pinned README</a>, <a href="https://github.com/abrahamADSK/maya-mcp/blob/a9f0af10ad327a052a12b8b7cfc4aa812be265e2/src/maya_mcp/maya_bridge.py">bridge</a>, <a href="https://github.com/abrahamADSK/maya-mcp/blob/a9f0af10ad327a052a12b8b7cfc4aa812be265e2/src/maya_mcp/color_policy.py">color policy</a>.</p>
+<p><strong>Implication:</strong> Units, color management and rendering mode belong in observation metadata. API retrieval helps repair commands, while playblasts and geometry probes assess results. Undo chunks should not be described as crash-atomic transactions spanning external files.</p>
+<h3 id="8-rhinomcp-editable-cad-and-grasshopper-graphs">8. RhinoMCP — editable CAD and Grasshopper graphs</h3>
+<p>A Python MCP server communicates with a C# RhinoCommon plugin. The documented surface includes object/layer/material inspection and editing, viewport capture, exports and undo/redo. Grasshopper support covers components, connections, sliders, solutions and baking. The project also documents server/plugin version checks. <a href="https://github.com/jingcheng-chen/rhinomcp/blob/70b63a2b86e4f92f3250f9a5e4a5813c2a38c163/README.md">Pinned project documentation</a>.</p>
+<p><strong>Implication:</strong> For procedural work, keep the editable graph and inspect its health alongside the baked geometry. A correct image can conceal a broken dependency or a graph that cannot regenerate. Our analogous sensors should include node dependencies, cook errors and evaluated output. The reviewed documentation does not establish a motion-quality loop.</p>
+<h3 id="9-freecad-mcp-explicit-execution-modes-and-honest-timeouts">9. FreeCAD MCP — explicit execution modes and honest timeouts</h3>
+<p>The bridge distinguishes GUI execution, independent background geometry followed by explicit GUI commit, and isolated <code>freecadcmd</code> work. Tools inspect documents/properties and capture configurable views; FEM operations provide quantitative engineering outputs. Its execution documentation separates queue and execution timeout budgets. A queued task may expire before running; a started GUI task cannot necessarily be interrupted when the caller times out. Completed async history is bounded and process-local. <a href="https://github.com/neka-nat/freecad-mcp/blob/d6bbe4b38be3a622b5981d9d2afa7037ee080534/README.md">Pinned README</a>, <a href="https://github.com/neka-nat/freecad-mcp/blob/d6bbe4b38be3a622b5981d9d2afa7037ee080534/docs/execution.md">execution contract</a>, <a href="https://github.com/neka-nat/freecad-mcp/blob/d6bbe4b38be3a622b5981d9d2afa7037ee080534/docs/tools.md">tool reference</a>.</p>
+<p><strong>Implication:</strong> This is an especially useful recovery reference. Report whether an operation was queued, running, completed or uncertain. A client timeout must not imply the mutation stopped. Separate heavy disposable computations from live edits, and make any later import explicit.</p>
+<h3 id="10-community-unreal-mcp-native-editor-dispatch">10. Community Unreal MCP — native editor dispatch</h3>
+<p>The older community project bridges Python MCP to a C++ editor plugin for actors and Blueprints. The inspected command routing includes both <code>focus_viewport</code> and <code>take_screenshot</code>, and dispatches operations onto the game thread. It is therefore inaccurate to characterize it as wholly visually blind. Blueprint compilation is another feedback channel. Its pinned repository snapshot is from April 2025; this review does not establish compatibility with current Unreal releases. <a href="https://github.com/chongdashu/unreal-mcp/blob/4e5f00da50733190481311e254d16d137a84ef33/README.md">Pinned README</a>, <a href="https://github.com/chongdashu/unreal-mcp/blob/4e5f00da50733190481311e254d16d137a84ef33/MCPGameProject/Plugins/UnrealMCP/Source/UnrealMCP/Private/UnrealMCPBridge.cpp">bridge implementation</a>.</p>
+<p><strong>Implication:</strong> Screenshots and compile diagnostics complement one another. Neither alone validates runtime collision, navigation or behavior. Keep this distinct from Epic's newer official integration.</p>
+<h3 id="11-epic-s-unreal-mcp-separate-the-tool-registry-from-transport">11. Epic's Unreal MCP — separate the tool registry from transport</h3>
+<p>Epic's Unreal 5.8 documentation labels its in-editor MCP feature Experimental. Tools come from a separate Toolset Registry, with reflected Python/C++ definitions and structured schemas. The default discovery mode offers toolset listing, description and invocation rather than exposing every tool at once. Calls run serially on the game thread; clients are instructed not to overlap them. Documented capabilities include actors, lighting, material instances, Slate inspection and automation tests. Tool refresh is supported, but new C++ reflected functions require restart. <a href="https://dev.epicgames.com/documentation/unreal-engine/unreal-mcp-in-unreal-editor">Official Unreal MCP documentation</a>.</p>
+<p><strong>Implication:</strong> A host operation should be reusable through CLI, MCP and other interfaces. The registry should own its schema and lifecycle. This overview does not establish an autonomous screenshot critic; editor introspection and automation tests are its clearly documented sensing channels.</p>
+<h3 id="12-unity-mcp-combine-visual-and-runtime-feedback">12. Unity MCP — combine visual and runtime feedback</h3>
+<p>The current main-branch README describes focused editor tools for scenes, assets, scripts, tests, profiling and builds, with tool groups and multi-instance routing. The inspected camera implementation detects capabilities such as Cinemachine and delegates screenshot and multiview capture to scene tooling. This confirms capture entry points on main; richer beta documentation should not silently be treated as the same release. <a href="https://github.com/CoplayDev/unity-mcp/blob/8be7d96d95aa3e262894c64412f0df3b432efa05/README.md">Pinned README</a>, <a href="https://github.com/CoplayDev/unity-mcp/blob/8be7d96d95aa3e262894c64412f0df3b432efa05/MCPForUnity/Editor/Tools/Cameras/ManageCamera.cs">camera implementation</a>.</p>
+<p><strong>Implication:</strong> Tests, logs and profiler signals should travel alongside images, and capability-dependent tools should state their fallback. Animation authoring access is useful; reliable motion acceptance still needs explicit frame sampling and behavior checks.</p>
+<h3 id="13-scenario-s-blender-plugin-durable-external-jobs-and-staged-import">13. Scenario's Blender plugin — durable external jobs and staged import</h3>
+<p>Scenario connects local Blender MCP operations to remote generation services. Its canonical tool reference covers scene/object inspection, opt-in Python execution, generation jobs, still-reference capture and staged imports. It documents quote-bound approvals, credential-scoped job recovery, revision/context checks, and uncertain submission handling without blind replay. The protocol separates main-thread preparation and completion from worker HTTP activity. Capture references are still images; video generation and clip/mesh preparation are distinct capabilities. Some UI lanes remain prototype workflows. <a href="https://github.com/scenario-labs/blender-plugin/blob/6fa30d06b43c6d3ce4e903b45e8635034e4ecb39/README.md">Pinned README</a>, <a href="https://github.com/scenario-labs/blender-plugin/blob/6fa30d06b43c6d3ce4e903b45e8635034e4ecb39/docs/MCP.md">canonical MCP reference</a>, <a href="https://github.com/scenario-labs/blender-plugin/blob/6fa30d06b43c6d3ce4e903b45e8635034e4ecb39/scenario/mcp/protocol.py">protocol</a>.</p>
+<p><strong>Implication:</strong> Prepare/apply handles, exact quote/source provenance and honest uncertainty are good models for any external asset service. An imported generated asset still needs DCC-side geometry, materials and portability checks. This plugin is not evidence of a complete autonomous scene-quality loop.</p>
+<h3 id="14-blenderalchemy-render-candidates-compare-retain-the-best">14. BlenderAlchemy — render candidates, compare, retain the best</h3>
+<p>BlenderAlchemy represents an editable scene subsystem as Python and uses vision to propose and evaluate changes. Its paper describes multiple candidates, rendered comparisons, larger “leap” edits and smaller “tweak” edits. The inspected refinement code preserves candidate/winner programs and images, uses pairwise selection, and bounds concurrency. The experiments emphasize appearance edits such as materials, lighting and procedural parameters; this is not universal scene reconstruction. <a href="https://arxiv.org/html/2404.17672v2">Paper</a>, <a href="https://github.com/ianhuang0630/BlenderAlchemyOfficial/blob/4444411592150a72d01d55ef84b1ac844b0b2ad0/refinement_process.py">pinned refinement code</a>, <a href="https://github.com/ianhuang0630/BlenderAlchemyOfficial/blob/4444411592150a72d01d55ef84b1ac844b0b2ad0/agents.py">agent code</a>.</p>
+<p><strong>Implication:</strong> Use small candidate sets when a visual decision is ambiguous, then show the artist the winner and alternatives. Preserve the baseline and reject regressions. Rendering several variants costs more than inspecting one; this should be a deliberate review mode with a budget, rather than the default for every parameter change.</p>
+<h3 id="15-ll3m-modular-programs-and-separate-critique-from-verification">15. LL3M — modular programs and separate critique from verification</h3>
+<p>LL3M's paper combines planning, retrieval, coding, criticism, verification and user feedback around readable modular Blender programs. Its critic uses multiple adaptive views; verification checks before/after edits against specific critiques. Localized revisions retain broader code context. The public repository describes a client/server arrangement, but its current README states that the hosted server was discontinued after the paper's model was retired. An academic/evaluation license is present; this is not an unrestricted production reuse assumption. <a href="https://arxiv.org/html/2508.08228v1">Paper</a>, <a href="https://github.com/threedle/ll3m/blob/b5e79c3efa862efcc6e4105ce48245230fee3ebf/README.md">pinned current repository documentation</a>.</p>
+<p><strong>Implication:</strong> A useful critique names an object, a defect and evidence; verification checks whether that specific defect changed. These can be logical roles within one agent workflow. They do not require multiple model processes or simultaneous mutations of the host. LL3M remains valuable methodological prior art, not a currently functioning drop-in hosted dependency.</p>
+<h3 id="16-scenecraft-relational-intent-becomes-spatial-constraints">16. SceneCraft — relational intent becomes spatial constraints</h3>
+<p>Here SceneCraft means <strong>Hu et al., arXiv:2403.01248</strong>, not the distinct diffusion project with the same name. The paper describes relational scene intent, numerical spatial constraints and code generation, followed by rendered feedback and reusable function/library learning. Experiments use retrieved assets and evaluate scene construction. No official public executable implementation was verified in this review. <a href="https://arxiv.org/html/2403.01248v1">Primary paper</a>.</p>
+<p><strong>Implication:</strong> Turn artistic intent into a combination of constraints and appearance goals. For our recursive city, door alignment, minimum passage width, scale relationships and camera traversal can become measurable contracts. Vision judges mood and composition; it should not be asked to infer exact clearance from an attractive perspective image.</p>
+<h3 id="17-ezblender-domain-specialists-and-local-repair">17. EZBlender — domain specialists and local repair</h3>
+<p>EZBlender's paper routes semantic instructions through planning and domain agents for geometry/modifiers, materials, lighting and cameras. Its propose/verify/refine loops repair locally instead of always replanning the whole scene. The evaluation uses specified BlenderGym tasks and rendering/model configurations, including a reported latency improvement under those conditions. The public repository packages skills/presets and launch workflows. That evidence does not establish a general speedup on our Houdini setup. <a href="https://arxiv.org/html/2601.07143v1">Paper</a>, <a href="https://github.com/Aztech-Lab/EZ_Blender/blob/7c15b5b20fdd7a8513d75bc26613e955190ffb43/README.md">pinned repository</a>.</p>
+<p><strong>Implication:</strong> Organize plugins by domain with cheap local validators and targeted repair instructions. Independently preparing materials and geometry may be useful; parallel planning does not authorize concurrent access to Houdini's host API. Measure total edit-to-review time, including rendering and failed candidates.</p>
+<h3 id="18-3d-gpt-language-drives-an-existing-procedural-generator">18. 3D-GPT — language drives an existing procedural generator</h3>
+<p>3D-GPT decomposes requests into tool selection, concept enrichment and parameter assignment for a predefined procedural modeling system, using Infinigen. Tool descriptions and procedural parameters are central to the representation. The official repository is a partial implementation; its README describes a richer configuration-file parser as upcoming, not already shipped. The reviewed evidence does not establish a general multiview visual correction loop. <a href="https://arxiv.org/html/2310.12945v1">Paper</a>, <a href="https://github.com/Chuny1/3DGPT/blob/590bf71bde9b854582d60913e054cda4d6cb38c2/README.md">pinned repository</a>.</p>
+<p><strong>Implication:</strong> This is a good conceptual fit for Houdini: improve the procedural vocabulary and expose meaningful parameters, rather than regenerate arbitrary low-level code every time. For self-referential architecture, a seed, recursion rule, transform family and termination/LOD policy provide compact reproducible control.</p>
+<h3 id="19-nvidia-usd-code-and-chatusd-query-stage-context-explicitly">19. NVIDIA USD Code and ChatUSD — query stage context explicitly</h3>
+<p>USD Code exposes expertise for USD questions and code generation. Documentation distinguishes a code-generation node without current-stage context from interactive execution in a Kit stage. ChatUSD's SceneInfoNetworkNode produces scene-query code for hierarchy, names, dimensions and positions before interactive edits. Immediate visualization is part of the editor workflow; the reviewed documentation does not establish an autonomous image-evaluation loop. <a href="https://docs.omniverse.nvidia.com/services/latest/services/usd-code/overview.html">Service overview</a>, <a href="https://docs.omniverse.nvidia.com/services/latest/services/usd-code/usage.html">usage</a>, <a href="https://docs.omniverse.nvidia.com/kit/docs/omni.ai.chat_usd.bundle/latest/components/scene-info-network-node.html">scene-query node</a>.</p>
+<p><strong>Implication:</strong> Make the difference between model knowledge and authoritative live scene context explicit. USD can become a cross-DCC artifact and interchange boundary, while Houdini-specific node and cook semantics remain in Houdini. A generated USD program is not evidence that its referenced assets resolve on another machine.</p>
+<h3 id="20-blender-agent-studio-staged-quality-and-evidence-caveats">20. Blender Agent Studio — staged quality and evidence caveats</h3>
+<p>This independent plugin combines specialist skills and local tools around saved Blender scenes and build-source Python. It documents graybox review, evaluated dimensions and constraints, fixed diagnostic views, smaller repair views, authored-camera beauty renders, reference overlays and fresh-process export reopen. An optional Rust SceneIR runtime adds baseline comparisons; the core tools do not require it. Its README reports five matched workflow pairs with better technical gates and mixed visual gains, at higher token cost and sometimes higher elapsed time. The study used skills without the optional MCP tools, so it does not measure their added benefit. <a href="https://github.com/ifBars/blender-agent-studio/blob/ef707f828410ab2059424cad15925e24c975cbd3/README.md">Pinned documentation</a>.</p>
+<p><strong>Implication:</strong> This is a strong reporting example precisely because it separates technical validity, aesthetic preference and cost. Use graybox acceptance before detail, preserve the editable build source, and measure the full workflow. Five pairs are illustrative evidence, not an arbitrary-task success rate.</p>
+<h2 id="benchmark-references">Benchmark references</h2>
+<h3 id="21-blendergym-controlled-graphics-editing-fixtures">21. BlenderGym — controlled graphics editing fixtures</h3>
+<p>The CVPR 2025 project provides 245 handcrafted scenes spanning procedural geometry, lighting, materials, shape keys and object placement. Its start/goal tasks create controlled graphics-editing comparisons. This is an evaluation resource rather than a persistent editor companion, and coverage of those families does not establish animation continuity, live-session recovery or whole-scene portability. <a href="https://blendergym.github.io/">Primary project page</a>, <a href="https://arxiv.org/abs/2504.01786">paper</a>, <a href="https://github.com/richard-guyunqi/BlenderGym-Open/blob/67c8b48bf8c548c701b6873db6fcc6527d756385/README.md">pinned repository</a>.</p>
+<p><strong>Implication:</strong> Borrow the fixture discipline: the same initial scene, goal, camera and budget across harness revisions. Our fixtures should include intentional failure cases and artistic exceptions, rather than only easy demonstrations of successful execution.</p>
+<h3 id="22-blender-videobench-an-animated-executable-result-under-a-budget">22. Blender-VideoBench — an animated executable result under a budget</h3>
+<p>This September 2026 benchmark reconstructs source videos in fresh Blender 4.2 sandboxes. Its agent-facing harness uses bash and frame inspection under a common cost limit; external asset libraries are excluded. The submission is an animated Blender scene. Scoring runs separately from the agent loop, using paired video-question retention and frozen V-JEPA 2.1 video similarity. Failed reconstructions remain in the evaluation pool. The public repository supplies protocol and reproduction instructions; large datasets were not downloaded or run here. <a href="https://github.com/yunlong10/BVB/blob/69b7a488e972b648819cc12cd2752256f84efbc3/README.md">Pinned repository/protocol</a>, <a href="https://arxiv.org/abs/2609.15478">paper</a>.</p>
+<p><strong>Implication:</strong> Time awareness should be tested on a reopened, rendered artifact, not inferred from keyframe creation. Keep judging separate from editing so a harness cannot grade only its own favorable intermediate output. Video similarity is useful perceptual evidence; it does not certify exact physical contacts or a seamless recursion transition.</p>
+<h2 id="findings-that-should-shape-our-harness">Findings that should shape our harness</h2>
+<p>These are recommendations derived from the comparisons, not claims that the current companion already implements every item.</p>
+<h3 id="the-observation-should-identify-the-state-it-describes">The observation should identify the state it describes</h3>
+<p>Return a versioned observation envelope with host build, session identity, scene/revision identity, selected objects, object references, source hashes, frame/time range, FPS, camera transform and projection, units, color settings, render mode, timings and truncation. State whether geometry is evaluated, sampled or complete. Include the last acknowledged mutation and outstanding jobs.</p>
+<p>Without that envelope, an agent can mistake an old image for a new edit, compare different cameras, or apply evidence from another HIP. Scene paths alone are not stable object identity. A reopened file should create a new session identity even when its filename matches.</p>
+<h3 id="make-cheap-feedback-frequent-and-expensive-feedback-deliberate">Make cheap feedback frequent and expensive feedback deliberate</h3>
+<p>The useful loop is: query relevant objects, make one bounded change, inspect deltas and errors, capture a small diagnostic review, then escalate to full multiview or beauty rendering when needed. Cache only against explicit revision/time/camera keys. Coalesce host events and report invalidation; do not silently reuse stale artifacts.</p>
+<p>Adaptive views help find hidden defects, while fixed views make before/after comparisons fair. Use both: a fixed comparison set plus additional views chosen for the defect. Workbench/wireframe and authored beauty images answer different questions and should retain their own settings.</p>
+<h3 id="treat-review-as-a-decision-with-evidence">Treat review as a decision with evidence</h3>
+<p>A review should produce: the brief's criteria, changed objects, quantitative checks, visual findings, known omissions, artifact links and an accept/reject decision. Each finding needs a target and a testable statement. For example, “the lower landing intersects the door sweep at frames 44–51” is actionable; “make it nicer” is not.</p>
+<p>Keep technical pass/fail separate from aesthetic preference. Our Escher geometry deliberately violates ordinary perspective expectations, and fractured neon may intentionally contain gaps. Validators should declare relevant constraints and approved exceptions, rather than reject a style because it resembles a defect in another task.</p>
+<h3 id="cancellation-undo-and-recovery-need-different-words">Cancellation, undo and recovery need different words</h3>
+<p>Cancellation can remove a queued operation without guaranteeing interruption after host execution starts. Undo may restore a scene edit without removing generated external files. A saved journal may recover job records without making a mutation crash-atomic.</p>
+<p>The contract should expose queued/running/completed/failed/cancelled/uncertain states. Reconciliation should inspect actual host state before retrying an uncertain mutation. A timeout must return enough information to ask about the same operation, rather than encouraging a duplicate apply.</p>
+<h3 id="a-plugin-is-more-than-a-list-of-tools">A plugin is more than a list of tools</h3>
+<p>Use a small shared core for identity, scheduling, schemas, jobs, artifacts, revisions, budgets and error conventions. Domain plugins contribute operations, sensors and validators. The same operations should be accessible through CLI and MCP adapters. Plugins declare versions, effects, host/thread requirements, lifecycle hooks and capability limitations.</p>
+<p>Discovery should be inexpensive: search and describe before loading large catalogs. Test load, failed load, reload, unload and listener cleanup. A catalog describing a release must not be confused with capabilities available in the current live instance. Logical specialist roles can share this infrastructure without requiring multiple simultaneous agents.</p>
+<h3 id="exact-editable-artifacts-beat-an-attractive-screenshot-alone">Exact editable artifacts beat an attractive screenshot alone</h3>
+<p>Archive exact source bytes, inline snippets, dependencies, hashes and build settings beside the review. Reopen a disposable copy, relink from its manifest, cook again and compare geometry and rendered evidence. Record what was compared and with what tolerance. Export readback checks the export; it does not by itself prove the native procedural scene is portable.</p>
+<p>For our town, do not assume a clean Git checkout contains companion-owned revisions or unsaved artist work. Package from an identified source state, and test separately from the live artist HIP.</p>
+<h2 id="time-aware-sensing-for-the-recursive-city">Time-aware sensing for the recursive city</h2>
+<p>I would make a motion review a bounded sampling plan plus a small video, with all state restored afterward. Record the frame range, sampling policy, FPS, shutter, simulation/cache assumptions and cameras. Probe transitions and extrema, not only the first and final frames.</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Intended effect</th>
+<th>Structured check</th>
+<th>Visual evidence</th>
+<th>Failure to distinguish</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Door into a repeating hallway</td>
+<td>Passage width, door sweep, transform alignment</td>
+<td>Eye-level approach/open/crossing sequence</td>
+<td>A beautiful closed-door render can hide blocked traversal</td>
+</tr>
+<tr>
+<td>Scale recursion</td>
+<td>Transform ratios, bounds growth, LOD/termination policy</td>
+<td>Continuous camera traversal and scale cues</td>
+<td>Finite geometry should not be advertised as physically infinite</td>
+</tr>
+<tr>
+<td>Escher gravity changes</td>
+<td>Camera-relative projection, landing continuity, declared gravity domains</td>
+<td>Authored illusion view plus diagnostic alternatives</td>
+<td>Off-axis “wrongness” may be intentional; landing gaps may not be</td>
+</tr>
+<tr>
+<td>Animated stair or portal</td>
+<td>Clearance/contact over sampled frames</td>
+<td>Contact sheet and short clip near extrema</td>
+<td>Sparse sampling can miss collisions and popping</td>
+</tr>
+<tr>
+<td>Neon/material animation</td>
+<td>Parameter ranges and temporal change statistics</td>
+<td>Fixed-exposure/color-managed clip</td>
+<td>Exposure changes can masquerade as material improvements</td>
+</tr>
+<tr>
+<td>Repeating camera loop</td>
+<td>End/start pose, projection and image continuity</td>
+<td>Boundary frames and looped playback</td>
+<td>Matching position alone can hide orientation or lighting discontinuity</td>
+</tr>
+</tbody>
+</table></div>
+<p>Each check should report sampling coverage. A bounded sample can find defects, but cannot prove all intermediate times safe unless a suitable continuous bound or solver is used. “Infinite” visual recursion should be described through its finite representation, camera strategy and regeneration/LOD behavior.</p>
+<h2 id="how-this-maps-to-our-existing-work">How this maps to our existing work</h2>
+<p>This is a research mapping to recorded follow-ups, not a status audit or new implementation plan. Dependencies and full acceptance remain in Beads. The report creates no duplicate engineering tasks.</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Existing Bead</th>
+<th>Relevant prior art</th>
+<th>Concrete evidence to seek</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>houdini-mcp-vzp.15</code> — fresh-process acceptance</td>
+<td>Blender CLI, host readiness distinctions in DCC-MCP</td>
+<td>Disposable restart; new identity; archived jobs; stale-session rejection; no replay or duplicate listener</td>
+</tr>
+<tr>
+<td><code>.16</code> — portable scene/source packaging</td>
+<td>CLI export readback, Blender Agent Studio, USD boundaries</td>
+<td>Exact source manifest; isolated relink/reopen; geometry equivalence; linked review artifacts</td>
+</tr>
+<tr>
+<td><code>.17</code> — recovery and retention</td>
+<td>FreeCAD timeouts, Scenario job recovery</td>
+<td>Fault-injected partial/uncertain outcomes; retained referenced sources; bounded cleanup; no duplicate mutation</td>
+</tr>
+<tr>
+<td><code>.18</code> — pre-apply temporal review</td>
+<td>BlenderAlchemy, LL3M, BVB</td>
+<td>Rejected candidate leaves baseline intact; accepted exact source applied once; stable camera/time restoration</td>
+</tr>
+<tr>
+<td><code>.19</code> — external plugin lifecycle</td>
+<td>DCC-MCP, Epic Toolset Registry</td>
+<td>Failed load/reload/unload; catalog parity; listener cleanup; clear capability errors</td>
+</tr>
+<tr>
+<td><code>.20</code> — edit-review scorecard</td>
+<td>Blender Agent Studio, BlenderGym, BVB</td>
+<td>Same fixtures and budgets; linked artifacts; cold/warm phase timings; quality alongside speed</td>
+</tr>
+</tbody>
+</table></div>
+<p>Retain Python for Houdini semantics and the gateway, consistent with <a href="../adr/0001-language-and-process-boundaries.md">ADR 0001</a>. A compiled sidecar is an evidence-gated option for byte transport or supervision, not a reason to duplicate HOM. None of this research establishes that our transport is the dominant current bottleneck.</p>
+<h2 id="proposed-evaluation-protocol">Proposed evaluation protocol</h2>
+<p>Use disposable saved fixtures and a fixed operation brief. Run both cold-process and warm-session cases. Measure discovery, observation, queue wait, mutation/cook, capture, artifact transfer, critique and acceptance separately. Record end-to-end time, context bytes, artifact bytes, render/model cost, retries, failures and quality outcomes. Compare distributions across repeated runs; label sample size and hardware. A single fast success is not a regression baseline.</p>
+<p>The initial fixture set should include a small static object, a dense procedural street, a deliberately broken source dependency, a door/clearance animation, a recursion boundary, an intentional anamorphic illusion, an unavailable viewport, an uncertain timed-out mutation and a failed plugin reload. Failures belong in the denominator.</p>
+<p>Performance gates should require the same quality and coverage. A quicker result obtained by skipping motion frames or export verification is a different service level. Set numerical thresholds after collecting a baseline, then investigate regressions by phase. Do not import a paper's speedup as our target or call a stricter workflow inefficient simply because it does more validation.</p>
+<p>For an artist-facing comparison, show a fixed before/after pair and a short motion clip, with technical findings visible separately. Keep aesthetic preference open to the artist. Record why a candidate was rejected so the next edit repairs the issue instead of repeating it.</p>
+<h2 id="source-inventory-and-limits">Source inventory and limits</h2>
+<p>The following pinned repository snapshots support the profiles. Full commit IDs, retrieved file hashes and additional implementation paths are in the <a href="ai-dcc-prior-art-2026-09-28.sources.json">machine-readable source manifest</a>. Official documentation URLs and paper versions are also listed there. Versionless vendor pages can change after this date.</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Repository</th>
+<th>Pinned commit</th>
+<th>Commit date (UTC)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="https://github.com/renezander030/blender-cli">renezander030/blender-cli</a></td>
+<td><a href="https://github.com/renezander030/blender-cli/commit/6d042220b4229e5594d5df509a479634eb04b181">6d042220b422</a></td>
+<td>2026-09-27</td>
+</tr>
+<tr>
+<td><a href="https://github.com/ahujasid/mcp-for-blender">ahujasid/mcp-for-blender</a></td>
+<td><a href="https://github.com/ahujasid/mcp-for-blender/commit/41a184322db3ccdcb2fdbc1f6994afe71bf9163c">41a184322db3</a></td>
+<td>2026-09-27</td>
+</tr>
+<tr>
+<td><a href="https://github.com/Kazama-Suichiku/Houdini-Agent">Kazama-Suichiku/Houdini-Agent</a></td>
+<td><a href="https://github.com/Kazama-Suichiku/Houdini-Agent/commit/73c5d2ca3d48e97208b09c036defc1271f58d34d">73c5d2ca3d48</a></td>
+<td>2026-09-04</td>
+</tr>
+<tr>
+<td><a href="https://github.com/dcc-mcp/dcc-mcp-core">dcc-mcp/dcc-mcp-core</a></td>
+<td><a href="https://github.com/dcc-mcp/dcc-mcp-core/commit/7b8a76afe9c1a87e032f60be86982a4bc01efe28">7b8a76afe9c1</a></td>
+<td>2026-09-28</td>
+</tr>
+<tr>
+<td><a href="https://github.com/dcc-mcp/dcc-mcp-houdini">dcc-mcp/dcc-mcp-houdini</a></td>
+<td><a href="https://github.com/dcc-mcp/dcc-mcp-houdini/commit/890d53d984cf871f894a691b82187fa7d44ac698">890d53d984cf</a></td>
+<td>2026-09-25</td>
+</tr>
+<tr>
+<td><a href="https://github.com/dcc-mcp/dcc-mcp-blender">dcc-mcp/dcc-mcp-blender</a></td>
+<td><a href="https://github.com/dcc-mcp/dcc-mcp-blender/commit/cf520d0ce18c5084757e06ac704caffe94c5f344">cf520d0ce18c</a></td>
+<td>2026-09-27</td>
+</tr>
+<tr>
+<td><a href="https://github.com/dcc-mcp/dcc-mcp-maya">dcc-mcp/dcc-mcp-maya</a></td>
+<td><a href="https://github.com/dcc-mcp/dcc-mcp-maya/commit/7178b242d0b1417469de39a0c964c398acc538d5">7178b242d0b1</a></td>
+<td>2026-09-28</td>
+</tr>
+<tr>
+<td><a href="https://github.com/abrahamADSK/maya-mcp">abrahamADSK/maya-mcp</a></td>
+<td><a href="https://github.com/abrahamADSK/maya-mcp/commit/a9f0af10ad327a052a12b8b7cfc4aa812be265e2">a9f0af10ad32</a></td>
+<td>2026-08-16</td>
+</tr>
+<tr>
+<td><a href="https://github.com/jingcheng-chen/rhinomcp">jingcheng-chen/rhinomcp</a></td>
+<td><a href="https://github.com/jingcheng-chen/rhinomcp/commit/70b63a2b86e4f92f3250f9a5e4a5813c2a38c163">70b63a2b86e4</a></td>
+<td>2026-09-13</td>
+</tr>
+<tr>
+<td><a href="https://github.com/chongdashu/unreal-mcp">chongdashu/unreal-mcp</a></td>
+<td><a href="https://github.com/chongdashu/unreal-mcp/commit/4e5f00da50733190481311e254d16d137a84ef33">4e5f00da5073</a></td>
+<td>2025-04-22</td>
+</tr>
+<tr>
+<td><a href="https://github.com/HKUDS/CLI-Anything">HKUDS/CLI-Anything</a></td>
+<td><a href="https://github.com/HKUDS/CLI-Anything/commit/34f519533bc175d2fe287ab8316b0dd99bb9cc43">34f519533bc1</a></td>
+<td>2026-09-22</td>
+</tr>
+<tr>
+<td><a href="https://github.com/gd3kr/BlenderGPT">gd3kr/BlenderGPT</a></td>
+<td><a href="https://github.com/gd3kr/BlenderGPT/commit/3fbc3bd3f169d904f8bf8a067807c4a71d3d3b4b">3fbc3bd3f169</a></td>
+<td>2023-06-10</td>
+</tr>
+<tr>
+<td><a href="https://github.com/ianhuang0630/BlenderAlchemyOfficial">ianhuang0630/BlenderAlchemyOfficial</a></td>
+<td><a href="https://github.com/ianhuang0630/BlenderAlchemyOfficial/commit/4444411592150a72d01d55ef84b1ac844b0b2ad0">444441159215</a></td>
+<td>2024-12-06</td>
+</tr>
+<tr>
+<td><a href="https://github.com/threedle/ll3m">threedle/ll3m</a></td>
+<td><a href="https://github.com/threedle/ll3m/commit/b5e79c3efa862efcc6e4105ce48245230fee3ebf">b5e79c3efa86</a></td>
+<td>2026-03-07</td>
+</tr>
+<tr>
+<td><a href="https://github.com/scenario-labs/blender-plugin">scenario-labs/blender-plugin</a></td>
+<td><a href="https://github.com/scenario-labs/blender-plugin/commit/6fa30d06b43c6d3ce4e903b45e8635034e4ecb39">6fa30d06b43c</a></td>
+<td>2026-09-27</td>
+</tr>
+<tr>
+<td><a href="https://github.com/neka-nat/freecad-mcp">neka-nat/freecad-mcp</a></td>
+<td><a href="https://github.com/neka-nat/freecad-mcp/commit/d6bbe4b38be3a622b5981d9d2afa7037ee080534">d6bbe4b38be3</a></td>
+<td>2026-09-24</td>
+</tr>
+<tr>
+<td><a href="https://github.com/CoplayDev/unity-mcp">CoplayDev/unity-mcp</a></td>
+<td><a href="https://github.com/CoplayDev/unity-mcp/commit/8be7d96d95aa3e262894c64412f0df3b432efa05">8be7d96d95aa</a></td>
+<td>2026-09-27</td>
+</tr>
+<tr>
+<td><a href="https://github.com/Chuny1/3DGPT">Chuny1/3DGPT</a></td>
+<td><a href="https://github.com/Chuny1/3DGPT/commit/590bf71bde9b854582d60913e054cda4d6cb38c2">590bf71bde9b</a></td>
+<td>2025-03-05</td>
+</tr>
+<tr>
+<td><a href="https://github.com/Aztech-Lab/EZ_Blender">Aztech-Lab/EZ_Blender</a></td>
+<td><a href="https://github.com/Aztech-Lab/EZ_Blender/commit/7c15b5b20fdd7a8513d75bc26613e955190ffb43">7c15b5b20fdd</a></td>
+<td>2026-07-17</td>
+</tr>
+<tr>
+<td><a href="https://github.com/ifBars/blender-agent-studio">ifBars/blender-agent-studio</a></td>
+<td><a href="https://github.com/ifBars/blender-agent-studio/commit/ef707f828410ab2059424cad15925e24c975cbd3">ef707f828410</a></td>
+<td>2026-09-28</td>
+</tr>
+<tr>
+<td><a href="https://github.com/richard-guyunqi/BlenderGym-Open">richard-guyunqi/BlenderGym-Open</a></td>
+<td><a href="https://github.com/richard-guyunqi/BlenderGym-Open/commit/67c8b48bf8c548c701b6873db6fcc6527d756385">67c8b48bf8c5</a></td>
+<td>2025-07-08</td>
+</tr>
+<tr>
+<td><a href="https://github.com/yunlong10/BVB">yunlong10/BVB</a></td>
+<td><a href="https://github.com/yunlong10/BVB/commit/69b7a488e972b648819cc12cd2752256f84efbc3">69b7a488e972</a></td>
+<td>2026-09-28</td>
+</tr>
+</tbody>
+</table></div>
+<p>License values in the manifest are GitHub metadata at retrieval, not legal clearance. Missing/<code>NOASSERTION</code> metadata does not establish permission; inspect the actual license before reuse. LL3M's evaluation restrictions deserve particular attention. Do not copy upstream code merely because its architecture is useful.</p>
+<p>The largest remaining uncertainty is <strong>real edit-to-review reliability on our Windows/Houdini workload</strong>. This report establishes patterns and source-backed capabilities, not a winner under that workload. The next evidence should come from bounded disposable comparisons with the same scene, quality criteria and budgets—not from adding tools until the catalog becomes larger.</p>
+</article><footer>Primary-source research. Recommendations are interpretation; upstream results were not reproduced. No external scripts, fonts or trackers.</footer></main><script>addEventListener('scroll',()=>{let d=document.documentElement;document.getElementById('progress').style.width=(100*d.scrollTop/Math.max(1,d.scrollHeight-d.clientHeight))+'%'})</script></body></html>

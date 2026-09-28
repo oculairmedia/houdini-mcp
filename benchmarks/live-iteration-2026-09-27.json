@@ -1,0 +1,242 @@
+{
+  "date": "2026-09-27",
+  "environment": {
+    "os": "Windows",
+    "houdini": "20.5.278",
+    "external_python": "3.12.1",
+    "embedded_python": "3.11"
+  },
+  "measurement_policy": "Recorded observations, not universal budgets. Artist layout changed between cycles; audit speedup uses exactly the same frozen asset.",
+  "audit": {
+    "points": 438776,
+    "primitives": 111020,
+    "legacy_ms": 14520.519400015473,
+    "native_samples_ms": [
+      203.229,
+      193.046,
+      199.042
+    ],
+    "speedup": 72.9520372585458,
+    "fault_fixture": {
+      "nonfinite_point_count": 1,
+      "nonfinite_points": [
+        8
+      ],
+      "points_checked": 9,
+      "primitives_visited": 2,
+      "polygons_checked": 2,
+      "excluded_non_polygons": 0,
+      "zero_area_count": 1,
+      "zero_area_primitives": [
+        1
+      ],
+      "normal_mismatch_count": 2,
+      "normal_mismatch_primitives": [
+        0,
+        1
+      ],
+      "point_normals_available": true,
+      "complete": true,
+      "scope": "all point positions and closed polygons; point N alignment when present",
+      "topology_policy": "surface cards allowed; no watertightness or self-intersection claim"
+    },
+    "passed": true
+  },
+  "cycles": [
+    {
+      "cycle": 1,
+      "stage_ms": 5231.03,
+      "apply_ms": 2136.72,
+      "candidate_geometry_access_ms": 385.4911000235006,
+      "apply_geometry_access_ms": 374.47330000577495,
+      "primitive_delta": 1434,
+      "primitives": 112454,
+      "regeneration": {
+        "samples_ms": [
+          677.5705000036396,
+          651.7095000017434,
+          629.9293999909423
+        ],
+        "scope": "changed frozen input detail attribute; includes input regeneration and cached VEX execution",
+        "compile_included": false
+      },
+      "stage_apply_semantic_match": true,
+      "checks": {
+        "nonfinite_point_count": 0,
+        "nonfinite_points": [],
+        "points_checked": 443600,
+        "primitives_visited": 112454,
+        "polygons_checked": 112454,
+        "excluded_non_polygons": 0,
+        "zero_area_count": 0,
+        "zero_area_primitives": [],
+        "normal_mismatch_count": 0,
+        "normal_mismatch_primitives": [],
+        "point_normals_available": true,
+        "complete": true,
+        "scope": "all point positions and closed polygons; point N alignment when present",
+        "topology_policy": "surface cards allowed; no watertightness or self-intersection claim"
+      }
+    },
+    {
+      "cycle": 2,
+      "stage_ms": 52429.83,
+      "apply_ms": 49161.57,
+      "candidate_geometry_access_ms": 47229.549500043504,
+      "apply_geometry_access_ms": 47390.60959999915,
+      "primitive_delta": 32416,
+      "primitives": 144870,
+      "regeneration": {
+        "samples_ms": [
+          764.3177999998443,
+          700.848699954804,
+          673.3512000064366
+        ],
+        "scope": "changed frozen input detail attribute; includes input regeneration and cached VEX execution",
+        "compile_included": false
+      },
+      "stage_apply_semantic_match": true,
+      "checks": {
+        "nonfinite_point_count": 0,
+        "nonfinite_points": [],
+        "points_checked": 573264,
+        "primitives_visited": 144870,
+        "polygons_checked": 144870,
+        "excluded_non_polygons": 0,
+        "zero_area_count": 0,
+        "zero_area_primitives": [],
+        "normal_mismatch_count": 0,
+        "normal_mismatch_primitives": [],
+        "point_normals_available": true,
+        "complete": true,
+        "scope": "all point positions and closed polygons; point N alignment when present",
+        "topology_policy": "surface cards allowed; no watertightness or self-intersection claim"
+      }
+    },
+    {
+      "cycle": 3,
+      "stage_ms": 56108.45,
+      "apply_ms": 49758.33,
+      "candidate_geometry_access_ms": 49767.89060002193,
+      "apply_geometry_access_ms": 47830.36560000619,
+      "primitive_delta": -10337,
+      "primitives": 173679,
+      "regeneration": {
+        "samples_ms": [
+          931.2845999957062,
+          1042.8339000209235,
+          860.7043999945745
+        ],
+        "scope": "changed frozen input detail attribute; includes input regeneration and cached VEX execution",
+        "compile_included": false
+      },
+      "stage_apply_semantic_match": true,
+      "checks": {
+        "nonfinite_point_count": 0,
+        "nonfinite_points": [],
+        "points_checked": 688464,
+        "primitives_visited": 173679,
+        "polygons_checked": 173679,
+        "excluded_non_polygons": 0,
+        "zero_area_count": 0,
+        "zero_area_primitives": [],
+        "normal_mismatch_count": 0,
+        "normal_mismatch_primitives": [],
+        "point_normals_available": true,
+        "complete": true,
+        "scope": "all point positions and closed polygons; point N alignment when present",
+        "topology_policy": "surface cards allowed; no watertightness or self-intersection claim"
+      }
+    },
+    {
+      "cycle": 4,
+      "stage_ms": 57952.09,
+      "apply_ms": 2001.5,
+      "candidate_geometry_access_ms": 51444.7908999864,
+      "apply_geometry_access_ms": 391.44420000957325,
+      "primitive_delta": 0,
+      "primitives": 173679,
+      "regeneration": {
+        "samples_ms": [
+          1026.0936999693513,
+          1265.070299967192,
+          907.8148999833502
+        ],
+        "scope": "changed frozen input detail attribute; includes input regeneration and cached VEX execution",
+        "compile_included": false
+      },
+      "stage_apply_semantic_match": true,
+      "checks": {
+        "nonfinite_point_count": 0,
+        "nonfinite_points": [],
+        "points_checked": 688464,
+        "primitives_visited": 173679,
+        "polygons_checked": 173679,
+        "excluded_non_polygons": 0,
+        "zero_area_count": 0,
+        "zero_area_primitives": [],
+        "normal_mismatch_count": 0,
+        "normal_mismatch_primitives": [],
+        "point_normals_available": true,
+        "complete": true,
+        "scope": "all point positions and closed polygons; point N alignment when present",
+        "topology_policy": "surface cards allowed; no watertightness or self-intersection claim"
+      }
+    }
+  ],
+  "live_fixture": {
+    "elapsed_ms": 2832.9318999894895,
+    "recapture_targets_editable_source": true,
+    "failed_preview_restored": true,
+    "paired_framing_preserved": true
+  },
+  "preservation": {
+    "cameras_preserved": true,
+    "controls": {
+      "copyinput": 1,
+      "cacheinput": 0,
+      "town_folder": 0,
+      "streets": 4,
+      "block_size": 55.9,
+      "road_width": 6.74,
+      "main_road_width": 11.19,
+      "sidewalk": 2.86,
+      "corner_clear": 9.92,
+      "lot_spacing": 8.99,
+      "seed": 1139,
+      "max_floors": 7
+    },
+    "output_nodes": [
+      "/obj/town/OUT"
+    ],
+    "temporary_nodes": [],
+    "errors": []
+  },
+  "verification": {
+    "unit_and_contract_passed": 728,
+    "skipped_integration_tests": 12,
+    "ruff": "passed",
+    "live_fixture": "passed",
+    "visual_review": "four candidate passes plus corrected overview and whole town"
+  },
+  "limits": [
+    "First new VEX compilation remains approximately 51 seconds on this town; no compiler-only timing is inferred.",
+    "Full iteration audit covers all positions and closed polygons; no watertightness or self-intersection claim.",
+    "General snapshot retains its explicitly sampled lightweight summary; full audits are in iteration.",
+    "Recovery is guarded for handled failures, with durable manual recovery journals; not process-crash atomic.",
+    "Applied snippets depend on persistent immutable source revisions; automatic restore handles are session scoped."
+  ],
+  "issues": [
+    19,
+    20,
+    21,
+    22,
+    23,
+    24,
+    25,
+    26,
+    27,
+    28,
+    29
+  ]
+}

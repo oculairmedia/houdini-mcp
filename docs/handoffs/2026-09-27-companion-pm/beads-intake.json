@@ -1,0 +1,165 @@
+{
+  "project": "HDMCP",
+  "purpose": "PM reconciliation and bead creation; no new Beads IDs have been assigned",
+  "implemented_head": "4efb7232859378d106e7375075cb366d25b5078c",
+  "implemented_branch": "spike/persistent-houdini-companion",
+  "completed_github_issues": [
+    19,
+    20,
+    21,
+    22,
+    23,
+    24,
+    25,
+    26,
+    27,
+    28,
+    29,
+    30,
+    31,
+    32,
+    33,
+    34,
+    35,
+    36,
+    37
+  ],
+  "delivered_milestones": [
+    {
+      "commit": "10cfd38",
+      "title": "Persistent companion foundation",
+      "status": "implemented_pushed"
+    },
+    {
+      "commit": "71ff0e7",
+      "title": "Plugin API and programmatic review/performance gates",
+      "status": "implemented_pushed"
+    },
+    {
+      "commit": "1f9153b",
+      "title": "Guarded iteration and native audits",
+      "status": "implemented_pushed",
+      "github_issues": [
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        26,
+        27,
+        28,
+        29
+      ]
+    },
+    {
+      "commit": "4efb723",
+      "title": "Agent-native CLI and temporal animation",
+      "status": "implemented_pushed",
+      "github_issues": [
+        30,
+        31,
+        32,
+        33,
+        34,
+        35,
+        36,
+        37
+      ]
+    }
+  ],
+  "proposed_followups": [
+    {
+      "intake_id": "PM-01",
+      "priority": 1,
+      "title": "Reconcile Beads/Huly authority, version and sync workflow",
+      "depends_on": []
+    },
+    {
+      "intake_id": "PM-02",
+      "priority": 1,
+      "title": "Backfill delivered spike milestones and GitHub issues",
+      "depends_on": [
+        "PM-01"
+      ]
+    },
+    {
+      "intake_id": "ENG-01",
+      "priority": 1,
+      "title": "Restart and installation acceptance without risking unsaved artist scene",
+      "depends_on": []
+    },
+    {
+      "intake_id": "ENG-02",
+      "priority": 1,
+      "title": "Portable reviewed source and scene packaging",
+      "depends_on": [
+        "PM-02"
+      ]
+    },
+    {
+      "intake_id": "ENG-03",
+      "priority": 1,
+      "title": "Fault-injected recovery and retention hardening",
+      "depends_on": [
+        "PM-02"
+      ]
+    },
+    {
+      "intake_id": "ENG-04",
+      "priority": 2,
+      "title": "Unified staged multi-frame candidate acceptance",
+      "depends_on": []
+    },
+    {
+      "intake_id": "ENG-05",
+      "priority": 2,
+      "title": "Fresh-process external plugin lifecycle acceptance",
+      "depends_on": [
+        "ENG-01"
+      ]
+    },
+    {
+      "intake_id": "ENG-06",
+      "priority": 2,
+      "title": "Agent edit-review-cycle scorecard and regression gates",
+      "depends_on": []
+    },
+    {
+      "intake_id": "SCENE-01",
+      "priority": 2,
+      "optional": true,
+      "title": "Next artist-directed motion wave",
+      "depends_on": [],
+      "recommended_after": [
+        "ENG-04"
+      ]
+    }
+  ],
+  "acceptance_criteria_source": "handoff.md: Proposed next Beads, with acceptance and dependencies",
+  "tracking_caveats": [
+    "Existing local JSONL is stale and contains duplicate mappings.",
+    "Do not import completed GitHub issues as open implementation work.",
+    "Look up authoritative houdini-mcp-vzp epic and children before assigning new IDs.",
+    "Town source and live HIP persistence are separate from tooling delivery."
+  ],
+  "current_live_time": {
+    "frame": 194,
+    "fps": 24,
+    "playing": false,
+    "frame_range": [
+      1,
+      240
+    ],
+    "playback_range": [
+      1,
+      240
+    ]
+  },
+  "restrictions": [
+    "Do not save HIP or commit town source as PM intake.",
+    "Do not restart live Houdini or run stale build_town.py.",
+    "Do not distribute session descriptor token."
+  ]
+}

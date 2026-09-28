@@ -29,6 +29,7 @@ dependencies = [
     "python-dotenv>=1.0.0",
     # For get_houdini_help web scraping
     "requests>=2.28.0",
+    "httpx>=0.27.0,<1.0.0",
     "beautifulsoup4>=4.11.0",
 ]
 
@@ -36,6 +37,8 @@ dependencies = [
 dev = [
     "pytest>=7.0.0",
     "pytest-cov>=4.0.0",
+    "pytest-benchmark>=4.0.0",
+    "numpy>=1.24",
     "pytest-asyncio>=0.23.0",
     # Property-based / stateful tests (outbound WSS state-machine core,
     # execute_code safety-rail evasion fuzzing).
@@ -53,10 +56,11 @@ Issues = "https://github.com/oculairmedia/houdini-mcp/issues"
 
 [project.scripts]
 houdini-mcp = "houdini_mcp.server:run_server"
+houdini-agent = "houdini_companion.cli:main"
 
 [tool.setuptools.packages.find]
 where = ["."]
-include = ["houdini_mcp*"]
+include = ["houdini_mcp*", "houdini_companion*"]
 
 # Ruff configuration (replaces black, isort, flake8)
 [tool.ruff]
@@ -116,6 +120,7 @@ filterwarnings = [
 ]
 markers = [
     "integration: requires a live Houdini hrpyc server",
+    "performance: companion performance budgets and deterministic hot-path checks",
 ]
 
 # Coverage configuration

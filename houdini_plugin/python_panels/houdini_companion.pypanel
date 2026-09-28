@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<pythonPanelDocument>
+  <interface name="houdini_companion" label="Houdini Companion" icon="MISC_python">
+    <script><![CDATA[
+def onCreateInterface():
+    from houdini_companion.panel import create_interface
+    return create_interface()
+    ]]></script>
+  </interface>
+</pythonPanelDocument>

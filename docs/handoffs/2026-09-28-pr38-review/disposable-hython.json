@@ -1,0 +1,136 @@
+{
+  "houdini": "20.5.278",
+  "disposable_process": true,
+  "checks": {
+    "state_guard": true,
+    "failed_build_cleanup": true,
+    "hidden_build_stale_rejection_promotion": true,
+    "profiles_and_clearance": true,
+    "render_pause_resume_corruption_stale_camera_source": true,
+    "boundary_geometry_and_images": true,
+    "fresh_reopen_and_changed_dependency": true,
+    "render_release": true
+  },
+  "render_manifest": "C:\\Users\\Emmanuel\\.houdini-companion\\pr38-review-regressions-1790610169613998700\\hython-workflow-1790610212505662400\\artifacts\\fb10118f7a3245349d5fa2ce14337260\\render-sequence.json",
+  "publication": {
+    "index": "C:\\Users\\Emmanuel\\.houdini-companion\\pr38-review-regressions-1790610169613998700\\hython-workflow-1790610212505662400\\review\\index.html",
+    "manifest": "C:\\Users\\Emmanuel\\.houdini-companion\\pr38-review-regressions-1790610169613998700\\hython-workflow-1790610212505662400\\review\\review.json",
+    "image_decode_verified": true,
+    "frames": 4,
+    "views": 2,
+    "review_id": "7455cc5bf2174b95b14c02699406115c",
+    "state_receipt": {
+      "restored": true,
+      "failures": [],
+      "before": {
+        "time": {
+          "frame": 1.0,
+          "fps": 24.0,
+          "frame_range": [
+            1.0,
+            240.0
+          ],
+          "playback_range": [
+            1.0,
+            240.0
+          ],
+          "playing": false
+        },
+        "cameras": {}
+      },
+      "after": {
+        "time": {
+          "frame": 1.0,
+          "fps": 24.0,
+          "frame_range": [
+            1.0,
+            240.0
+          ],
+          "playback_range": [
+            1.0,
+            240.0
+          ],
+          "playing": false
+        },
+        "cameras": {}
+      }
+    },
+    "scope": "Complete, source-aligned sampled evidence; not aesthetic approval"
+  },
+  "boundary": {
+    "accepted": true,
+    "reasons": [],
+    "matched": 8,
+    "born_count": 0,
+    "died_count": 0,
+    "born_ids": [],
+    "died_ids": [],
+    "max_displacement": 2.002716064453125e-05,
+    "tolerance": 0.001,
+    "scope": "Declared point identity at two sampled times; no continuous-path proof",
+    "images": [
+      {
+        "mean_absolute_difference": 1.0637935729847494e-07,
+        "changed_pixel_fraction": 0.0
+      },
+      {
+        "mean_absolute_difference": 1.0637935729847493e-06,
+        "changed_pixel_fraction": 0.0
+      }
+    ],
+    "frames": [
+      1,
+      1.01
+    ],
+    "state_receipt": {
+      "restored": true,
+      "failures": [],
+      "before": {
+        "time": {
+          "frame": 1.0,
+          "fps": 24.0,
+          "frame_range": [
+            1.0,
+            240.0
+          ],
+          "playback_range": [
+            1.0,
+            240.0
+          ],
+          "playing": false
+        },
+        "cameras": {}
+      },
+      "after": {
+        "time": {
+          "frame": 1.0,
+          "fps": 24.0,
+          "frame_range": [
+            1.0,
+            240.0
+          ],
+          "playback_range": [
+            1.0,
+            240.0
+          ],
+          "playing": false
+        },
+        "cameras": {}
+      }
+    }
+  },
+  "save_reopen": {
+    "verification_id": "303f19a2ac604a508035c5b83876c7d2",
+    "state": "complete",
+    "exit_code": 0,
+    "accepted": true,
+    "reasons": [],
+    "opened": true,
+    "geometry_samples": 2,
+    "cameras": 2,
+    "scope": "Declared SOP outputs/cameras and discoverable source dependencies; not whole-scene portability certification",
+    "houdini": "20.5.278",
+    "report": "C:\\Users\\Emmanuel\\.houdini-companion\\pr38-review-regressions-1790610169613998700\\hython-workflow-1790610212505662400\\artifacts\\303f19a2ac604a508035c5b83876c7d2\\verification.json"
+  },
+  "passed": true
+}

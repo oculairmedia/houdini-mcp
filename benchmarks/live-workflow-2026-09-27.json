@@ -1,0 +1,213 @@
+{
+  "date_local": "2026-09-27",
+  "houdini": "20.5.278",
+  "beads": [
+    "houdini-mcp-vzp.22",
+    "houdini-mcp-vzp.23",
+    "houdini-mcp-vzp.24",
+    "houdini-mcp-vzp.25",
+    "houdini-mcp-vzp.26",
+    "houdini-mcp-vzp.27",
+    "houdini-mcp-vzp.28"
+  ],
+  "catalog": {
+    "plugins": 14,
+    "operations": 42
+  },
+  "commands": [
+    "python -X utf8 -m pytest tests -q",
+    "hython scripts/verify_companion_workflow.py <new-disposable-directory>",
+    "python scripts/verify_review_player.py <new-disposable-directory>/review/index.html --browser <Edge-executable>"
+  ],
+  "portable_tests": {
+    "full_suite": {
+      "passed": 776,
+      "skipped": 12
+    },
+    "updated_workflow_and_temporal": 48,
+    "documentation_links": 4,
+    "ruff": "passed"
+  },
+  "disposable_houdini": {
+    "passed": true,
+    "checks": {
+      "state_guard": true,
+      "failed_build_cleanup": true,
+      "hidden_build_stale_rejection_promotion": true,
+      "profiles_and_clearance": true,
+      "render_pause_resume_corruption_stale_camera_source": true,
+      "boundary_geometry_and_images": true,
+      "fresh_reopen_and_changed_dependency": true,
+      "render_release": true
+    },
+    "fresh_process_reopen": {
+      "state": "complete",
+      "exit_code": 0,
+      "accepted": true,
+      "reasons": [],
+      "opened": true,
+      "geometry_samples": 2,
+      "cameras": 2,
+      "scope": "Declared SOP outputs/cameras and discoverable source dependencies; not whole-scene portability certification",
+      "houdini": "20.5.278"
+    },
+    "boundary": {
+      "accepted": true,
+      "reasons": [],
+      "matched": 8,
+      "born_count": 0,
+      "died_count": 0,
+      "born_ids": [],
+      "died_ids": [],
+      "max_displacement": 2.002716064453125e-05,
+      "tolerance": 0.001,
+      "scope": "Declared point identity at two sampled times; no continuous-path proof",
+      "images": [
+        {
+          "mean_absolute_difference": 4.0424155773420485e-06,
+          "changed_pixel_fraction": 0.0
+        },
+        {
+          "mean_absolute_difference": 1.0637935729847493e-06,
+          "changed_pixel_fraction": 0.0
+        }
+      ],
+      "frames": [
+        1,
+        1.01
+      ],
+      "state_receipt": {
+        "restored": true,
+        "failures": [],
+        "before": {
+          "time": {
+            "frame": 1.0,
+            "fps": 24.0,
+            "frame_range": [
+              1.0,
+              240.0
+            ],
+            "playback_range": [
+              1.0,
+              240.0
+            ],
+            "playing": false
+          },
+          "cameras": {}
+        },
+        "after": {
+          "time": {
+            "frame": 1.0,
+            "fps": 24.0,
+            "frame_range": [
+              1.0,
+              240.0
+            ],
+            "playback_range": [
+              1.0,
+              240.0
+            ],
+            "playing": false
+          },
+          "cameras": {}
+        }
+      }
+    }
+  },
+  "browser": {
+    "passed": true,
+    "checks": [
+      "two-view image decode",
+      "synchronized scrubbing",
+      "annotation binding",
+      "half-speed playback",
+      "end-of-sequence stop",
+      "keyboard frame step"
+    ],
+    "page_errors": []
+  },
+  "live_courtyard": {
+    "artist_state_preserved": true,
+    "frame": 73.0,
+    "hip_reloaded": false,
+    "hip_saved": false,
+    "listener_restarted": false,
+    "camera_digest": "030b8695ce3e12833416739f03da07da9ae56b7ad3a61f39624e61ad153357d9",
+    "points": 192480,
+    "polygons": 48120,
+    "profile": "surface",
+    "accepted": true,
+    "profile_ms_before": 11929.47,
+    "profile_ms_after": 2235.39,
+    "nonmanifold_edges": 2028,
+    "note": "Surface acceptance is not closed-solid certification; welded coincident faces are reported.",
+    "jobs": [
+      {
+        "operation": "execute",
+        "job_id": "4f33d8a3d3f647e1952e5c6883dd4e96",
+        "execution_ms": 44.05
+      },
+      {
+        "operation": "geometry.validate",
+        "job_id": "00dc5f7ec7184d55a748a00cc422d8aa",
+        "execution_ms": 11929.47
+      },
+      {
+        "operation": "render.start",
+        "job_id": "a62eed3a045b40c9b9bf341148990b31",
+        "execution_ms": 12.56
+      },
+      {
+        "operation": "render.step",
+        "job_id": "da2d3a56e3f74789ac9a1956ef586a00",
+        "execution_ms": 536.28
+      },
+      {
+        "operation": "render.step",
+        "job_id": "be49ff5ac0694ce09b9c9886e1646a28",
+        "execution_ms": 705.09
+      },
+      {
+        "operation": "review.publish",
+        "job_id": "fdac6d7032d64518994d4c1f33c70a70",
+        "execution_ms": 41.3
+      },
+      {
+        "operation": "render.release",
+        "job_id": "cc37fa111b2c49898474086557e57e26",
+        "execution_ms": 2.03
+      },
+      {
+        "operation": "execute",
+        "job_id": "d80cd46685c541e4b3f6231ebb7836f7",
+        "execution_ms": 38.31
+      }
+    ],
+    "render_timings": [
+      {
+        "frame": 73.0,
+        "cook_ms": 32.22479997202754,
+        "render_ms": 362.14,
+        "total_ms": 529.2506000259891
+      },
+      {
+        "frame": 73.25,
+        "cook_ms": 147.88869995390996,
+        "render_ms": 318.99,
+        "total_ms": 585.0345999933779
+      }
+    ],
+    "visual_inspection": "Decoded courtyard image shows nested arches and tiled passage; no blank image."
+  },
+  "limits": [
+    "Same-runtime render resume; no automatic cross-restart replay.",
+    "One native frame cook/render can still block the UI until it returns.",
+    "Saved-scene acceptance is scoped to declared outputs/cameras and discoverable dependencies.",
+    "StateGuard restores declared time/camera channels, not arbitrary Python side effects.",
+    "Artist scene and town source changes are excluded from the harness commit."
+  ],
+  "local_evidence": {
+    "disposable_report": "C:\\Users\\Emmanuel\\.houdini-companion\\workflow-acceptance-06\\report.json",
+    "live_report": "C:\\Users\\Emmanuel\\.houdini-companion\\courtyard-harness-review-1790557229\\live-acceptance.json"
+  }
+}

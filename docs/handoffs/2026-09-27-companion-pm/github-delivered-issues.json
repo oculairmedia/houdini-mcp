@@ -1,0 +1,173 @@
+[
+  {
+    "body": "Scene quality iteration required three bespoke scripts for frozen inputs, candidate extraction and camera preservation. Add discoverable plugin operations with reusable capture receipts, same-parent staging for relative channels, immutable inputs, paired images, stale guards, cleanup and explicit supported scope. Exercise through repeated live scene improvements.",
+    "closedAt": "2026-09-27T19:50:57Z",
+    "labels": [],
+    "number": 19,
+    "state": "CLOSED",
+    "title": "feature: reusable guarded capture, stage, compare, apply and restore",
+    "url": "https://github.com/oculairmedia/houdini-mcp/issues/19"
+  },
+  {
+    "body": "Houdini undo does not restore VEX include files. Add hash-checked file staging, persistent original bytes and a transaction journal; restore on apply failure and reject stale restore. Verify file and parameter failure paths. Do not claim atomicity across a process crash.",
+    "closedAt": "2026-09-27T19:51:01Z",
+    "labels": [],
+    "number": 20,
+    "state": "CLOSED",
+    "title": "bug: scene and external source edits lack coordinated recovery",
+    "url": "https://github.com/oculairmedia/houdini-mcp/issues/20"
+  },
+  {
+    "body": "The 247573-primitive building output required tens of seconds per Python audit; existing snapshots sample 50000 items and cannot accept the full scene. Add compiled geometry diagnostics and bulk point checks, bounded examples, explicit supported coverage and regression tests. Compare with prior complete audit on the same scene.",
+    "closedAt": "2026-09-27T19:51:04Z",
+    "labels": [],
+    "number": 21,
+    "state": "CLOSED",
+    "title": "bug: geometry validation is slow and incomplete on large scenes",
+    "url": "https://github.com/oculairmedia/houdini-mcp/issues/21"
+  },
+  {
+    "body": "Town review showed black shadowed facades, striped ground and specular glare. Add stable diagnostic rendering defaults, scale-aware clipping, stored review framing and identical before/after settings; preserve artist cameras and lights. Validate actual images, not only render success.",
+    "closedAt": "2026-09-27T19:51:07Z",
+    "labels": [],
+    "number": 22,
+    "state": "CLOSED",
+    "title": "bug: review renders hide detail and produce depth precision artifacts",
+    "url": "https://github.com/oculairmedia/houdini-mcp/issues/22"
+  },
+  {
+    "body": "A forced warm cook reported 0.19 ms, insufficient evidence of regeneration. Separate geometry access, freeze, diagnostics, render and total timings. Record cook counts; measure deliberate invalidation on disposable staged nodes and label combined compile/cook rather than inventing compile-only numbers.",
+    "closedAt": "2026-09-27T19:51:10Z",
+    "labels": [],
+    "number": 23,
+    "state": "CLOSED",
+    "title": "bug: cached geometry access is mislabeled as cook performance",
+    "url": "https://github.com/oculairmedia/houdini-mcp/issues/23"
+  },
+  {
+    "body": "Make the capture-stage-apply-restore loop repeatable from JSON requests without ad hoc scene scripts. Add contracts, failure tests, host/scene-matched timing budgets and live evidence. Re-run a second scene improvement through the same interface and record new friction as issues.",
+    "closedAt": "2026-09-27T19:51:13Z",
+    "labels": [],
+    "number": 24,
+    "state": "CLOSED",
+    "title": "feature: repeatable live iteration acceptance and performance gates",
+    "url": "https://github.com/oculairmedia/houdini-mcp/issues/24"
+  },
+  {
+    "body": "Live iteration exposed a staging bug: creating temporary SOPs in the same subnet can change which sibling owns display/render flags. The stale guard rejected the candidate after cleanup; canonical source was not applied. Preserve and restore flags for every original sibling, add a nested output-node fixture and verify exact observation identity after staging. This is required for relative-channel-aware staging.",
+    "closedAt": "2026-09-27T19:51:17Z",
+    "labels": [],
+    "number": 25,
+    "state": "CLOSED",
+    "title": "bug: same-subnet staging must restore sibling display and render flags",
+    "url": "https://github.com/oculairmedia/houdini-mcp/issues/25"
+  },
+  {
+    "body": "An unchanged candidate acquired a new include path on each stage, forcing another expensive VEX compilation. Store staged includes in a content-addressed directory keyed by captured paths and candidate hashes, preserve timestamps on cache hits, reject tampered cache entries, and protect active cache artifacts from retention. Prove benefit by staging the same candidate twice on the live scene.",
+    "closedAt": "2026-09-27T19:51:20Z",
+    "labels": [],
+    "number": 26,
+    "state": "CLOSED",
+    "title": "perf: reuse immutable staged VEX sources across identical retries",
+    "url": "https://github.com/oculairmedia/houdini-mcp/issues/26"
+  },
+  {
+    "body": "Live apply rolled back because bgeo files differed only in their serialization date. Positions, topology and attributes were identical. Replace byte-identity acceptance with a bounded semantic hash of native topology and bulk attributes. Keep byte hashes for artifact integrity, report comparison scope, and add tests proving changed positions/colors/topology fail while metadata-only changes pass.",
+    "closedAt": "2026-09-27T19:51:23Z",
+    "labels": [],
+    "number": 27,
+    "state": "CLOSED",
+    "title": "bug: geometry equivalence must ignore bgeo serialization timestamps",
+    "url": "https://github.com/oculairmedia/houdini-mcp/issues/27"
+  },
+  {
+    "body": "Cycle two exposed duplicate compilation: candidate preparation spent 47.2 s compiling and apply spent another 47.4 s because the source include path changed. Promote the exact reviewed immutable source revision, retain the editable canonical files plus source manifest, fingerprint both dependencies, preserve persistent source cache outside artifact pruning, and support coordinated restore. Prove apply reuses compilation on a new candidate and future captures still target editable sources.",
+    "closedAt": "2026-09-27T19:51:25Z",
+    "labels": [],
+    "number": 28,
+    "state": "CLOSED",
+    "title": "perf: promote reviewed VEX revision without compiling it again on apply",
+    "url": "https://github.com/oculairmedia/houdini-mcp/issues/28"
+  },
+  {
+    "body": "Automatic square review images leave a large empty region and compress scene coverage vertically. The disposable camera retains its default 1280x720 resolution while the OpenGL ROP overrides output to a square image. Captured widescreen images are fine. Align owned camera resolution and ROP output for every view, preserve artist camera aspect, and verify mixed custom/automatic views visually and in the live fixture.\r\n",
+    "closedAt": "2026-09-27T19:51:28Z",
+    "labels": [],
+    "number": 29,
+    "state": "CLOSED",
+    "title": "Review: fit automatic cameras to projected geometry and freeze paired framing",
+    "url": "https://github.com/oculairmedia/houdini-mcp/issues/29"
+  },
+  {
+    "body": "Use Blender CLI as reference: https://github.com/renezander030/blender-cli . Add command/effect-filtered schemas, compact output, stdin JSON input, typed timeline and keyframe commands, actionable job continuation and artifact paths. Cover parsing, output bounds and request counts with portable tests.",
+    "closedAt": "2026-09-27T20:32:59Z",
+    "labels": [],
+    "number": 30,
+    "state": "CLOSED",
+    "title": "Agent CLI: scoped schemas, stdin recipes and compact actionable job receipts",
+    "url": "https://github.com/oculairmedia/houdini-mcp/issues/30"
+  },
+  {
+    "body": "Add a modular timeline plugin. Inspect current time, ranges, FPS and time dependence. Sample bounded explicit frames with native geometryAtFrame, preserve artist time/playback, record exact seconds and cold/warm cook timing. Detect actual position motion and stable topology without treating color-only changes as movement. Reject unsupported simulation semantics explicitly.",
+    "closedAt": "2026-09-27T20:33:02Z",
+    "labels": [],
+    "number": 31,
+    "state": "CLOSED",
+    "title": "Timeline: explicit frame/FPS context and frame-safe geometry sampling",
+    "url": "https://github.com/oculairmedia/houdini-mcp/issues/31"
+  },
+  {
+    "body": "Expose JSON numeric-parameter tracks with explicit frames and interpolation, expected observation guards, batch prevalidation, restore receipts and rollback on handled failure. No arbitrary Python needed to author parameter animation. Preserve FPS, ranges and current time; support inspection/readback and test stale state and fault recovery.",
+    "closedAt": "2026-09-27T20:33:05Z",
+    "labels": [],
+    "number": 32,
+    "state": "CLOSED",
+    "title": "Animation: guarded typed keyframe batches with exact recovery",
+    "url": "https://github.com/oculairmedia/houdini-mcp/issues/32"
+  },
+  {
+    "body": "Build multi-frame geometry audits, fixed camera recipes, labeled contact sheet and hash manifest. Report per-frame issues, geometry motion, topology stability, repeated-frame determinism and perf budgets with bounded work. Use the new CLI to verify live animation, including fractional frames and a static negative control.",
+    "closedAt": "2026-09-27T20:33:07Z",
+    "labels": [],
+    "number": 33,
+    "state": "CLOSED",
+    "title": "Temporal review: fixed-camera sequence evidence and motion acceptance gates",
+    "url": "https://github.com/oculairmedia/houdini-mcp/issues/33"
+  },
+  {
+    "body": "Use the new tools to animate cars and streetcars with bounded approach-to-stop motion. Keep expensive building generation static and add a small downstream deformation node. Audit the street layer: its addCard currently reverses primitive winding relative to N, and tree crowns omit normals. Fix discovered geometry issues, validate multiple times, preserve artist cameras and controls, and do not save the HIP or commit town source without explicit authorization.",
+    "closedAt": "2026-09-27T20:33:10Z",
+    "labels": [],
+    "number": 34,
+    "state": "CLOSED",
+    "title": "Town animation wave: separate moving traffic from static generator and repair street normals",
+    "url": "https://github.com/oculairmedia/houdini-mcp/issues/34"
+  },
+  {
+    "body": "The first town animation had valid progress keys and nonzero vehicle deltas but no position motion. The temporal gate correctly returned NO_MOTION. Houdini had compiled the wrangle before its new spare control existed and retained a constant missing-channel binding. Adding a snippet revision refreshed the dependency and gave 1.75\u20132.64 ms animated cooks. Make animation.control invalidate the wrangle binding automatically while preserving authored behavior, and reproduce the missing-control-first ordering in the live fixture.\r\n",
+    "closedAt": "2026-09-27T20:33:13Z",
+    "labels": [],
+    "number": 35,
+    "state": "CLOSED",
+    "title": "Animation controls: invalidate stale VEX bindings when adding referenced channels",
+    "url": "https://github.com/oculairmedia/houdini-mcp/issues/35"
+  },
+  {
+    "body": "New multi-frame jobs exposed a 50 ms client polling loop and incomplete compact batch receipts. Add capability-negotiated bounded waiting for existing jobs, retain the two-worker wait limit, and back off on older runtimes. Test request counts and timeout behavior without resubmitting mutations. Live schema discovery must report the same registry used for dispatch, including newly loaded animation/timeline plugins.\r\n",
+    "closedAt": "2026-09-27T20:33:16Z",
+    "labels": [],
+    "number": 36,
+    "state": "CLOSED",
+    "title": "Agent job continuation: reduce polling and keep live discovery aligned with dispatch",
+    "url": "https://github.com/oculairmedia/houdini-mcp/issues/36"
+  },
+  {
+    "body": "Whole-town temporal review found 108 additional normal mismatches on the park tree crowns in an inline road-generator wrangle. The reusable iteration API currently requires at least one include-file edit, forcing agents back to ad hoc Python for inline VEX. Support guarded inline snippet candidates using the same staged evidence, source identity, apply and restore path; retain include dependency restrictions. Use it to repair park-tree normals without changing the road layout, then repeat whole-town temporal review.\r\n",
+    "closedAt": "2026-09-27T20:33:19Z",
+    "labels": [],
+    "number": 37,
+    "state": "CLOSED",
+    "title": "Iteration: support inline VEX candidates through the guarded review workflow",
+    "url": "https://github.com/oculairmedia/houdini-mcp/issues/37"
+  }
+]

@@ -1,0 +1,25 @@
+name: Companion contracts and performance
+on:
+  push:
+    branches: [main, develop, 'spike/**']
+  pull_request:
+  workflow_dispatch:
+jobs:
+  companion:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: python -m pip install -e ".[dev]"
+      - name: Contract and performance gates (no Houdini required)
+        run: python -X utf8 -m pytest tests/test_companion_core.py tests/test_companion_client.py tests/test_companion_mcp.py tests/test_companion_plugins.py tests/test_companion_performance.py tests/test_companion_iteration.py tests/test_companion_temporal.py tests/test_companion_workflow.py tests/test_companion_review_regressions.py --benchmark-json=companion-benchmark.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: companion-performance-${{ matrix.os }}
+          path: companion-benchmark.json

@@ -1,0 +1,373 @@
+{
+  "passed": true,
+  "houdini": "20.5.278",
+  "variants": [
+    {
+      "title": "Gothic Vertigo",
+      "slug": "gothic_vertigo",
+      "root": "/obj/relativity_gothic_vertigo",
+      "camera": "/obj/relativity_variant_views/gothic_vertigo",
+      "points": 98064,
+      "polygons": 24516,
+      "sampled_frames": [
+        1,
+        121
+      ],
+      "surface_checks_accepted": true,
+      "degenerate_polygons": [
+        0,
+        0
+      ],
+      "loop_accepted": true,
+      "loop": {
+        "accepted": true,
+        "reasons": [],
+        "matched": 98064,
+        "born_count": 0,
+        "died_count": 0,
+        "born_ids": [],
+        "died_ids": [],
+        "max_displacement": 2.870939869592737e-06,
+        "tolerance": 0.001,
+        "scope": "Declared point identity at two sampled times; no continuous-path proof",
+        "frames": [
+          1,
+          241
+        ],
+        "state_receipt": {
+          "restored": true,
+          "failures": [],
+          "before": {
+            "time": {
+              "frame": 240.0,
+              "fps": 24.0,
+              "frame_range": [
+                1.0,
+                240.0
+              ],
+              "playback_range": [
+                1.0,
+                240.0
+              ],
+              "playing": false
+            },
+            "cameras": {}
+          },
+          "after": {
+            "time": {
+              "frame": 240.0,
+              "fps": 24.0,
+              "frame_range": [
+                1.0,
+                240.0
+              ],
+              "playback_range": [
+                1.0,
+                240.0
+              ],
+              "playing": false
+            },
+            "cameras": {}
+          }
+        }
+      },
+      "source_sha256": "b7d7baf70a5a8c896e92e570a6177892aa9833067305aab485cfb1cd9734adab"
+    },
+    {
+      "title": "Clockwork Helix",
+      "slug": "clockwork_helix",
+      "root": "/obj/relativity_clockwork_helix",
+      "camera": "/obj/relativity_variant_views/clockwork_helix",
+      "points": 141264,
+      "polygons": 35316,
+      "sampled_frames": [
+        1,
+        121
+      ],
+      "surface_checks_accepted": true,
+      "degenerate_polygons": [
+        0,
+        0
+      ],
+      "loop_accepted": true,
+      "loop": {
+        "accepted": true,
+        "reasons": [],
+        "matched": 141264,
+        "born_count": 0,
+        "died_count": 0,
+        "born_ids": [],
+        "died_ids": [],
+        "max_displacement": 2.870939869592737e-06,
+        "tolerance": 0.001,
+        "scope": "Declared point identity at two sampled times; no continuous-path proof",
+        "frames": [
+          1,
+          241
+        ],
+        "state_receipt": {
+          "restored": true,
+          "failures": [],
+          "before": {
+            "time": {
+              "frame": 240.0,
+              "fps": 24.0,
+              "frame_range": [
+                1.0,
+                240.0
+              ],
+              "playback_range": [
+                1.0,
+                240.0
+              ],
+              "playing": false
+            },
+            "cameras": {}
+          },
+          "after": {
+            "time": {
+              "frame": 240.0,
+              "fps": 24.0,
+              "frame_range": [
+                1.0,
+                240.0
+              ],
+              "playback_range": [
+                1.0,
+                240.0
+              ],
+              "playing": false
+            },
+            "cameras": {}
+          }
+        }
+      },
+      "source_sha256": "fe87b1868cccc1200e49cae3cad62c3f06f7f983481527595559c5ce972f6980"
+    },
+    {
+      "title": "Library of Babel",
+      "slug": "library_of_babel",
+      "root": "/obj/relativity_library_of_babel",
+      "camera": "/obj/relativity_variant_views/library_of_babel",
+      "points": 177552,
+      "polygons": 44388,
+      "sampled_frames": [
+        1,
+        121
+      ],
+      "surface_checks_accepted": true,
+      "degenerate_polygons": [
+        0,
+        0
+      ],
+      "loop_accepted": true,
+      "loop": {
+        "accepted": true,
+        "reasons": [],
+        "matched": 177552,
+        "born_count": 0,
+        "died_count": 0,
+        "born_ids": [],
+        "died_ids": [],
+        "max_displacement": 2.870939869592737e-06,
+        "tolerance": 0.001,
+        "scope": "Declared point identity at two sampled times; no continuous-path proof",
+        "frames": [
+          1,
+          241
+        ],
+        "state_receipt": {
+          "restored": true,
+          "failures": [],
+          "before": {
+            "time": {
+              "frame": 240.0,
+              "fps": 24.0,
+              "frame_range": [
+                1.0,
+                240.0
+              ],
+              "playback_range": [
+                1.0,
+                240.0
+              ],
+              "playing": false
+            },
+            "cameras": {}
+          },
+          "after": {
+            "time": {
+              "frame": 240.0,
+              "fps": 24.0,
+              "frame_range": [
+                1.0,
+                240.0
+              ],
+              "playback_range": [
+                1.0,
+                240.0
+              ],
+              "playing": false
+            },
+            "cameras": {}
+          }
+        }
+      },
+      "source_sha256": "74a7ad85529bce60988ed049a159875136e917492a5e62c60d86a2f93886c7df"
+    },
+    {
+      "title": "Hanging Gardens",
+      "slug": "hanging_gardens",
+      "root": "/obj/relativity_hanging_gardens",
+      "camera": "/obj/relativity_variant_views/hanging_gardens",
+      "points": 104976,
+      "polygons": 26820,
+      "sampled_frames": [
+        1,
+        121
+      ],
+      "surface_checks_accepted": true,
+      "degenerate_polygons": [
+        0,
+        0
+      ],
+      "loop_accepted": true,
+      "loop": {
+        "accepted": true,
+        "reasons": [],
+        "matched": 104976,
+        "born_count": 0,
+        "died_count": 0,
+        "born_ids": [],
+        "died_ids": [],
+        "max_displacement": 2.870939869592737e-06,
+        "tolerance": 0.001,
+        "scope": "Declared point identity at two sampled times; no continuous-path proof",
+        "frames": [
+          1,
+          241
+        ],
+        "state_receipt": {
+          "restored": true,
+          "failures": [],
+          "before": {
+            "time": {
+              "frame": 240.0,
+              "fps": 24.0,
+              "frame_range": [
+                1.0,
+                240.0
+              ],
+              "playback_range": [
+                1.0,
+                240.0
+              ],
+              "playing": false
+            },
+            "cameras": {}
+          },
+          "after": {
+            "time": {
+              "frame": 240.0,
+              "fps": 24.0,
+              "frame_range": [
+                1.0,
+                240.0
+              ],
+              "playback_range": [
+                1.0,
+                240.0
+              ],
+              "playing": false
+            },
+            "cameras": {}
+          }
+        }
+      },
+      "source_sha256": "25c4a102095e37ee2d7aaafc4307d4274b6119c4d56b734d36ebe066d5608fd3"
+    },
+    {
+      "title": "Fractured Neon",
+      "slug": "fractured_neon",
+      "root": "/obj/relativity_fractured_neon",
+      "camera": "/obj/relativity_variant_views/fractured_neon",
+      "points": 48816,
+      "polygons": 12204,
+      "sampled_frames": [
+        1,
+        121
+      ],
+      "surface_checks_accepted": true,
+      "degenerate_polygons": [
+        0,
+        0
+      ],
+      "loop_accepted": true,
+      "loop": {
+        "accepted": true,
+        "reasons": [],
+        "matched": 48816,
+        "born_count": 0,
+        "died_count": 0,
+        "born_ids": [],
+        "died_ids": [],
+        "max_displacement": 2.870939869592737e-06,
+        "tolerance": 0.001,
+        "scope": "Declared point identity at two sampled times; no continuous-path proof",
+        "frames": [
+          1,
+          241
+        ],
+        "state_receipt": {
+          "restored": true,
+          "failures": [],
+          "before": {
+            "time": {
+              "frame": 240.0,
+              "fps": 24.0,
+              "frame_range": [
+                1.0,
+                240.0
+              ],
+              "playback_range": [
+                1.0,
+                240.0
+              ],
+              "playing": false
+            },
+            "cameras": {}
+          },
+          "after": {
+            "time": {
+              "frame": 240.0,
+              "fps": 24.0,
+              "frame_range": [
+                1.0,
+                240.0
+              ],
+              "playback_range": [
+                1.0,
+                240.0
+              ],
+              "playing": false
+            },
+            "cameras": {}
+          }
+        }
+      },
+      "source_sha256": "d5c28cb76cae26d802f0972bf1db64ef1a16002a3e8ddb8e13ac2e013487b44b"
+    }
+  ],
+  "rendered_images": 25,
+  "artist_state_preserved": true,
+  "hip_saved": false,
+  "browser": {
+    "decoded_images": 5,
+    "synchronized_scrub": true,
+    "source_downloads": 5,
+    "source_expansion": true,
+    "page_errors": []
+  },
+  "local_gallery": "C:\\Users\\Emmanuel\\.houdini-companion\\relativity-variants\\index.html",
+  "scope": "Finite six-generation variants. Surface checks are sampled; no self-intersection or continuous clearance claim."
+}

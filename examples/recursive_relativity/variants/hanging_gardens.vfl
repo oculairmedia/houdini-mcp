@@ -1,0 +1,156 @@
+// VARIANT: Hanging Gardens
+// Mossy stair terraces support branching trees in three directions of gravity.
+// Recursive Relativity: an anamorphic three-gravity staircase.
+// End minus start is parallel to the hero camera ray, closing only in projection.
+function vector world(vector p; int generation) {
+    vector center=set(8,5.2,.6), axis=normalize(set(1,1,1));
+    float scale=pow(0.55,generation);
+    return qrotate(quaternion(radians(-20.0*generation),axis),(p-center)*scale)
+        -axis*generation*3.5;
+}
+function void face(vector a,b,c,d,color; int gen,part) {
+    int pts[];
+    vector corners[]=array(d,c,b,a);
+    foreach(vector p; corners) {
+        int pt=addpoint(0,world(p,gen));
+        setpointattrib(0,"id",pt,pt);
+        append(pts,pt);
+    }
+    int prim=addprim(0,"poly",pts);
+    setprimattrib(0,"Cd",prim,color);
+    setprimattrib(0,"generation",prim,gen);
+    setprimattrib(0,"part",prim,part);
+}
+function void box(vector c,x,y,z,dim,col; int gen,part) {
+    vector p[];
+    vector local[]=array(set(-1,-1,-1),set(1,-1,-1),set(1,1,-1),set(-1,1,-1),
+                         set(-1,-1,1),set(1,-1,1),set(1,1,1),set(-1,1,1));
+    foreach(vector v; local) append(p,c+(x*v.x*dim.x+y*v.y*dim.y+z*v.z*dim.z)*.5);
+    face(p[0],p[3],p[2],p[1],col,gen,part);
+    face(p[4],p[5],p[6],p[7],col,gen,part);
+    face(p[0],p[4],p[7],p[3],col,gen,part);
+    face(p[1],p[2],p[6],p[5],col,gen,part);
+    face(p[0],p[1],p[5],p[4],col,gen,part);
+    face(p[3],p[7],p[6],p[2],col,gen,part);
+}
+function void arch(vector c,x,y,z,col; int gen) {
+    float r=.62, thickness=.14, depth=.18;
+    for(int j=0;j<12;j++) {
+        float a=M_PI*j/12+.004,b=M_PI*(j+1)/12-.004;
+        vector p[];
+        float depths[]=array(-depth*.5,depth*.5);
+        foreach(float zz; depths) {
+            append(p,c+x*r*cos(a)+y*r*sin(a)+z*zz);
+            append(p,c+x*(r+thickness)*cos(a)+y*(r+thickness)*sin(a)+z*zz);
+            append(p,c+x*(r+thickness)*cos(b)+y*(r+thickness)*sin(b)+z*zz);
+            append(p,c+x*r*cos(b)+y*r*sin(b)+z*zz);
+        }
+        vector shade=col*(.88+.06*(j%3));
+        face(p[0],p[3],p[2],p[1],shade,gen,2);
+        face(p[4],p[5],p[6],p[7],shade,gen,2);
+        face(p[0],p[1],p[5],p[4],shade,gen,2);
+        face(p[3],p[7],p[6],p[2],shade,gen,2);
+        face(p[1],p[2],p[6],p[5],shade,gen,2);
+        face(p[0],p[4],p[7],p[3],shade,gen,2);
+    }
+}
+function void beam(vector a,b,z; float width; vector col; int gen,part) {
+    vector y=normalize(b-a),x=normalize(cross(y,z));
+    box((a+b)*.5,x,y,z,set(width,distance(a,b),width),col,gen,part);
+}
+
+
+function void leaftri(vector a,b,c,center,col; int gen) {
+    vector corners[]=array(a,b,c);
+    if(dot(cross(b-a,c-a),(a+b+c)/3-center)>0) corners=array(c,b,a);
+    int pts[];
+    foreach(vector v; corners) {
+        int pt=addpoint(0,world(v,gen)); setpointattrib(0,"id",pt,pt); append(pts,pt);
+    }
+    int pr=addprim(0,"poly",pts); setprimattrib(0,"Cd",pr,col);
+    setprimattrib(0,"generation",pr,gen); setprimattrib(0,"part",pr,5);
+}
+function void leaf(vector c,x,y,z,dim,col; int gen) {
+    vector ring[]=array(c+x*dim.x,c+z*dim.z,c-x*dim.x,c-z*dim.z);
+    for(int i=0;i<4;i++) {
+        leaftri(c+y*dim.y,ring[i],ring[(i+1)%4],c,col,gen);
+        leaftri(c-y*dim.y,ring[(i+1)%4],ring[i],c,col*.8,gen);
+    }
+}
+
+vector stone=set(.28,.35,.18),ivory=set(.75,.72,.46);
+vector ink=set(.07,.12,.07),teal=set(.13,.34,.13),gold=set(.94,.37,.12);
+vector dirs[]=array(set(1,0,0),set(0,1,0),set(0,0,1));
+vector ups[]=array(set(0,1,0),set(0,0,1),set(1,0,0));
+vector sides[]=array(set(0,0,1),set(1,0,0),set(0,1,0));
+vector starts[]=array(set(0,0,0),set(12,1.8,0),set(12,13.8,1.8));
+int layers=6,steps=24;
+float phase=2*M_PI*(@Frame-1)/240.0;
+for(int gen=0;gen<layers;gen++) {
+    vector tone=lerp(stone,teal,min(.52,gen*.09));
+    for(int leg=0;leg<3;leg++) {
+        vector d=dirs[leg],u=ups[leg],w=sides[leg],a=starts[leg];
+        vector slope=d+u*.15;
+        // A continuous sloping stone spine beneath individually flat stair treads.
+        box(a+slope*6-u*.48,slope,u,w,set(12,.8,1.75),tone*.75,gen,0);
+        box(a+slope*6-u*.86,slope,u,w,set(12,.12,1.90),ink,gen,0);
+        for(int j=0;j<steps;j++) {
+            vector p=a+d*(j+.5)*.5+u*(j+1)*.075;
+            box(p-u*.1,d,u,w,set(.495,.2,1.65),ivory,gen,1);
+            for(int tile=0;tile<3;tile++) {
+                vector color=((j+tile)%2)?ivory*.85:teal*.75;
+                box(p+u*.013+w*(tile-1)*.52,d,u,w,set(.47,.025,.50),color,gen,1);
+            }
+            // Deliberately open near-side railing for a readable stair silhouette.
+            if(j%3==0) {
+                vector foot=p-w*.87;
+                box(foot+u*.32,d,u,w,set(.065,.64,.065),ink,gen,3);
+                box(foot+u*.69,d,u,w,set(.12,.09,.12),gold*.8,gen,3);
+            }
+        }
+        box(a+slope*6+u*.70-w*.87,slope,u,w,set(12,.075,.075),ink,gen,3);
+        // Repeated Romanesque arcades grow sideways/upside-down with local gravity.
+        for(int bay=0;bay<4;bay++) {
+            float xx=1.5+bay*3;
+            vector foot=a+slope*xx+w*.89;
+            for(int sign=-1;sign<=1;sign+=2) {
+                vector base=foot+d*sign*.70;
+                box(base+u*.58,d,u,w,set(.16,1.16,.24),tone,gen,2);
+                box(base+u*.08,d,u,w,set(.31,.16,.35),ivory,gen,2);
+                box(base+u*1.12,d,u,w,set(.29,.16,.31),ivory,gen,2);
+            }
+            arch(foot+u*1.18,d,u,w,ivory,gen);
+            box(foot+u*2.0,d,u,w,set(1.8,.11,.36),teal,gen,2);
+            box(foot+u*2.1,d,u,w,set(1.94,.08,.42),ivory,gen,2);
+            vector planter=foot+w*.42;
+            box(planter+u*.18,d,u,w,set(1.3,.36,.8),tone,gen,5);
+            box(planter+u*.38,d,u,w,set(1.16,.06,.66),ink,gen,5);
+            beam(planter+u*.4,planter+u*1.8,w,.095,set(.22,.12,.045),gen,5);
+            for(int branch=-1;branch<=1;branch++) {
+                vector tip=planter+d*branch*.48+u*(2.2-.25*abs(branch));
+                beam(planter+u*1.4,tip,w,.075,set(.3,.18,.06),gen,5);
+                leaf(tip+u*.34,d,u,w,set(.48,.65,.4),lerp(set(.16,.40,.06),set(.42,.57,.12),(branch+1)*.5),gen);
+            }
+            leaf(planter+d*.47+u*.66,d,u,w,set(.30,.36,.25),set(.26,.48,.14),gen);
+        }
+        // Amber figures pace smoothly on each gravity plane, with stable point IDs.
+        float pos=6+2.5*sin(phase+leg*2.094+gen*.55);
+        float gait=sin(phase*8+leg*2);
+        vector foot=a+slope*pos-w*.14+u*.12;
+        box(foot+u*.53,d,u,w,set(.23,.38,.22),gold,gen,4);
+        box(foot+u*.83,d,u,w,set(.19,.21,.19),ivory,gen,4);
+        for(int sign=-1;sign<=1;sign+=2) {
+            vector hip=foot+u*.36+w*sign*.065;
+            vector knee=foot+u*.17+w*sign*.075+d*sign*gait*.11;
+            vector ankle=foot+w*sign*.075+d*sign*gait*.18;
+            beam(hip,knee,w,.072,ink,gen,4);
+            beam(knee,ankle,w,.068,ink,gen,4);
+            beam(foot+u*.65+w*sign*.16,foot+u*.35+w*sign*.18-d*sign*gait*.16,w,.065,gold,gen,4);
+        }
+    }
+}
+// Point identity is assigned during construction, before the output geometry cooks.
+setdetailattrib(0,"title","Hanging Gardens");
+setdetailattrib(0,"generations",layers);
+setdetailattrib(0,"cycle_frames",240);
+setdetailattrib(0,"illusion","Three gravity directions; end-start parallel to hero camera ray");

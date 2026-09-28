@@ -9,6 +9,8 @@ from starlette.requests import Request
 from starlette.responses import JSONResponse
 
 from . import tools
+from .companion_tools import ToolAdapter
+from .companion_tools import register as register_companion
 from .connection import ensure_connected, get_connection_info, is_connected, ping
 from .tools._common import apply_response_cap
 
@@ -26,6 +28,9 @@ HOUDINI_PORT = int(os.getenv("HOUDINI_PORT", "18811"))
 
 # Create FastMCP instance
 mcp = FastMCP("Houdini MCP")
+register_companion(mcp)
+if os.getenv("HOUDINI_BACKEND", "legacy") == "companion":
+    tools = ToolAdapter(tools)
 
 
 # Health check endpoint

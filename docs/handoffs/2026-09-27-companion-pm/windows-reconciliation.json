@@ -1,0 +1,785 @@
+{
+  "date": "2026-09-27",
+  "bead": "houdini-mcp-vzp.13",
+  "source_dolt_commit": "ikqedhj5ok4pv1k1tl52ur2vq1kcjb6m",
+  "dolt_remote": "git+https://github.com/oculairmedia/houdini-mcp.git",
+  "dolt_branch": "main",
+  "git_transport_ref": "refs/dolt/data",
+  "versions": {
+    "windows_beads": "1.1.0 (8e4e59d39)",
+    "linux_pm_beads": "1.2.2 (6c124203e), PM-reported",
+    "windows_dolt_cli": "2.0.1",
+    "windows_mode": "embedded"
+  },
+  "bootstrap": {
+    "plan": "sync existing Dolt remote, not JSONL import or blank initialization",
+    "command": "bd bootstrap --yes --json",
+    "succeeded": true
+  },
+  "counts": {
+    "historical_issues": 62,
+    "authoritative_issues_at_clone": 87,
+    "missing_historical_ids": 0,
+    "missing_historical_comment_texts": 0,
+    "missing_historical_dependency_edges": 0,
+    "status_changes": 9
+  },
+  "readonly_ready_and_status_passed": true,
+  "duplicate_historical_huly_labels": {
+    "huly:HDMCP-52": [
+      {
+        "id": "houdini-mcp-2t6",
+        "status": "closed"
+      },
+      {
+        "id": "houdini-mcp-fr0",
+        "status": "open"
+      }
+    ],
+    "huly:HDMCP-23": [
+      {
+        "id": "houdini-mcp-00p",
+        "status": "closed"
+      },
+      {
+        "id": "houdini-mcp-d2j",
+        "status": "closed"
+      }
+    ],
+    "huly:HDMCP-11": [
+      {
+        "id": "houdini-mcp-9e2",
+        "status": "closed"
+      },
+      {
+        "id": "houdini-mcp-b4z",
+        "status": "closed"
+      }
+    ],
+    "huly:HDMCP-25": [
+      {
+        "id": "houdini-mcp-crr",
+        "status": "closed"
+      },
+      {
+        "id": "houdini-mcp-38o",
+        "status": "open"
+      }
+    ],
+    "huly:HDMCP-35": [
+      {
+        "id": "houdini-mcp-48x",
+        "status": "open"
+      },
+      {
+        "id": "houdini-mcp-e6s",
+        "status": "open"
+      }
+    ]
+  },
+  "duplicate_policy": "Historical provenance only; do not merge/delete. Huly deprecated by user instruction.",
+  "historical_records": [
+    {
+      "id": "houdini-mcp-00p",
+      "historical_status": "open",
+      "authoritative_status": "closed",
+      "historical_comment_count": 1,
+      "historical_comments_retained": true,
+      "historical_dependency_count": 0,
+      "historical_dependencies_retained": true,
+      "changed_content_fields": [
+        "acceptance_criteria",
+        "labels",
+        "close_reason"
+      ]
+    },
+    {
+      "id": "houdini-mcp-01h",
+      "historical_status": "closed",
+      "authoritative_status": "closed",
+      "historical_comment_count": 0,
+      "historical_comments_retained": true,
+      "historical_dependency_count": 0,
+      "historical_dependencies_retained": true,
+      "changed_content_fields": []
+    },
+    {
+      "id": "houdini-mcp-08b",
+      "historical_status": "closed",
+      "authoritative_status": "closed",
+      "historical_comment_count": 0,
+      "historical_comments_retained": true,
+      "historical_dependency_count": 0,
+      "historical_dependencies_retained": true,
+      "changed_content_fields": []
+    },
+    {
+      "id": "houdini-mcp-14c",
+      "historical_status": "closed",
+      "authoritative_status": "closed",
+      "historical_comment_count": 0,
+      "historical_comments_retained": true,
+      "historical_dependency_count": 1,
+      "historical_dependencies_retained": true,
+      "changed_content_fields": []
+    },
+    {
+      "id": "houdini-mcp-16w",
+      "historical_status": "open",
+      "authoritative_status": "closed",
+      "historical_comment_count": 0,
+      "historical_comments_retained": true,
+      "historical_dependency_count": 0,
+      "historical_dependencies_retained": true,
+      "changed_content_fields": [
+        "acceptance_criteria",
+        "labels",
+        "close_reason"
+      ]
+    },
+    {
+      "id": "houdini-mcp-2t6",
+      "historical_status": "open",
+      "authoritative_status": "closed",
+      "historical_comment_count": 1,
+      "historical_comments_retained": true,
+      "historical_dependency_count": 0,
+      "historical_dependencies_retained": true,
+      "changed_content_fields": [
+        "acceptance_criteria",
+        "labels",
+        "close_reason"
+      ]
+    },
+    {
+      "id": "houdini-mcp-348",
+      "historical_status": "closed",
+      "authoritative_status": "closed",
+      "historical_comment_count": 0,
+      "historical_comments_retained": true,
+      "historical_dependency_count": 0,
+      "historical_dependencies_retained": true,
+      "changed_content_fields": []
+    },
+    {
+      "id": "houdini-mcp-38o",
+      "historical_status": "open",
+      "authoritative_status": "open",
+      "historical_comment_count": 1,
+      "historical_comments_retained": true,
+      "historical_dependency_count": 0,
+      "historical_dependencies_retained": true,
+      "changed_content_fields": [
+        "acceptance_criteria",
+        "labels"
+      ]
+    },
+    {
+      "id": "houdini-mcp-3z2",
+      "historical_status": "closed",
+      "authoritative_status": "closed",
+      "historical_comment_count": 0,
+      "historical_comments_retained": true,
+      "historical_dependency_count": 0,
+      "historical_dependencies_retained": true,
+      "changed_content_fields": []
+    },
+    {
+      "id": "houdini-mcp-48h",
+      "historical_status": "closed",
+      "authoritative_status": "closed",
+      "historical_comment_count": 0,
+      "historical_comments_retained": true,
+      "historical_dependency_count": 0,
+      "historical_dependencies_retained": true,
+      "changed_content_fields": []
+    },
+    {
+      "id": "houdini-mcp-48x",
+      "historical_status": "open",
+      "authoritative_status": "open",
+      "historical_comment_count": 1,
+      "historical_comments_retained": true,
+      "historical_dependency_count": 0,
+      "historical_dependencies_retained": true,
+      "changed_content_fields": []
+    },
+    {
+      "id": "houdini-mcp-49h",
+      "historical_status": "closed",
+      "authoritative_status": "closed",
+      "historical_comment_count": 1,
+      "historical_comments_retained": true,
+      "historical_dependency_count": 0,
+      "historical_dependencies_retained": true,
+      "changed_content_fields": []
+    },
+    {
+      "id": "houdini-mcp-52y",
+      "historical_status": "closed",
+      "authoritative_status": "closed",
+      "historical_comment_count": 0,
+      "historical_comments_retained": true,
+      "historical_dependency_count": 0,
+      "historical_dependencies_retained": true,
+      "changed_content_fields": []
+    },
+    {
+      "id": "houdini-mcp-5gt",
+      "historical_status": "open",
+      "authoritative_status": "open",
+      "historical_comment_count": 0,
+      "historical_comments_retained": true,
+      "historical_dependency_count": 0,
+      "historical_dependencies_retained": true,
+      "changed_content_fields": [
+        "acceptance_criteria",
+        "labels"
+      ]
+    },
+    {
+      "id": "houdini-mcp-5qy",
+      "historical_status": "closed",
+      "authoritative_status": "closed",
+      "historical_comment_count": 0,
+      "historical_comments_retained": true,
+      "historical_dependency_count": 0,
+      "historical_dependencies_retained": true,
+      "changed_content_fields": []
+    },
+    {
+      "id": "houdini-mcp-5tp",
+      "historical_status": "open",
+      "authoritative_status": "open",
+      "historical_comment_count": 0,
+      "historical_comments_retained": true,
+      "historical_dependency_count": 0,
+      "historical_dependencies_retained": true,
+      "changed_content_fields": [
+        "acceptance_criteria",
+        "labels"
+      ]
+    },
+    {
+      "id": "houdini-mcp-5xn",
+      "historical_status": "closed",
+      "authoritative_status": "closed",
+      "historical_comment_count": 0,
+      "historical_comments_retained": true,
+      "historical_dependency_count": 0,
+      "historical_dependencies_retained": true,
+      "changed_content_fields": []
+    },
+    {
+      "id": "houdini-mcp-6iz",
+      "historical_status": "closed",
+      "authoritative_status": "closed",
+      "historical_comment_count": 0,
+      "historical_comments_retained": true,
+      "historical_dependency_count": 1,
+      "historical_dependencies_retained": true,
+      "changed_content_fields": []
+    },
+    {
+      "id": "houdini-mcp-6pt",
+      "historical_status": "open",
+      "authoritative_status": "open",
+      "historical_comment_count": 1,
+      "historical_comments_retained": true,
+      "historical_dependency_count": 0,
+      "historical_dependencies_retained": true,
+      "changed_content_fields": [
+        "acceptance_criteria",
+        "labels"
+      ]
+    },
+    {
+      "id": "houdini-mcp-7di",
+      "historical_status": "closed",
+      "authoritative_status": "closed",
+      "historical_comment_count": 0,
+      "historical_comments_retained": true,
+      "historical_dependency_count": 0,
+      "historical_dependencies_retained": true,
+      "changed_content_fields": []
+    },
+    {
+      "id": "houdini-mcp-7md",
+      "historical_status": "closed",
+      "authoritative_status": "closed",
+      "historical_comment_count": 0,
+      "historical_comments_retained": true,
+      "historical_dependency_count": 0,
+      "historical_dependencies_retained": true,
+      "changed_content_fields": []
+    },
+    {
+      "id": "houdini-mcp-7n9",
+      "historical_status": "closed",
+      "authoritative_status": "closed",
+      "historical_comment_count": 0,
+      "historical_comments_retained": true,
+      "historical_dependency_count": 0,
+      "historical_dependencies_retained": true,
+      "changed_content_fields": []
+    },
+    {
+      "id": "houdini-mcp-893",
+      "historical_status": "open",
+      "authoritative_status": "open",
+      "historical_comment_count": 0,
+      "historical_comments_retained": true,
+      "historical_dependency_count": 0,
+      "historical_dependencies_retained": true,
+      "changed_content_fields": []
+    },
+    {
+      "id": "houdini-mcp-8p0",
+      "historical_status": "closed",
+      "authoritative_status": "closed",
+      "historical_comment_count": 1,
+      "historical_comments_retained": true,
+      "historical_dependency_count": 0,
+      "historical_dependencies_retained": true,
+      "changed_content_fields": []
+    },
+    {
+      "id": "houdini-mcp-8vh",
+      "historical_status": "open",
+      "authoritative_status": "open",
+      "historical_comment_count": 0,
+      "historical_comments_retained": true,
+      "historical_dependency_count": 0,
+      "historical_dependencies_retained": true,
+      "changed_content_fields": [
+        "acceptance_criteria",
+        "labels"
+      ]
+    },
+    {
+      "id": "houdini-mcp-9e2",
+      "historical_status": "open",
+      "authoritative_status": "closed",
+      "historical_comment_count": 1,
+      "historical_comments_retained": true,
+      "historical_dependency_count": 0,
+      "historical_dependencies_retained": true,
+      "changed_content_fields": [
+        "acceptance_criteria",
+        "labels",
+        "close_reason"
+      ]
+    },
+    {
+      "id": "houdini-mcp-9hi",
+      "historical_status": "closed",
+      "authoritative_status": "closed",
+      "historical_comment_count": 0,
+      "historical_comments_retained": true,
+      "historical_dependency_count": 0,
+      "historical_dependencies_retained": true,
+      "changed_content_fields": []
+    },
+    {
+      "id": "houdini-mcp-9ra",
+      "historical_status": "closed",
+      "authoritative_status": "closed",
+      "historical_comment_count": 0,
+      "historical_comments_retained": true,
+      "historical_dependency_count": 0,
+      "historical_dependencies_retained": true,
+      "changed_content_fields": []
+    },
+    {
+      "id": "houdini-mcp-9sx",
+      "historical_status": "open",
+      "authoritative_status": "open",
+      "historical_comment_count": 1,
+      "historical_comments_retained": true,
+      "historical_dependency_count": 0,
+      "historical_dependencies_retained": true,
+      "changed_content_fields": [
+        "acceptance_criteria",
+        "labels"
+      ]
+    },
+    {
+      "id": "houdini-mcp-9yp",
+      "historical_status": "closed",
+      "authoritative_status": "closed",
+      "historical_comment_count": 0,
+      "historical_comments_retained": true,
+      "historical_dependency_count": 0,
+      "historical_dependencies_retained": true,
+      "changed_content_fields": []
+    },
+    {
+      "id": "houdini-mcp-9zn",
+      "historical_status": "open",
+      "authoritative_status": "open",
+      "historical_comment_count": 1,
+      "historical_comments_retained": true,
+      "historical_dependency_count": 0,
+      "historical_dependencies_retained": true,
+      "changed_content_fields": []
+    },
+    {
+      "id": "houdini-mcp-a5n",
+      "historical_status": "closed",
+      "authoritative_status": "closed",
+      "historical_comment_count": 0,
+      "historical_comments_retained": true,
+      "historical_dependency_count": 0,
+      "historical_dependencies_retained": true,
+      "changed_content_fields": []
+    },
+    {
+      "id": "houdini-mcp-aki",
+      "historical_status": "closed",
+      "authoritative_status": "closed",
+      "historical_comment_count": 1,
+      "historical_comments_retained": true,
+      "historical_dependency_count": 0,
+      "historical_dependencies_retained": true,
+      "changed_content_fields": []
+    },
+    {
+      "id": "houdini-mcp-ap7",
+      "historical_status": "closed",
+      "authoritative_status": "closed",
+      "historical_comment_count": 0,
+      "historical_comments_retained": true,
+      "historical_dependency_count": 1,
+      "historical_dependencies_retained": true,
+      "changed_content_fields": []
+    },
+    {
+      "id": "houdini-mcp-au2",
+      "historical_status": "closed",
+      "authoritative_status": "closed",
+      "historical_comment_count": 1,
+      "historical_comments_retained": true,
+      "historical_dependency_count": 0,
+      "historical_dependencies_retained": true,
+      "changed_content_fields": []
+    },
+    {
+      "id": "houdini-mcp-b4z",
+      "historical_status": "open",
+      "authoritative_status": "closed",
+      "historical_comment_count": 1,
+      "historical_comments_retained": true,
+      "historical_dependency_count": 0,
+      "historical_dependencies_retained": true,
+      "changed_content_fields": []
+    },
+    {
+      "id": "houdini-mcp-b75",
+      "historical_status": "open",
+      "authoritative_status": "open",
+      "historical_comment_count": 0,
+      "historical_comments_retained": true,
+      "historical_dependency_count": 0,
+      "historical_dependencies_retained": true,
+      "changed_content_fields": []
+    },
+    {
+      "id": "houdini-mcp-bfp",
+      "historical_status": "closed",
+      "authoritative_status": "closed",
+      "historical_comment_count": 0,
+      "historical_comments_retained": true,
+      "historical_dependency_count": 0,
+      "historical_dependencies_retained": true,
+      "changed_content_fields": []
+    },
+    {
+      "id": "houdini-mcp-brn",
+      "historical_status": "open",
+      "authoritative_status": "open",
+      "historical_comment_count": 1,
+      "historical_comments_retained": true,
+      "historical_dependency_count": 0,
+      "historical_dependencies_retained": true,
+      "changed_content_fields": []
+    },
+    {
+      "id": "houdini-mcp-cef",
+      "historical_status": "closed",
+      "authoritative_status": "closed",
+      "historical_comment_count": 0,
+      "historical_comments_retained": true,
+      "historical_dependency_count": 0,
+      "historical_dependencies_retained": true,
+      "changed_content_fields": []
+    },
+    {
+      "id": "houdini-mcp-ck7",
+      "historical_status": "open",
+      "authoritative_status": "open",
+      "historical_comment_count": 1,
+      "historical_comments_retained": true,
+      "historical_dependency_count": 0,
+      "historical_dependencies_retained": true,
+      "changed_content_fields": [
+        "acceptance_criteria",
+        "labels"
+      ]
+    },
+    {
+      "id": "houdini-mcp-cnq",
+      "historical_status": "closed",
+      "authoritative_status": "closed",
+      "historical_comment_count": 0,
+      "historical_comments_retained": true,
+      "historical_dependency_count": 0,
+      "historical_dependencies_retained": true,
+      "changed_content_fields": []
+    },
+    {
+      "id": "houdini-mcp-cos",
+      "historical_status": "closed",
+      "authoritative_status": "closed",
+      "historical_comment_count": 0,
+      "historical_comments_retained": true,
+      "historical_dependency_count": 0,
+      "historical_dependencies_retained": true,
+      "changed_content_fields": []
+    },
+    {
+      "id": "houdini-mcp-crr",
+      "historical_status": "open",
+      "authoritative_status": "closed",
+      "historical_comment_count": 0,
+      "historical_comments_retained": true,
+      "historical_dependency_count": 0,
+      "historical_dependencies_retained": true,
+      "changed_content_fields": []
+    },
+    {
+      "id": "houdini-mcp-d2j",
+      "historical_status": "open",
+      "authoritative_status": "closed",
+      "historical_comment_count": 0,
+      "historical_comments_retained": true,
+      "historical_dependency_count": 0,
+      "historical_dependencies_retained": true,
+      "changed_content_fields": []
+    },
+    {
+      "id": "houdini-mcp-e6s",
+      "historical_status": "open",
+      "authoritative_status": "open",
+      "historical_comment_count": 0,
+      "historical_comments_retained": true,
+      "historical_dependency_count": 0,
+      "historical_dependencies_retained": true,
+      "changed_content_fields": []
+    },
+    {
+      "id": "houdini-mcp-fd2",
+      "historical_status": "closed",
+      "authoritative_status": "closed",
+      "historical_comment_count": 0,
+      "historical_comments_retained": true,
+      "historical_dependency_count": 0,
+      "historical_dependencies_retained": true,
+      "changed_content_fields": []
+    },
+    {
+      "id": "houdini-mcp-fr0",
+      "historical_status": "open",
+      "authoritative_status": "open",
+      "historical_comment_count": 0,
+      "historical_comments_retained": true,
+      "historical_dependency_count": 0,
+      "historical_dependencies_retained": true,
+      "changed_content_fields": []
+    },
+    {
+      "id": "houdini-mcp-ih9",
+      "historical_status": "closed",
+      "authoritative_status": "closed",
+      "historical_comment_count": 0,
+      "historical_comments_retained": true,
+      "historical_dependency_count": 0,
+      "historical_dependencies_retained": true,
+      "changed_content_fields": []
+    },
+    {
+      "id": "houdini-mcp-juc",
+      "historical_status": "open",
+      "authoritative_status": "open",
+      "historical_comment_count": 0,
+      "historical_comments_retained": true,
+      "historical_dependency_count": 0,
+      "historical_dependencies_retained": true,
+      "changed_content_fields": []
+    },
+    {
+      "id": "houdini-mcp-nfh",
+      "historical_status": "open",
+      "authoritative_status": "open",
+      "historical_comment_count": 0,
+      "historical_comments_retained": true,
+      "historical_dependency_count": 0,
+      "historical_dependencies_retained": true,
+      "changed_content_fields": []
+    },
+    {
+      "id": "houdini-mcp-oub",
+      "historical_status": "closed",
+      "authoritative_status": "closed",
+      "historical_comment_count": 0,
+      "historical_comments_retained": true,
+      "historical_dependency_count": 0,
+      "historical_dependencies_retained": true,
+      "changed_content_fields": []
+    },
+    {
+      "id": "houdini-mcp-piz",
+      "historical_status": "closed",
+      "authoritative_status": "closed",
+      "historical_comment_count": 1,
+      "historical_comments_retained": true,
+      "historical_dependency_count": 0,
+      "historical_dependencies_retained": true,
+      "changed_content_fields": []
+    },
+    {
+      "id": "houdini-mcp-pqm",
+      "historical_status": "closed",
+      "authoritative_status": "closed",
+      "historical_comment_count": 1,
+      "historical_comments_retained": true,
+      "historical_dependency_count": 0,
+      "historical_dependencies_retained": true,
+      "changed_content_fields": []
+    },
+    {
+      "id": "houdini-mcp-ptw",
+      "historical_status": "closed",
+      "authoritative_status": "closed",
+      "historical_comment_count": 1,
+      "historical_comments_retained": true,
+      "historical_dependency_count": 0,
+      "historical_dependencies_retained": true,
+      "changed_content_fields": []
+    },
+    {
+      "id": "houdini-mcp-rhv",
+      "historical_status": "closed",
+      "authoritative_status": "closed",
+      "historical_comment_count": 0,
+      "historical_comments_retained": true,
+      "historical_dependency_count": 0,
+      "historical_dependencies_retained": true,
+      "changed_content_fields": []
+    },
+    {
+      "id": "houdini-mcp-rnc",
+      "historical_status": "open",
+      "authoritative_status": "closed",
+      "historical_comment_count": 0,
+      "historical_comments_retained": true,
+      "historical_dependency_count": 0,
+      "historical_dependencies_retained": true,
+      "changed_content_fields": [
+        "notes",
+        "labels",
+        "close_reason"
+      ]
+    },
+    {
+      "id": "houdini-mcp-rvy",
+      "historical_status": "closed",
+      "authoritative_status": "closed",
+      "historical_comment_count": 0,
+      "historical_comments_retained": true,
+      "historical_dependency_count": 0,
+      "historical_dependencies_retained": true,
+      "changed_content_fields": []
+    },
+    {
+      "id": "houdini-mcp-ryz",
+      "historical_status": "closed",
+      "authoritative_status": "closed",
+      "historical_comment_count": 0,
+      "historical_comments_retained": true,
+      "historical_dependency_count": 0,
+      "historical_dependencies_retained": true,
+      "changed_content_fields": []
+    },
+    {
+      "id": "houdini-mcp-v2i",
+      "historical_status": "open",
+      "authoritative_status": "open",
+      "historical_comment_count": 1,
+      "historical_comments_retained": true,
+      "historical_dependency_count": 0,
+      "historical_dependencies_retained": true,
+      "changed_content_fields": []
+    },
+    {
+      "id": "houdini-mcp-vl7",
+      "historical_status": "closed",
+      "authoritative_status": "closed",
+      "historical_comment_count": 0,
+      "historical_comments_retained": true,
+      "historical_dependency_count": 0,
+      "historical_dependencies_retained": true,
+      "changed_content_fields": []
+    },
+    {
+      "id": "houdini-mcp-xu4",
+      "historical_status": "open",
+      "authoritative_status": "closed",
+      "historical_comment_count": 1,
+      "historical_comments_retained": true,
+      "historical_dependency_count": 0,
+      "historical_dependencies_retained": true,
+      "changed_content_fields": [
+        "acceptance_criteria",
+        "labels",
+        "close_reason"
+      ]
+    }
+  ],
+  "file_preservation": {
+    ".beads/issues.jsonl": {
+      "sha256": "8b4984bdfe00cdf407c67f225a704432f34750f31f5a64a84531ca35e9a0399f",
+      "unchanged": true
+    },
+    "town/building.cga.h": {
+      "sha256": "52f581ab8772ba79499c0a4897b409ff8bc7929194e8bc1058a0398f376c66c5",
+      "unchanged": true
+    },
+    "town/street_life.h": {
+      "sha256": "5449a5d48c10c21b81bae7056c98ece47f71395f842c04157e1faa0b8f0fc4fb",
+      "unchanged": true
+    },
+    ".beads/interactions.jsonl": {
+      "historical_sha256": "0a5477bf61785ea6907c063e9a670a7c2a5afae9596f74dd1000df2a8dd8b71e",
+      "historical_bytes_preserved_as_prefix": true,
+      "note": "Beads appends audit records for tracking mutations; original records remain intact."
+    }
+  },
+  "scene": {
+    "operations": "health and timeline.inspect only",
+    "observed_frame": 54,
+    "fps": 24,
+    "hip_saved": false,
+    "restarted": false,
+    "camera_or_timeline_mutation": false
+  },
+  "host_generated_uncommitted_files": [
+    ".beads/metadata.json",
+    ".beads/last-touched"
+  ],
+  "historical_reference_conflict": {
+    "bead": "houdini-mcp-2t6",
+    "label": "huly:HDMCP-52",
+    "comment_mentions": "HDMCP-54",
+    "resolution": "Preserved historical text; Huly is deprecated."
+  }
+}
