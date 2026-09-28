@@ -89,20 +89,21 @@ class Runtime:
         )
         self.hou.ui.addEventLoopCallback(self.tick_callback)
         self.hou.hipFile.addEventCallback(self.hip_callback)
-        atomic_json(
-            self.descriptor,
-            {
-                "url": f"http://127.0.0.1:{self.port}/companion/v1",
-                "token": self.token,
-                "pid": os.getpid(),
-                "session_id": self.ledger.session_id,
-                "artifact_root": str(self.ledger.root),
-            },
-        )
         try:
-            self.descriptor.chmod(0o600)
-        except OSError:
-            pass
+            atomic_json(
+                self.descriptor,
+                {
+                    "url": f"http://127.0.0.1:{self.port}/companion/v1",
+                    "token": self.token,
+                    "pid": os.getpid(),
+                    "session_id": self.ledger.session_id,
+                    "artifact_root": str(self.ledger.root),
+                },
+                private=True,
+            )
+        except Exception:
+            self.stop()
+            raise
         return {**self.ledger.status(), "capabilities": self.capabilities}
 
     def http(self, request):
@@ -283,6 +284,7 @@ class Runtime:
             protected.update(self.operations.state.get("render_sequences", {}))
             protected.update(self.operations.state.get("deliverables", {}))
             protected.update(self.operations.state.get("save_verifiers", {}))
+            protected.update(self.operations.state.get("reviews", {}))
             protected.update(
                 v["source_cache"]
                 for v in self.operations.state.get("iteration", {}).values()
@@ -327,6 +329,7 @@ class Runtime:
     def stop(self):
         global _runtime
         self.ledger.stop()
+        self.operations.shutdown()
         self.watchers.clear()
         self.hou.ui.removeEventLoopCallback(self.tick_callback)
         self.hou.hipFile.removeEventCallback(self.hip_callback)

@@ -21,13 +21,30 @@ def boundary(
     import numpy as np
 
     from ..continuity import compare_images, compare_points, image_pixels
-    from .render_sequence import file_ok, get
+    from .render_sequence import file_ok, get, validate_sample
 
     node = require_node(ctx.hou, path)
     values = []
+    if render_id:
+        folder, data = get(ctx, render_id)
+        if data["path"] != path or before not in data["frames"] or after not in data["frames"]:
+            raise CompanionError(
+                "UNALIGNED_EVIDENCE", "Render source and sampled frames must match"
+            )
+        rows = [data["rows"][data["frames"].index(f)] for f in (before, after)]
+        if any(
+            row is not None and row.get("frame") != frame
+            for row, frame in zip(rows, (before, after), strict=True)
+        ):
+            raise CompanionError(
+                "UNALIGNED_EVIDENCE", "Render row frame differs from sampled frame"
+            )
     with StateGuard(ctx.hou) as state:
-        for frame in (before, after):
-            geo = node.geometryAtFrame(frame)
+        for index, frame in enumerate((before, after)):
+            ctx.hou.setFrame(frame)
+            geo = node.geometry()
+            if render_id:
+                validate_sample(ctx, folder, data, rows[index], geo)
             if geo.intrinsicValue("pointcount") > 1_000_000:
                 raise CompanionError(
                     "GEOMETRY_BUDGET", "Correspondence is limited to one million points"
@@ -53,17 +70,11 @@ def boundary(
             values.append((ids, xyz))
         result = compare_points(*values[0], *values[1], tolerance, allow_birth_death)
         if render_id:
-            folder, data = get(ctx, render_id)
-            if data["path"] != path or before not in data["frames"] or after not in data["frames"]:
-                raise CompanionError(
-                    "UNALIGNED_EVIDENCE", "Render source and sampled frames must match"
-                )
             ctx.hou.setFrame(data["anchor_frame"])
             node.geometry()
             check_expected(ctx.hou, node, data["expected"])
-            rows = [data["rows"][data["frames"].index(f)] for f in (before, after)]
-            if any(row is None for row in rows):
-                raise CompanionError("INCOMPLETE_REVIEW", "Render both samples first")
+            for camera, expected in data["camera_tokens"].items():
+                check_expected(ctx.hou, require_node(ctx.hou, camera), expected)
             image_results = []
             for a, b in zip(rows[0]["images"], rows[1]["images"], strict=True):
                 if not file_ok(folder, a, True) or not file_ok(folder, b, True):
@@ -84,7 +95,7 @@ def boundary(
 def plugin():
     return PluginSpec(
         "boundary",
-        "0.1.0",
+        "0.2.0",
         (
             OperationSpec(
                 "timeline.boundary",

@@ -1,0 +1,227 @@
+{
+  "houdini": "20.5.278",
+  "pid": 466536,
+  "disposable_gui": true,
+  "checks": {
+    "never_saved_copy_preserves_dirty_state": true,
+    "clean_and_dirty_copy_preserve_active_hip": true,
+    "failed_copy_preserves_dirty_state": true,
+    "batch_literal_rejected_alias_replacement_accepted": true,
+    "missing_partial_stale_corrupt_review_rejected_exact_promoted": true,
+    "nonanchor_source_edit_rejected_with_time_restored": true,
+    "actual_scene_clear_keeps_worker_handle_shutdown_reaps": true
+  },
+  "save_receipts": [
+    {
+      "save_id": "79ec0dd6c8f54300a526937edb4ab2cd",
+      "hip": "C:\\Users\\Emmanuel\\.houdini-companion\\pr38-review-regressions-1790610169613998700\\clean-copy.hip",
+      "active_hip": "C:/Users/Emmanuel/.houdini-companion/pr38-review-regressions-1790610169613998700/original.hip",
+      "manifest": "C:\\Users\\Emmanuel\\.houdini-companion\\pr38-review-regressions-1790610169613998700\\artifacts\\79ec0dd6c8f54300a526937edb4ab2cd\\saved-scene.json",
+      "state_receipt": {
+        "restored": true,
+        "failures": [],
+        "before": {
+          "time": {
+            "frame": 1.0,
+            "fps": 24.0,
+            "frame_range": [
+              1.0,
+              240.0
+            ],
+            "playback_range": [
+              1.0,
+              240.0
+            ],
+            "playing": false
+          },
+          "cameras": {}
+        },
+        "after": {
+          "time": {
+            "frame": 1.0,
+            "fps": 24.0,
+            "frame_range": [
+              1.0,
+              240.0
+            ],
+            "playback_range": [
+              1.0,
+              240.0
+            ],
+            "playing": false
+          },
+          "cameras": {}
+        }
+      },
+      "hip_state_receipt": {
+        "before": {
+          "path": "C:/Users/Emmanuel/.houdini-companion/pr38-review-regressions-1790610169613998700/original.hip",
+          "dirty": false
+        },
+        "after": {
+          "path": "C:/Users/Emmanuel/.houdini-companion/pr38-review-regressions-1790610169613998700/original.hip",
+          "dirty": false
+        }
+      },
+      "verified_reopen": false,
+      "next_operation": "save.verify"
+    },
+    {
+      "save_id": "fe925063abae41a79ad92130412ddebd",
+      "hip": "C:\\Users\\Emmanuel\\.houdini-companion\\pr38-review-regressions-1790610169613998700\\dirty-copy.hip",
+      "active_hip": "C:/Users/Emmanuel/.houdini-companion/pr38-review-regressions-1790610169613998700/original.hip",
+      "manifest": "C:\\Users\\Emmanuel\\.houdini-companion\\pr38-review-regressions-1790610169613998700\\artifacts\\fe925063abae41a79ad92130412ddebd\\saved-scene.json",
+      "state_receipt": {
+        "restored": true,
+        "failures": [],
+        "before": {
+          "time": {
+            "frame": 1.0,
+            "fps": 24.0,
+            "frame_range": [
+              1.0,
+              240.0
+            ],
+            "playback_range": [
+              1.0,
+              240.0
+            ],
+            "playing": false
+          },
+          "cameras": {}
+        },
+        "after": {
+          "time": {
+            "frame": 1.0,
+            "fps": 24.0,
+            "frame_range": [
+              1.0,
+              240.0
+            ],
+            "playback_range": [
+              1.0,
+              240.0
+            ],
+            "playing": false
+          },
+          "cameras": {}
+        }
+      },
+      "hip_state_receipt": {
+        "before": {
+          "path": "C:/Users/Emmanuel/.houdini-companion/pr38-review-regressions-1790610169613998700/original.hip",
+          "dirty": true
+        },
+        "after": {
+          "path": "C:/Users/Emmanuel/.houdini-companion/pr38-review-regressions-1790610169613998700/original.hip",
+          "dirty": true
+        }
+      },
+      "verified_reopen": false,
+      "next_operation": "save.verify"
+    }
+  ],
+  "promotion": {
+    "promoted": "/obj/reviewed",
+    "output": "/obj/reviewed/box",
+    "build_id": "e67cfb0639b74353bb3585cda64fd690",
+    "validation": {
+      "accepted": true,
+      "profile": "closed_solids",
+      "reasons": [],
+      "points": 8,
+      "polygons": 6,
+      "nonfinite_points": 0,
+      "degenerate_polygons": 0,
+      "boundary_edges": 0,
+      "nonmanifold_edges": 0,
+      "inconsistent_edges": 0,
+      "inward_components": 0,
+      "components": 1,
+      "scope": "Welded polygon topology and component signed volume; no self-intersection proof",
+      "state_receipt": {
+        "restored": true,
+        "failures": [],
+        "before": {
+          "time": {
+            "frame": 1.0,
+            "fps": 24.0,
+            "frame_range": [
+              1.0,
+              240.0
+            ],
+            "playback_range": [
+              1.0,
+              240.0
+            ],
+            "playing": false
+          },
+          "cameras": {}
+        },
+        "after": {
+          "time": {
+            "frame": 1.0,
+            "fps": 24.0,
+            "frame_range": [
+              1.0,
+              240.0
+            ],
+            "playback_range": [
+              1.0,
+              240.0
+            ],
+            "playing": false
+          },
+          "cameras": {}
+        }
+      }
+    },
+    "review_id": "ea4b6ea53bc441f9abc6b7675ec49c71"
+  },
+  "review": {
+    "index": "C:\\Users\\Emmanuel\\.houdini-companion\\pr38-review-regressions-1790610169613998700\\review\\index.html",
+    "manifest": "C:\\Users\\Emmanuel\\.houdini-companion\\pr38-review-regressions-1790610169613998700\\review\\review.json",
+    "image_decode_verified": true,
+    "frames": 2,
+    "views": 1,
+    "review_id": "ea4b6ea53bc441f9abc6b7675ec49c71",
+    "state_receipt": {
+      "restored": true,
+      "failures": [],
+      "before": {
+        "time": {
+          "frame": 1.0,
+          "fps": 24.0,
+          "frame_range": [
+            1.0,
+            240.0
+          ],
+          "playback_range": [
+            1.0,
+            240.0
+          ],
+          "playing": false
+        },
+        "cameras": {}
+      },
+      "after": {
+        "time": {
+          "frame": 1.0,
+          "fps": 24.0,
+          "frame_range": [
+            1.0,
+            240.0
+          ],
+          "playback_range": [
+            1.0,
+            240.0
+          ],
+          "playing": false
+        },
+        "cameras": {}
+      }
+    },
+    "scope": "Complete, source-aligned sampled evidence; not aesthetic approval"
+  },
+  "passed": true
+}

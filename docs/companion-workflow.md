@@ -13,7 +13,7 @@ never resubmit a mutation with a fresh request ID to guess whether it ran.
 | `houdini-mcp-vzp.22` | `build.stage`, `build.promote`, `build.discard` | Build an owned hidden SOP graph, cook and validate it, then expose the exact candidate after checking its observation. Failed builds remove only their owned container. |
 | `.23` | `geometry.validate` | Explicit polygon profiles: `surface`, `open_cards`, `closed_solids`, `walkway`. Closed solids check welded topology, winding and each connected component's signed volume. Walking checks require explicit local-space ray probes. |
 | `.24` | `render.start`, `render.step`, `render.status`, `render.cancel`, `render.release` | Pin observations and fixed cameras; render one missing or corrupt frame per job. Pause/resume without rewriting intact frames. |
-| `.25` | `review.publish` | Verify artifact hashes and actual image decoding; publish a standalone player with synchronized views, frame scrubbing, play/pause, speed controls, annotations and linked geometry/timing evidence. |
+| `.25` | `review.publish`, `review.release` | Verify artifact hashes and actual image decoding; publish a standalone player with synchronized views, frame scrubbing, play/pause, speed controls, annotations and linked geometry/timing evidence. Release unconsumed receipts without deleting published files. |
 | `.26` | State guard, `scene.show`, `scene.save` | Restore declared temporary time and camera channels, report partial restoration; keep intentional presentation and persistence explicit. |
 | `.27` | `save.verify`, `save.verify_status`, `save.release` | Reopen a saved fixture in a separate bounded hython process and compare declared outputs, cameras and dependencies. Never reload the interactive artist session. |
 | `.28` | `timeline.boundary` | Match unique point IDs across fractional frames, report births/deaths and position jumps, optionally compare aligned fixed-camera images. |
@@ -38,7 +38,8 @@ def run(operation, **params):
     return job["result"]
 
 candidate = run("build.stage", name="reviewed_box", profile="closed_solids",
-                nodes=[{"id": "box", "type": "box"}], output="box")
+                nodes=[{"id": "box", "type": "box"}], output="box",
+                review_frames=[1, 1.25, 2])
 # Review candidate["output"] while the object remains hidden.
 sequence = run("render.start", path=candidate["output"],
                frames=[1, 1.25, 2], cameras=["/obj/review_camera"], resolution=640)
@@ -47,7 +48,7 @@ while not run("render.status", render_id=sequence["render_id"])["complete"]:
 review = run("review.publish", render_id=sequence["render_id"],
              destination="C:/reviews/unique-review-directory", title="Box review")
 # After evaluating the candidate, promote it or call build.discard.
-run("build.promote", build_id=candidate["build_id"])
+run("build.promote", build_id=candidate["build_id"], review_id=review["review_id"])
 run("render.release", render_id=sequence["render_id"])
 ```
 
@@ -65,10 +66,11 @@ error. The guard is not an arbitrary Python undo mechanism or a complete viewpor
 snapshot. `scene.show` intentionally changes the selected viewport camera, unlocks
 camera-to-view, enables the requested object and optionally changes frame.
 
-`scene.save` saves the entire current HIP to a new destination. By default it
-restores the original active filename; `activate=true` retains the new filename.
-Saving can change Houdini's dirty flag. Call it only for an authorized save or a
-disposable fixture. Verification certifies only declared SOP outputs/cameras and
+`scene.save` saves the entire current HIP to a new destination. Copy mode uses
+Houdini's backup writer (or native `mwrite -n` copy mode for a never-saved HIP),
+preserving the original active filename and dirty flag;
+`activate=true` intentionally performs Save As and clears the dirty flag. Call it
+only for an authorized save or a disposable fixture. Verification certifies only declared SOP outputs/cameras and
 discoverable source dependencies; it does not package sources or prove whole-town
 portability. `save.release` removes pinned receipts, never the destination HIP.
 
@@ -84,6 +86,17 @@ geometry review, not an animated-camera movie. Changed source/camera observation
 reject subsequent frame work. Image differences are threshold measurements, not
 perceptual or artistic quality judgments. Boundary correspondence requires unique
 scalar integer/string point IDs, never an assumption that point ordering is stable.
+
+Each rendered row records its source observation and evaluated geometry signature
+at that exact frame. Boundary acceptance and publication revalidate sampled source,
+geometry and artifact hashes. Old rows without this evidence must be re-rendered.
+`build.promote` requires the `review_id` from a completed `review.publish`, covering
+the candidate's declared `review_frames` (default: its staging frame). It checks
+the unchanged candidate and published evidence again before exposing it. This
+enforces complete sampled review evidence, not an artist's aesthetic approval.
+Pending review receipts are limited to 16 and consumed on promotion; `review.release`
+unpins an unconsumed receipt, and discarding a candidate drops its associated receipts. Verifier handles and saved receipts
+survive HIP replacement; runtime shutdown terminates and reaps managed workers.
 
 ## Bounds and performance
 

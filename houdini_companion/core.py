@@ -5,6 +5,8 @@ from __future__ import annotations
 import copy
 import hashlib
 import json
+import os
+import tempfile
 import threading
 import time
 import uuid
@@ -37,12 +39,25 @@ def digest(value):
     return hashlib.sha256(canonical(value).encode()).hexdigest()
 
 
-def atomic_json(path, value):
+def atomic_json(path, value, *, private=False):
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
-    temporary = path.with_suffix(".tmp")
-    temporary.write_text(json.dumps(value, indent=2, allow_nan=False), encoding="utf-8")
-    temporary.replace(path)
+    payload = json.dumps(value, indent=2, allow_nan=False)
+    if private and os.name == "nt":
+        from .private_file import windows_private_fd
+
+        temporary = path.with_name(path.name + "." + uuid.uuid4().hex + ".tmp")
+        fd = windows_private_fd(temporary)
+    else:
+        # mkstemp applies 0600 at creation, independent of a permissive POSIX umask.
+        fd, name = tempfile.mkstemp(prefix=path.name + ".", suffix=".tmp", dir=path.parent)
+        temporary = Path(name)
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8") as stream:
+            stream.write(payload)
+        temporary.replace(path)
+    finally:
+        temporary.unlink(missing_ok=True)
 
 
 class Ledger:

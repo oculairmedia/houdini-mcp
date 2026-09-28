@@ -25,4 +25,12 @@ class Operations:
         return self.registry.dispatch(self, {**job, "operation": operation, "params": params})
 
     def reset(self):
+        # Saved artifacts and their subprocesses belong to the runtime, not the HIP.
+        retained = {k: self.state[k] for k in ("deliverables", "save_verifiers") if k in self.state}
         self.state.clear()
+        self.state.update(retained)
+
+    def shutdown(self):
+        from .plugins.delivery import stop_verifiers
+
+        stop_verifiers(self)

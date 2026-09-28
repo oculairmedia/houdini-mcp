@@ -11,6 +11,7 @@ from ..errors import CompanionError
 from ..observation import check_expected, fingerprint, require_node
 from ..registry import OperationSpec, PluginSpec
 from ..rendering import artifact, render_snapshot
+from ..saved_scene import geometry_signature
 from ..state_guard import StateGuard
 from .introspection import PATH, object_schema
 
@@ -52,6 +53,46 @@ def get(ctx, render_id):
     if data["scene_id"] != ctx.ledger.scene_id or data["session_id"] != ctx.ledger.session_id:
         raise CompanionError("STALE_SCENE", "Sequence belongs to another scene/session")
     return folder, data
+
+
+def validate_sample(ctx, folder, data, row, geo=None):
+    """Bind current evaluated geometry to the source observed when this frame rendered."""
+    if row is None or not row.get("source_observation") or not row.get("geometry_signature"):
+        raise CompanionError("INCOMPLETE_REVIEW", "Re-render samples without per-frame evidence")
+    ctx.hou.setFrame(row["frame"])
+    node = require_node(ctx.hou, data["path"])
+    geo = node.geometry() if geo is None else geo
+    if node.errors():
+        raise CompanionError("COOK_FAILED", "; ".join(node.errors()))
+    check_expected(ctx.hou, node, row["source_observation"])
+    if geometry_signature(geo) != row["geometry_signature"]:
+        raise CompanionError("UNALIGNED_EVIDENCE", "Current geometry differs from rendered sample")
+    if not row.get("images") or len(row["images"]) != len(data["recipes"]):
+        raise CompanionError("INCOMPLETE_REVIEW", "Missing synchronized images")
+    for item in [row["geometry_artifact"], *row["images"]]:
+        if not file_ok(folder, item, strict=True):
+            raise CompanionError("ARTIFACT_CORRUPT", "Sample evidence changed")
+    return geo
+
+
+def validate_review(ctx, folder, data):
+    """Check every frame and fixed camera, preserving the caller's time state."""
+    if data["scene_id"] != ctx.ledger.scene_id or data["session_id"] != ctx.ledger.session_id:
+        raise CompanionError("STALE_SCENE", "Review belongs to another scene/session")
+    with StateGuard(ctx.hou) as state:
+        ctx.hou.setFrame(data["anchor_frame"])
+        node = require_node(ctx.hou, data["path"])
+        node.geometry()
+        check_expected(ctx.hou, node, data["expected"])
+        for camera, expected in data["camera_tokens"].items():
+            check_expected(ctx.hou, require_node(ctx.hou, camera), expected)
+        if len(data["rows"]) != len(data["frames"]):
+            raise CompanionError("INCOMPLETE_REVIEW", "Frame coverage differs")
+        for frame, row in zip(data["frames"], data["rows"], strict=True):
+            if row is None or row["frame"] != frame:
+                raise CompanionError("INCOMPLETE_REVIEW", "Missing requested frame")
+            validate_sample(ctx, folder, data, row)
+    return state.receipt
 
 
 def summary(folder, data):
@@ -167,9 +208,12 @@ def step(ctx, job, render_id, resume=False):
             ctx.ledger.checkpoint(job["job_id"])
             ctx.ledger.phase(job["job_id"], f"frame_{index + 1}_of_{len(data['frames'])}")
             t = time.perf_counter()
-            geo = node.geometryAtFrame(data["frames"][index])
+            ctx.hou.setFrame(data["frames"][index])
+            geo = node.geometry()
             if node.errors():
                 raise CompanionError("COOK_FAILED", "; ".join(node.errors()))
+            observation = fingerprint(ctx.hou, node)["token"]
+            signature = geometry_signature(geo)
             dest = folder / f"frame-{index:04d}.bgeo.sc"
             geo.saveToFile(str(dest))
             cook_ms = (time.perf_counter() - t) * 1000
@@ -196,12 +240,16 @@ def step(ctx, job, render_id, resume=False):
                 "job_id": job["job_id"],
                 "geometry_artifact": artifact(dest, "geometry"),
                 "geometry": checks,
+                "source_observation": observation,
+                "geometry_signature": signature,
                 "images": images,
                 "cook_ms": cook_ms,
                 "render_ms": render["render_ms"],
                 "total_ms": (time.perf_counter() - started) * 1000,
             }
-            node.geometry()
+            # Capture/render helpers must not silently change the sampled source.
+            ctx.hou.setFrame(row["frame"])
+            check_expected(ctx.hou, node, observation)
         row["state_receipt"] = state.receipt
         data["rows"][index] = row
         data["paused"] = False
@@ -240,7 +288,7 @@ def plugin():
     key = object_schema({"render_id": PATH}, ["render_id"])
     return PluginSpec(
         "render_sequence",
-        "0.1.0",
+        "0.2.0",
         (
             OperationSpec(
                 "render.start",

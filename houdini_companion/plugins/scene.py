@@ -17,7 +17,7 @@ class Handlers(BasePlugin):
             raise CompanionError(
                 "INVALID_BATCH", "expected must map existing paths to observation tokens"
             )
-        aliases = set()
+        aliases, bound, deleted = {}, {}, []
         schemas = {
             "create": {"op", "parent", "type", "name", "as"},
             "set": {"op", "path", "values"},
@@ -48,8 +48,15 @@ class Handlers(BasePlugin):
                 if path.startswith("$"):
                     if path[1:] not in aliases:
                         raise CompanionError("INVALID_BATCH", f"Unknown alias: {path}")
+                    if aliases[path[1:]] is None:
+                        raise CompanionError("TARGET_DELETED", f"Alias was deleted: {path}")
                 else:
+                    if any(path == p or path.startswith(p + "/") for p in deleted):
+                        raise CompanionError(
+                            "TARGET_DELETED", "Use a creation alias for a replacement node"
+                        )
                     node = require_node(self.hou, path)
+                    bound[path] = node
                     # Root creation is explicitly named and fails on name collisions.
                     if key == "parent" and path in {"/obj", "/out"}:
                         continue
@@ -62,13 +69,30 @@ class Handlers(BasePlugin):
             if alias:
                 if not isinstance(alias, str) or alias in aliases or not alias.isidentifier():
                     raise CompanionError("INVALID_BATCH", "Aliases must be unique identifiers")
-                aliases.add(alias)
+                parent = action["parent"]
+                parent = aliases[parent[1:]] if parent.startswith("$") else parent
+                aliases[alias] = parent + "/" + action["name"]
+            if action["op"] == "delete":
+                target = action["path"]
+                target = aliases[target[1:]] if target.startswith("$") else target
+                deleted.append(target)
+                for key, path in aliases.items():
+                    if path and (path == target or path.startswith(target + "/")):
+                        aliases[key] = None
+        return bound
 
-    def _apply_actions(self, actions):
+    def _apply_actions(self, actions, bound):
         hou, aliases, changed = self.hou, {}, []
 
         def resolve(path):
-            return aliases[path[1:]] if path.startswith("$") else require_node(hou, path)
+            node = aliases[path[1:]] if path.startswith("$") else bound[path]
+            try:
+                current = hou.node(node.path())
+                if current is None or current.sessionId() != node.sessionId():
+                    raise CompanionError("STALE_TARGET", "Batch target identity changed")
+            except hou.ObjectWasDeleted as exc:
+                raise CompanionError("STALE_TARGET", "Batch target was deleted") from exc
+            return node
 
         for action in actions:
             op = action["op"]
@@ -105,17 +129,25 @@ class Handlers(BasePlugin):
                     node.destroy()
                     continue
             changed.append({"path": node.path(), "op": op})
-        return changed, {name: node.path() for name, node in aliases.items()}
+        live_aliases = {}
+        for name, node in aliases.items():
+            try:
+                current = hou.node(node.path())
+                if current is not None and current.sessionId() == node.sessionId():
+                    live_aliases[name] = node.path()
+            except hou.ObjectWasDeleted:
+                continue
+        return changed, live_aliases
 
     def op_batch(
         self, job, actions, expected=None, output=None, feedback=True, views=None, resolution=640
     ):
         hou = self.hou
-        self._validate_actions(actions, expected or {})
+        bound = self._validate_actions(actions, expected or {})
         label = "Houdini Companion " + job["job_id"]
         try:
             with hou.undos.group(label):
-                changed, aliases = self._apply_actions(actions)
+                changed, aliases = self._apply_actions(actions, bound)
                 resolved_output = (
                     aliases[output[1:]] if output and output.startswith("$") else output
                 )

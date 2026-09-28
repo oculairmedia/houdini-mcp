@@ -1,8 +1,10 @@
 """Owned declarative SOP builds: stage, validate, explicitly promote or discard."""
 
+import json
 import re
+from pathlib import Path
 
-from ..core import atomic_json
+from ..core import atomic_json, digest
 from ..errors import CompanionError
 from ..observation import check_expected, fingerprint, require_node
 from ..registry import OperationSpec, PluginSpec
@@ -49,7 +51,7 @@ def validate(ctx, job, path, profile="surface", frame=None, probes=None):
     return {**result, "state_receipt": state.receipt}
 
 
-def stage(ctx, job, nodes, output, name="candidate", profile="surface"):
+def stage(ctx, job, nodes, output, name="candidate", profile="surface", review_frames=None):
     """Stage a hidden SOP graph; any failed cook/check removes its owned container."""
     if profile == "walkway":
         raise CompanionError(
@@ -108,6 +110,8 @@ def stage(ctx, job, nodes, output, name="candidate", profile="surface"):
                 "output": out.path(),
                 "name": name,
                 "expected": observation["token"],
+                "anchor_frame": observation["frame"],
+                "review_frames": review_frames or [observation["frame"]],
                 "validation": checked,
             }
             atomic_json(ctx.ledger.root / job["job_id"] / "build.json", record)
@@ -139,10 +143,28 @@ def record(ctx, build_id):
     return value, root
 
 
-def promote(ctx, job, build_id):
-    """Expose the exact validated candidate; never overwrite an existing object."""
+def promote(ctx, job, build_id, review_id=None):
+    """Expose an unchanged candidate only after its completed sampled review."""
+    from .render_sequence import validate_review
+
     value, root = record(ctx, build_id)
-    check_expected(ctx.hou, require_node(ctx.hou, value["output"]), value["expected"])
+    with StateGuard(ctx.hou):
+        ctx.hou.setFrame(value["anchor_frame"])
+        check_expected(ctx.hou, require_node(ctx.hou, value["output"]), value["expected"])
+    receipt = ctx.state.get("reviews", {}).get(review_id)
+    if not receipt or receipt["path"] != value["output"]:
+        raise CompanionError("REVIEW_REQUIRED", "Publish this candidate's complete review first")
+    try:
+        data = json.loads(Path(receipt["manifest"]).read_text(encoding="utf-8"))
+    except (OSError, ValueError) as exc:
+        raise CompanionError("ARTIFACT_CORRUPT", "Review manifest is missing or invalid") from exc
+    if digest(data) != receipt["manifest_digest"]:
+        raise CompanionError("ARTIFACT_CORRUPT", "Review manifest changed")
+    if not set(value["review_frames"]) <= set(data["frames"]):
+        raise CompanionError(
+            "INCOMPLETE_REVIEW", "Review must cover the candidate's declared frames"
+        )
+    validate_review(ctx, Path(receipt["manifest"]).parent, data)
     if ctx.hou.node("/obj/" + value["name"]):
         raise CompanionError("TARGET_EXISTS", "Choose an unused object name")
     old_name, old_display = root.name(), root.isDisplayFlagSet()
@@ -167,11 +189,13 @@ def promote(ctx, job, build_id):
             current_root=root.path(),
         ) from exc
     del ctx.state["builds"][build_id]
+    del ctx.state["reviews"][review_id]
     return {
         "promoted": root.path(),
         "output": root.path() + "/" + value["output"].rsplit("/", 1)[-1],
         "build_id": build_id,
         "validation": value["validation"],
+        "review_id": review_id,
     }
 
 
@@ -179,6 +203,9 @@ def discard(ctx, job, build_id):
     value, root = record(ctx, build_id)
     root.destroy()
     del ctx.state["builds"][build_id]
+    for key, receipt in list(ctx.state.get("reviews", {}).items()):
+        if receipt["path"] == value["output"]:
+            del ctx.state["reviews"][key]
     return {"discarded": value["root"], "build_id": build_id}
 
 
@@ -194,7 +221,7 @@ def plugin():
     )
     return PluginSpec(
         "build",
-        "0.1.0",
+        "0.2.0",
         (
             OperationSpec(
                 "build.stage",
@@ -205,6 +232,12 @@ def plugin():
                         "output": PATH,
                         "name": PATH,
                         "profile": PROFILES,
+                        "review_frames": {
+                            "type": "array",
+                            "items": {"type": "number"},
+                            "minItems": 1,
+                            "maxItems": 8,
+                        },
                     },
                     ["nodes", "output"],
                 ),
@@ -214,7 +247,7 @@ def plugin():
             OperationSpec(
                 "build.promote",
                 "scene",
-                object_schema({"build_id": PATH}, ["build_id"]),
+                object_schema({"build_id": PATH, "review_id": PATH}, ["build_id"]),
                 promote,
                 promote.__doc__,
             ),

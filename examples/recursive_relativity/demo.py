@@ -66,6 +66,7 @@ result={'time':time_state(hou),'hip':hou.hipFile.path(),
         "build.stage",
         name="recursive_relativity",
         profile="surface",
+        review_frames=[1, 61, 121, 181, 241],
         nodes=[
             {
                 "id": "relativity",
@@ -154,7 +155,15 @@ def review(client, frames, resolution):
 
 def promote(client):
     state = json.loads(STATE.read_text())
-    result = run(client, "build.promote", build_id=state["candidate"]["build_id"])
+    publication = state.get("publication")
+    if not publication or not publication.get("review_id"):
+        raise RuntimeError("Run review with the declared frames before promotion")
+    result = run(
+        client,
+        "build.promote",
+        build_id=state["candidate"]["build_id"],
+        review_id=publication["review_id"],
+    )
     state["output"] = result["output"]
     state["promoted"] = result
     STATE.write_text(json.dumps(state, indent=2))
@@ -174,7 +183,7 @@ result={{'root':n.path()}}
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("command", choices=["stage", "review", "promote", "show"])
-    parser.add_argument("--frames", default="73")
+    parser.add_argument("--frames", default="1,61,121,181,241")
     parser.add_argument("--resolution", type=int, default=960)
     args = parser.parse_args()
     client = Client()

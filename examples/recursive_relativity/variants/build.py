@@ -62,6 +62,7 @@ result={'time':time_state(hou),'hip':hou.hipFile.path(),'camera_paths':[n.path()
             "build.stage",
             name="relativity_" + slug,
             profile="surface",
+            review_frames=[1, 61, 121, 181, 241],
             nodes=[
                 {
                     "id": "generator",
@@ -132,7 +133,9 @@ result=cam.path()
         run(client, "render.release", render_id=seq["render_id"])
         shutil.copy2(HERE / (slug + ".vfl"), DIRECTORY / slug / (slug + ".vfl"))
         # Expose only the reviewed candidate. Translate the new object and its new camera together.
-        promoted = run(client, "build.promote", build_id=built["build_id"])
+        promoted = run(
+            client, "build.promote", build_id=built["build_id"], review_id=pub["review_id"]
+        )
         record["promoted"] = promoted
         record["offset"] = 3000 + index * 100
         execute(

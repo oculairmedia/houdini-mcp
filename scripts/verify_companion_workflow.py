@@ -104,7 +104,27 @@ def main():
     box.parm("sizex").set(2)
     rejected("build.promote", "STALE_INPUT", build_id=built["build_id"])
     box.parm("sizex").set(1)
-    promoted = run("build.promote", build_id=built["build_id"])
+    rejected("build.promote", "REVIEW_REQUIRED", build_id=built["build_id"])
+    review_cam = hou.node("/obj").createNode("cam", "promotion_cam")
+    review_cam.parmTuple("t").set((3, 2, 4))
+    review_cam.parmTuple("r").set((-20, 35, 0))
+    candidate_render = run(
+        "render.start",
+        path=built["output"],
+        frames=[hou.frame()],
+        cameras=[review_cam.path()],
+        resolution=128,
+    )
+    run("render.step", render_id=candidate_render["render_id"])
+    candidate_review = run(
+        "review.publish",
+        render_id=candidate_render["render_id"],
+        destination=str(directory / "candidate-review"),
+    )
+    promoted = run(
+        "build.promote", build_id=built["build_id"], review_id=candidate_review["review_id"]
+    )
+    run("render.release", render_id=candidate_render["render_id"])
     root = hou.node(promoted["promoted"])
     out = root.node("motion")
     path = out.path()

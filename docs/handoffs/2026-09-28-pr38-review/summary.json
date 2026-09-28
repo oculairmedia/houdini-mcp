@@ -1,0 +1,46 @@
+{
+  "date": "2026-09-28",
+  "reviewed_base": "a0d50af",
+  "scope": "Five source-review findings and enforced completed sampled review before build promotion. Artist live runtime was not reloaded.",
+  "checks": {
+    "disposable_gui": true,
+    "disposable_hython": true,
+    "windows_prewrite_and_published_dacl": true,
+    "visual_review_of_fixture_render": true
+  },
+  "regression_tests": 26,
+  "local_full_suite": {
+    "command": "python -X utf8 -m pytest tests/ -q -m \"not integration\"",
+    "passed": 802,
+    "skipped": 8,
+    "deselected": 4,
+    "note": "Final full-suite run includes all 26 regression cases. UTF-8 mode avoids pre-existing Windows default-code-page doc-test errors."
+  },
+  "baseline_comparison": {
+    "base": "a0d50af",
+    "failed": 21,
+    "passed": 1,
+    "note": "Earlier 22-case subset: includes direct dirty-state reproduction and new contract tests; some failures reflect unsupported new interfaces, not independent runtime reproductions."
+  },
+  "beads": [
+    "houdini-mcp-vzp.33",
+    "houdini-mcp-vzp.34",
+    "houdini-mcp-vzp.35",
+    "houdini-mcp-vzp.36",
+    "houdini-mcp-vzp.37",
+    "houdini-mcp-vzp.38"
+  ],
+  "evidence_files": {
+    "disposable-gui.json": "288622f4134ea00df138f0087a18b803dcc3e67869402cf7f403bc0e2543c711",
+    "disposable-hython.json": "95c68829c15e54dcc2309126eb61dbaad61824251cf7cf3599b87cda5a162c53",
+    "review-frame-0.png": "c9725210f27efe09915a169421e00fd5499e9eed8b2527f1e4ca040fb412943f",
+    "review-frame-1.png": "c9725210f27efe09915a169421e00fd5499e9eed8b2527f1e4ca040fb412943f"
+  },
+  "limitations": [
+    "Windows Houdini 20.5.278 disposable fixtures, not a replay of the artist town or every example.",
+    "Lifetime test uses a deliberately long-running hython stand-in; separate workflow tests use actual saved-scene verification workers.",
+    "Review receipt certifies complete, source-aligned sampled evidence; not artist aesthetic approval or continuous-time proof.",
+    "Temporal geometry signature covers topology and supported scalar/tuple attributes, not a universal simulation/intrinsic-state proof.",
+    "No crash atomicity claim or automatic replay after restart."
+  ]
+}

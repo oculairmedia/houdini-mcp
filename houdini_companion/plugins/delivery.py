@@ -2,6 +2,7 @@
 
 import json
 import os
+import shutil
 import subprocess
 import threading
 import time
@@ -14,6 +15,61 @@ from ..registry import OperationSpec, PluginSpec
 from ..saved_scene import camera_signature, geometry_signature, sha256
 from ..state_guard import StateGuard, time_state
 from .introspection import PATH, object_schema
+
+
+def save_copy(h, destination, folder):
+    """Use Houdini's backup write, which does not mark the active HIP saved."""
+    backup_dir = folder / "hip-copy"
+    backup_dir.mkdir(parents=True, exist_ok=True)
+    previous = h.getenv("HOUDINI_BACKUP_DIR")
+    backup = None
+    try:
+        if Path(h.hipFile.path()).is_file():
+            h.putenv("HOUDINI_BACKUP_DIR", str(backup_dir))
+            backup = Path(h.hipFile.saveAsBackup()).resolve()
+        else:
+            # saveAsBackup requires an accessible original HIP. Native copy mode
+            # also handles a never-saved scene without first marking it saved.
+            staging = backup_dir / ("scene" + destination.suffix)
+            value = staging.as_posix()
+            if any(c in value for c in ("\n", "\r", "\0")):
+                raise CompanionError("HIP_PATH", "Invalid staging path")
+            quoted = (
+                '"'
+                + value.replace("\\", "\\\\")
+                .replace('"', '\\"')
+                .replace("$", "\\$")
+                .replace("`", "\\`")
+                + '"'
+            )
+            _output, error = h.hscript("mwrite -n " + quoted)
+            files = [
+                p for p in backup_dir.iterdir() if p.suffix.lower() in {".hip", ".hiplc", ".hipnc"}
+            ]
+            if error.strip() or len(files) != 1:
+                raise CompanionError("SAVE_COPY_FAILED", error.strip() or "No unique copy produced")
+            backup = files[0].resolve()
+        if backup.parent != backup_dir.resolve():
+            raise CompanionError("SAVE_COPY_PATH", "Backup did not use the owned destination")
+        # Respect the license-specific extension returned by Houdini.
+        target = destination.with_suffix(backup.suffix)
+        target.parent.mkdir(parents=True, exist_ok=True)
+        with target.open("xb") as output:
+            try:
+                with backup.open("rb") as source:
+                    shutil.copyfileobj(source, output)
+            except Exception:
+                output.close()
+                target.unlink()
+                raise
+        return target
+    finally:
+        if previous is None:
+            h.unsetenv("HOUDINI_BACKUP_DIR")
+        else:
+            h.putenv("HOUDINI_BACKUP_DIR", previous)
+        if backup is not None and backup.parent == backup_dir.resolve():
+            backup.unlink(missing_ok=True)
 
 
 def show(ctx, job, path, camera, frame=None):
@@ -53,7 +109,8 @@ def save(ctx, job, destination, paths, cameras=None, frames=None, activate=False
         raise CompanionError("TARGET_EXISTS", "Save requires a new destination")
     if destination.suffix.lower() not in {".hip", ".hiplc", ".hipnc"}:
         raise CompanionError("HIP_PATH", "A HIP file extension is required")
-    original = h.hipFile.path()
+    before_hip = {"path": h.hipFile.path(), "dirty": h.hipFile.hasUnsavedChanges()}
+    folder = ctx.ledger.root / job["job_id"]
     if len(ctx.state.setdefault("deliverables", {})) >= 16:
         raise CompanionError("SAVE_LIMIT", "Release a saved receipt before creating another")
     frames = frames or [h.frame()]
@@ -86,14 +143,20 @@ def save(ctx, job, destination, paths, cameras=None, frames=None, activate=False
             "dependencies": list(deps.values()),
             "scope": "Declared SOP outputs/cameras and discoverable source dependencies; not whole-scene portability certification",
         }
-        try:
+        if activate:
             h.hipFile.save(file_name=str(destination))
             manifest["hip"] = h.hipFile.path()
-            manifest["hip_sha256"] = sha256(manifest["hip"])
-        finally:
-            if not activate:
-                h.hipFile.setName(original)
-    folder = ctx.ledger.root / job["job_id"]
+        else:
+            manifest["hip"] = str(save_copy(h, destination, folder))
+        manifest["hip_sha256"] = sha256(manifest["hip"])
+    after_hip = {"path": h.hipFile.path(), "dirty": h.hipFile.hasUnsavedChanges()}
+    if not activate and after_hip != before_hip:
+        raise CompanionError(
+            "HIP_STATE_CHANGED",
+            "Copy save changed active HIP state",
+            before=before_hip,
+            after=after_hip,
+        )
     atomic_json(folder / "saved-scene.json", manifest)
     ctx.state.setdefault("deliverables", {})[job["job_id"]] = str(folder / "saved-scene.json")
     return {
@@ -102,6 +165,7 @@ def save(ctx, job, destination, paths, cameras=None, frames=None, activate=False
         "active_hip": h.hipFile.path(),
         "manifest": str(folder / "saved-scene.json"),
         "state_receipt": state.receipt,
+        "hip_state_receipt": {"before": before_hip, "after": after_hip},
         "verified_reopen": False,
         "next_operation": "save.verify",
     }
@@ -128,7 +192,7 @@ def verify_start(ctx, job, save_id, timeout=120):
     env = {
         **os.environ,
         "HOUDINI_COMPANION_AUTOSTART": "0",
-        "HOUDINI_USER_PREF_DIR": str(folder / "prefs"),
+        "HOUDINI_USER_PREF_DIR": str(folder / "prefs__HVER__"),
         "HOUDINI_NO_ENV_FILE": "1",
     }
     with (folder / "worker.log").open("wb") as log:
@@ -198,10 +262,30 @@ def release(ctx, job, save_id):
     return {"released": save_id, "hip_deleted": False}
 
 
+def stop_verifiers(ctx):
+    """Cancel deadlines, terminate and reap every managed worker before forgetting it."""
+    failures = []
+    for key, record in ctx.state.get("save_verifiers", {}).items():
+        record["timer"].cancel()
+        process = record["process"]
+        try:
+            if process.poll() is None:
+                process.terminate()
+            try:
+                process.wait(timeout=2)
+            except subprocess.TimeoutExpired:
+                process.kill()
+                process.wait(timeout=2)
+        except Exception as exc:
+            failures.append({"verification_id": key, "message": str(exc)})
+    if failures:
+        raise CompanionError("VERIFY_SHUTDOWN_FAILED", "Worker handles retained", failures=failures)
+
+
 def plugin():
     return PluginSpec(
         "delivery",
-        "0.1.0",
+        "0.2.0",
         (
             OperationSpec(
                 "save.release",
