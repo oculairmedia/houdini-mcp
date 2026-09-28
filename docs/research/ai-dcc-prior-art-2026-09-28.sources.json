@@ -1,0 +1,623 @@
+{
+  "snapshot_date": "2026-09-28",
+  "scope": "Static documentation, paper and selected source inspection; no third-party runtime acceptance or whole-repository audit. Retrieved files are not all individually audited.",
+  "repository_count": 22,
+  "repositories": [
+    {
+      "repo": "renezander030/blender-cli",
+      "requested_repo": "renezander030/blender-cli",
+      "commit": "6d042220b4229e5594d5df509a479634eb04b181",
+      "commit_date": "2026-09-27T12:43:02Z",
+      "default_branch": "master",
+      "archived": false,
+      "license": "MIT",
+      "description": "Drive Blender headless from your AI agent: scaffold, build, animate from natural language. JSON in, JSON out.",
+      "retrieved_files": [
+        {
+          "path": "README.md",
+          "url": "https://github.com/renezander030/blender-cli/blob/6d042220b4229e5594d5df509a479634eb04b181/README.md",
+          "sha256": "529066719d24e3d819b6f713ac27ae75010c8f00fdc67f170f56da73b34f3421"
+        },
+        {
+          "path": "blender-cli",
+          "url": "https://github.com/renezander030/blender-cli/blob/6d042220b4229e5594d5df509a479634eb04b181/blender-cli",
+          "sha256": "d1cb6351dabe7fa635f67da7a805b548427d9f5057409685278b852804456270",
+          "bytes": 168644
+        },
+        {
+          "path": "foundation.js",
+          "url": "https://github.com/renezander030/blender-cli/blob/6d042220b4229e5594d5df509a479634eb04b181/foundation.js",
+          "sha256": "6c1409250b95f8da2509ffaf4227be49cfee41bd9bda2b9707c2590b044716ce",
+          "bytes": 8923
+        },
+        {
+          "path": "test/smoke.mjs",
+          "url": "https://github.com/renezander030/blender-cli/blob/6d042220b4229e5594d5df509a479634eb04b181/test/smoke.mjs",
+          "sha256": "e4c12332c9640a02383fa5dfd312a03fe22b6d20c8748046f1b0d77823048a47",
+          "bytes": 50230
+        }
+      ]
+    },
+    {
+      "repo": "ahujasid/mcp-for-blender",
+      "requested_repo": "ahujasid/mcp-for-blender",
+      "commit": "41a184322db3ccdcb2fdbc1f6994afe71bf9163c",
+      "commit_date": "2026-09-27T05:04:24Z",
+      "default_branch": "main",
+      "archived": false,
+      "license": "MIT",
+      "description": "Community plugin to control Blender 3D with any LLM of your choice",
+      "retrieved_files": [
+        {
+          "path": "README.md",
+          "url": "https://github.com/ahujasid/mcp-for-blender/blob/41a184322db3ccdcb2fdbc1f6994afe71bf9163c/README.md",
+          "sha256": "02db11475969ac5c225898af1343b10eb1dfb85e0bac4eb5621f4b222f988941"
+        },
+        {
+          "path": "src/blender_mcp/trajectory.py",
+          "url": "https://github.com/ahujasid/mcp-for-blender/blob/41a184322db3ccdcb2fdbc1f6994afe71bf9163c/src/blender_mcp/trajectory.py",
+          "sha256": "607d0a1b070c59333e8fffbd9af800b7bf31c5f3bfa28efe7cdc0506ca75fac7",
+          "bytes": 57820
+        },
+        {
+          "path": "addon.py",
+          "url": "https://github.com/ahujasid/mcp-for-blender/blob/41a184322db3ccdcb2fdbc1f6994afe71bf9163c/addon.py",
+          "sha256": "d224965b72ecc2dc646156b85060bfc7befd08a959ff638e149e81e59c8cd701",
+          "bytes": 257633
+        }
+      ]
+    },
+    {
+      "repo": "Kazama-Suichiku/Houdini-Agent",
+      "requested_repo": "Kazama-Suichiku/Houdini-Agent",
+      "commit": "73c5d2ca3d48e97208b09c036defc1271f58d34d",
+      "commit_date": "2026-09-04T11:25:08Z",
+      "default_branch": "main",
+      "archived": false,
+      "license": null,
+      "description": "Houdini Agent - DCC Asset Manager with AI capabilities",
+      "retrieved_files": [
+        {
+          "path": "README.md",
+          "url": "https://github.com/Kazama-Suichiku/Houdini-Agent/blob/73c5d2ca3d48e97208b09c036defc1271f58d34d/README.md",
+          "sha256": "c5fe79adab0ba622e9ae0808a6e2058d55997255031af17f1d26852b13cd4c25"
+        },
+        {
+          "path": "houdini_agent/bridge/server.py",
+          "url": "https://github.com/Kazama-Suichiku/Houdini-Agent/blob/73c5d2ca3d48e97208b09c036defc1271f58d34d/houdini_agent/bridge/server.py",
+          "sha256": "806ed4c8fee5043af2d09f759ddd8bccbc7e44bde391c89b4229fff6df0080b7",
+          "bytes": 10992
+        },
+        {
+          "path": "houdini_agent/bridge/client.py",
+          "url": "https://github.com/Kazama-Suichiku/Houdini-Agent/blob/73c5d2ca3d48e97208b09c036defc1271f58d34d/houdini_agent/bridge/client.py",
+          "sha256": "7eaace6ee1c936fbbb6d7f2bc1577de3941faa984c9b13a6d23a562573e0bee0",
+          "bytes": 3339
+        },
+        {
+          "path": "houdini_agent/utils/ai_client_agent.py",
+          "url": "https://github.com/Kazama-Suichiku/Houdini-Agent/blob/73c5d2ca3d48e97208b09c036defc1271f58d34d/houdini_agent/utils/ai_client_agent.py",
+          "sha256": "92f94b838d428eee8bcf073d6eb20bbbfe99827ad37071e55a1a8d39b1f4dc15",
+          "bytes": 97241
+        },
+        {
+          "path": "houdini_agent/utils/tool_registry.py",
+          "url": "https://github.com/Kazama-Suichiku/Houdini-Agent/blob/73c5d2ca3d48e97208b09c036defc1271f58d34d/houdini_agent/utils/tool_registry.py",
+          "sha256": "dc8b0c7d441d7c5c6ce54cbd201ec4da4d7830512afbe88d1a7476a1510832a0",
+          "bytes": 17658
+        },
+        {
+          "path": "tests/test_tool_registry.py",
+          "url": "https://github.com/Kazama-Suichiku/Houdini-Agent/blob/73c5d2ca3d48e97208b09c036defc1271f58d34d/tests/test_tool_registry.py",
+          "sha256": "de565e46e66f5c0534dbe9392eb4ddc65ed604f376bea147a745238893ea36ea",
+          "bytes": 1905
+        }
+      ]
+    },
+    {
+      "repo": "dcc-mcp/dcc-mcp-core",
+      "requested_repo": "dcc-mcp/dcc-mcp-core",
+      "commit": "7b8a76afe9c1a87e032f60be86982a4bc01efe28",
+      "commit_date": "2026-09-28T04:45:21Z",
+      "default_branch": "main",
+      "archived": false,
+      "license": "MIT",
+      "description": "Skill-first control plane for creative tools: shared MCP/REST runtime, gateway, CLI, marketplace, safety, and observability across studio pipelines.",
+      "retrieved_files": [
+        {
+          "path": "README.md",
+          "url": "https://github.com/dcc-mcp/dcc-mcp-core/blob/7b8a76afe9c1a87e032f60be86982a4bc01efe28/README.md",
+          "sha256": "cae4d8fc83c72ff08c17ecb739f628b79f88c3c043192f4fbffe08ea1a7a868e"
+        }
+      ]
+    },
+    {
+      "repo": "dcc-mcp/dcc-mcp-houdini",
+      "requested_repo": "dcc-mcp/dcc-mcp-houdini",
+      "commit": "890d53d984cf871f894a691b82187fa7d44ac698",
+      "commit_date": "2026-09-25T17:38:23Z",
+      "default_branch": "main",
+      "archived": false,
+      "license": "MIT",
+      "description": "SideFX Houdini adapter for the DCC Model Context Protocol",
+      "retrieved_files": [
+        {
+          "path": "README.md",
+          "url": "https://github.com/dcc-mcp/dcc-mcp-houdini/blob/890d53d984cf871f894a691b82187fa7d44ac698/README.md",
+          "sha256": "6a79054ee91369d450228d148daa857d2f5e3efa0607cfc63b7287a09ae20431"
+        },
+        {
+          "path": "src/dcc_mcp_houdini/skills/houdini-render/scripts/capture_viewport.py",
+          "url": "https://github.com/dcc-mcp/dcc-mcp-houdini/blob/890d53d984cf871f894a691b82187fa7d44ac698/src/dcc_mcp_houdini/skills/houdini-render/scripts/capture_viewport.py",
+          "sha256": "122bf8df19e835b38df05a1675e2511b2b9f09588403e8f8a132e64b92278965",
+          "bytes": 9625
+        }
+      ]
+    },
+    {
+      "repo": "dcc-mcp/dcc-mcp-blender",
+      "requested_repo": "dcc-mcp/dcc-mcp-blender",
+      "commit": "cf520d0ce18c5084757e06ac704caffe94c5f344",
+      "commit_date": "2026-09-27T15:27:37Z",
+      "default_branch": "main",
+      "archived": false,
+      "license": "MIT",
+      "description": "Blender addon for the DCC Model Context Protocol (MCP) ecosystem — embeds a Streamable HTTP MCP server directly inside Blender",
+      "retrieved_files": [
+        {
+          "path": "README.md",
+          "url": "https://github.com/dcc-mcp/dcc-mcp-blender/blob/cf520d0ce18c5084757e06ac704caffe94c5f344/README.md",
+          "sha256": "a53d5cbe52944507cfd84fa36339b97d805c5e33816bb6352a306f63731dac5b"
+        }
+      ]
+    },
+    {
+      "repo": "dcc-mcp/dcc-mcp-maya",
+      "requested_repo": "dcc-mcp/dcc-mcp-maya",
+      "commit": "7178b242d0b1417469de39a0c964c398acc538d5",
+      "commit_date": "2026-09-28T00:46:56Z",
+      "default_branch": "main",
+      "archived": false,
+      "license": "MIT",
+      "description": "Maya-specific implementation of Model Context Protocol (MCP) for Autodesk Maya, enabling remote control and integration with MCP ecosystem.",
+      "retrieved_files": [
+        {
+          "path": "README.md",
+          "url": "https://github.com/dcc-mcp/dcc-mcp-maya/blob/7178b242d0b1417469de39a0c964c398acc538d5/README.md",
+          "sha256": "fbed6344091ad01f77fcd69e6493020efaa59990af860741e2d8d2a578b4a474"
+        }
+      ]
+    },
+    {
+      "repo": "abrahamADSK/maya-mcp",
+      "requested_repo": "abrahamADSK/maya-mcp",
+      "commit": "a9f0af10ad327a052a12b8b7cfc4aa812be265e2",
+      "commit_date": "2026-08-16T14:16:22Z",
+      "default_branch": "main",
+      "archived": false,
+      "license": "MIT",
+      "description": "MCP server for Autodesk Maya — scene control, modeling, animation, and I/O with RAG search, anti-hallucination safety, and self-learning",
+      "retrieved_files": [
+        {
+          "path": "README.md",
+          "url": "https://github.com/abrahamADSK/maya-mcp/blob/a9f0af10ad327a052a12b8b7cfc4aa812be265e2/README.md",
+          "sha256": "85eee4adc0bfc6aa2cc755bcf256e3e197e0ee513bbf208776283a437781b565"
+        },
+        {
+          "path": "src/maya_mcp/maya_bridge.py",
+          "url": "https://github.com/abrahamADSK/maya-mcp/blob/a9f0af10ad327a052a12b8b7cfc4aa812be265e2/src/maya_mcp/maya_bridge.py",
+          "sha256": "a3ffe52d6ee3bd7bd5c55cf2544bbfed5b5d7e91ba30d6cfbabae915b38c4b00",
+          "bytes": 16471
+        },
+        {
+          "path": "src/maya_mcp/color_policy.py",
+          "url": "https://github.com/abrahamADSK/maya-mcp/blob/a9f0af10ad327a052a12b8b7cfc4aa812be265e2/src/maya_mcp/color_policy.py",
+          "sha256": "e89c27970c2bde0f1dae74e036209e943e494fc2fb984da2013b0928864a35a6",
+          "bytes": 8342
+        }
+      ]
+    },
+    {
+      "repo": "jingcheng-chen/rhinomcp",
+      "requested_repo": "jingcheng-chen/rhinomcp",
+      "commit": "70b63a2b86e4f92f3250f9a5e4a5813c2a38c163",
+      "commit_date": "2026-09-13T07:29:20Z",
+      "default_branch": "main",
+      "archived": false,
+      "license": "MIT",
+      "description": "RhinoMCP connects Rhino 3D to AI Agent through the Model Context Protocol (MCP)",
+      "retrieved_files": [
+        {
+          "path": "README.md",
+          "url": "https://github.com/jingcheng-chen/rhinomcp/blob/70b63a2b86e4f92f3250f9a5e4a5813c2a38c163/README.md",
+          "sha256": "b3406c899c62e32c1701ea920a2dd71666f2c674d332558798bb74493abb6baf"
+        }
+      ]
+    },
+    {
+      "repo": "chongdashu/unreal-mcp",
+      "requested_repo": "chongdashu/unreal-mcp",
+      "commit": "4e5f00da50733190481311e254d16d137a84ef33",
+      "commit_date": "2025-04-22T02:01:56Z",
+      "default_branch": "main",
+      "archived": false,
+      "license": null,
+      "description": "Enable AI assistant clients like Cursor, Windsurf and Claude Desktop to control Unreal Engine through natural language using the Model Context Protocol (MCP).",
+      "retrieved_files": [
+        {
+          "path": "README.md",
+          "url": "https://github.com/chongdashu/unreal-mcp/blob/4e5f00da50733190481311e254d16d137a84ef33/README.md",
+          "sha256": "c7940b0aa091c9cb2d3fca20f55b5ae7093c1cc0c3bae15b4b1b7d812afd8630"
+        },
+        {
+          "path": "Docs/Tools/README.md",
+          "url": "https://github.com/chongdashu/unreal-mcp/blob/4e5f00da50733190481311e254d16d137a84ef33/Docs/Tools/README.md",
+          "sha256": "0795995c212a2201ca1ea899a97972aa36a7a8a2edee4689075f22c340c0934f",
+          "bytes": 180
+        },
+        {
+          "path": "MCPGameProject/Plugins/UnrealMCP/Source/UnrealMCP/Private/UnrealMCPBridge.cpp",
+          "url": "https://github.com/chongdashu/unreal-mcp/blob/4e5f00da50733190481311e254d16d137a84ef33/MCPGameProject/Plugins/UnrealMCP/Source/UnrealMCP/Private/UnrealMCPBridge.cpp",
+          "sha256": "f4d65586397c91a83ea52a91efcf93648678f2865a80b76db942b245db1967c7",
+          "bytes": 12184
+        }
+      ]
+    },
+    {
+      "repo": "HKUDS/CLI-Anything",
+      "requested_repo": "HKUDS/CLI-Anything",
+      "commit": "34f519533bc175d2fe287ab8316b0dd99bb9cc43",
+      "commit_date": "2026-09-22T02:01:28Z",
+      "default_branch": "main",
+      "archived": false,
+      "license": "Apache-2.0",
+      "description": "\"CLI-Anything: Making ALL Software Agent-Native\" -- CLI-Hub: https://clianything.cc/",
+      "retrieved_files": [
+        {
+          "path": "README.md",
+          "url": "https://github.com/HKUDS/CLI-Anything/blob/34f519533bc175d2fe287ab8316b0dd99bb9cc43/README.md",
+          "sha256": "24669c9549ad753b173eead4ffc465ebc0b8dc9b4d64e7be73cd5b3b03f56ac9"
+        },
+        {
+          "path": "blender/agent-harness/cli_anything/blender/README.md",
+          "url": "https://github.com/HKUDS/CLI-Anything/blob/34f519533bc175d2fe287ab8316b0dd99bb9cc43/blender/agent-harness/cli_anything/blender/README.md",
+          "sha256": "94ee8d3466e98aed8213c8dda49d2850c9cfd47c12aca85d499cd23b927cda2d",
+          "bytes": 7957
+        },
+        {
+          "path": "blender/agent-harness/cli_anything/blender/core/render.py",
+          "url": "https://github.com/HKUDS/CLI-Anything/blob/34f519533bc175d2fe287ab8316b0dd99bb9cc43/blender/agent-harness/cli_anything/blender/core/render.py",
+          "sha256": "5b64d52800d4033b9aa8aeae9df5358f55a969a78ccf7542b30272137747ab4c",
+          "bytes": 8767
+        },
+        {
+          "path": "blender/agent-harness/cli_anything/blender/core/preview.py",
+          "url": "https://github.com/HKUDS/CLI-Anything/blob/34f519533bc175d2fe287ab8316b0dd99bb9cc43/blender/agent-harness/cli_anything/blender/core/preview.py",
+          "sha256": "add3777c1e58bf23c038bbcec188c83357dfb2d24c1b491284abd28980421896",
+          "bytes": 30403
+        }
+      ]
+    },
+    {
+      "repo": "gd3kr/BlenderGPT",
+      "requested_repo": "gd3kr/BlenderGPT",
+      "commit": "3fbc3bd3f169d904f8bf8a067807c4a71d3d3b4b",
+      "commit_date": "2023-06-10T08:11:01Z",
+      "default_branch": "main",
+      "archived": false,
+      "license": "MIT",
+      "description": "Use commands in English to control Blender with OpenAI's GPT-4",
+      "retrieved_files": [
+        {
+          "path": "README.md",
+          "url": "https://github.com/gd3kr/BlenderGPT/blob/3fbc3bd3f169d904f8bf8a067807c4a71d3d3b4b/README.md",
+          "sha256": "e0501505caaf7e53f40a2b2aa7a654eecf2aa830537b05e2f86ea7f55417fc59"
+        },
+        {
+          "path": "__init__.py",
+          "url": "https://github.com/gd3kr/BlenderGPT/blob/3fbc3bd3f169d904f8bf8a067807c4a71d3d3b4b/__init__.py",
+          "sha256": "22c4b4bb4019e2b9d47405c3dc3cf8fe1102bcc2a2a061dd3e4d927de194f36c",
+          "bytes": 7630
+        }
+      ]
+    },
+    {
+      "repo": "ianhuang0630/BlenderAlchemyOfficial",
+      "requested_repo": "ianhuang0630/BlenderAlchemyOfficial",
+      "commit": "4444411592150a72d01d55ef84b1ac844b0b2ad0",
+      "commit_date": "2024-12-06T18:42:32Z",
+      "default_branch": "main",
+      "archived": false,
+      "license": null,
+      "description": "[ECCV 2024] BlenderAlchemy: Editing 3D Graphics with Vision-Language Models",
+      "retrieved_files": [
+        {
+          "path": "README.md",
+          "url": "https://github.com/ianhuang0630/BlenderAlchemyOfficial/blob/4444411592150a72d01d55ef84b1ac844b0b2ad0/README.md",
+          "sha256": "4b35a8a10109e1558396dd29a7364e2c6d692bdf2adfca704a3491368a33afd3"
+        },
+        {
+          "path": "refinement_process.py",
+          "url": "https://github.com/ianhuang0630/BlenderAlchemyOfficial/blob/4444411592150a72d01d55ef84b1ac844b0b2ad0/refinement_process.py",
+          "sha256": "b6500032d319f3c7ae9a9983b381e8cdbdec19f610743e9d690ec69627082fff",
+          "bytes": 26204
+        },
+        {
+          "path": "agents.py",
+          "url": "https://github.com/ianhuang0630/BlenderAlchemyOfficial/blob/4444411592150a72d01d55ef84b1ac844b0b2ad0/agents.py",
+          "sha256": "8c5835f7e2db11c2938746a84935580b0dc2b278cbb73276178602636e89916f",
+          "bytes": 8947
+        }
+      ]
+    },
+    {
+      "repo": "threedle/ll3m",
+      "requested_repo": "threedle/ll3m",
+      "commit": "b5e79c3efa862efcc6e4105ce48245230fee3ebf",
+      "commit_date": "2026-03-07T23:37:18Z",
+      "default_branch": "main",
+      "archived": false,
+      "license": "NOASSERTION",
+      "description": "LL3M writes Python code that generates 3D assets in Blender.",
+      "retrieved_files": [
+        {
+          "path": "README.md",
+          "url": "https://github.com/threedle/ll3m/blob/b5e79c3efa862efcc6e4105ce48245230fee3ebf/README.md",
+          "sha256": "0aa9984debbab03ed1695c8ad44eed283fac7257d6b9b705bbf2befa1b2ca677"
+        }
+      ]
+    },
+    {
+      "repo": "scenario-labs/blender-plugin",
+      "requested_repo": "scenario-labs/blender-plugin",
+      "commit": "6fa30d06b43c6d3ce4e903b45e8635034e4ecb39",
+      "commit_date": "2026-09-27T21:40:41Z",
+      "default_branch": "main",
+      "archived": false,
+      "license": "GPL-3.0",
+      "description": "Scenario for Blender: AI images, video, 3D and PBR materials in the viewport, plus a local MCP server for agents. Blender 5.0+ extension, GPL-3.0-or-later.",
+      "retrieved_files": [
+        {
+          "path": "README.md",
+          "url": "https://github.com/scenario-labs/blender-plugin/blob/6fa30d06b43c6d3ce4e903b45e8635034e4ecb39/README.md",
+          "sha256": "ca438c537a25078586f95641436edd716f436190ca4dc680b4da9ad9424377ee"
+        },
+        {
+          "path": "docs/knowledge/readme/local-mcp.md",
+          "url": "https://github.com/scenario-labs/blender-plugin/blob/6fa30d06b43c6d3ce4e903b45e8635034e4ecb39/docs/knowledge/readme/local-mcp.md",
+          "sha256": "c3d7f3b015e5e4bbf32d23cf99e00b25a04843836b4f59c7239b8f610a1e2f04",
+          "bytes": 3531
+        },
+        {
+          "path": "docs/knowledge/readme/workflow-contracts.md",
+          "url": "https://github.com/scenario-labs/blender-plugin/blob/6fa30d06b43c6d3ce4e903b45e8635034e4ecb39/docs/knowledge/readme/workflow-contracts.md",
+          "sha256": "460af30f547787196def8075a3c65922f76f5501b9cd38b56d9a3be1e221318f",
+          "bytes": 3391
+        },
+        {
+          "path": "docs/knowledge/readme/scorecard.md",
+          "url": "https://github.com/scenario-labs/blender-plugin/blob/6fa30d06b43c6d3ce4e903b45e8635034e4ecb39/docs/knowledge/readme/scorecard.md",
+          "sha256": "819480982d974fdae3d05c5a385f477563ca1dee96bbf8d85f46f8e45da70fd3",
+          "bytes": 3547
+        },
+        {
+          "path": "docs/MCP.md",
+          "url": "https://github.com/scenario-labs/blender-plugin/blob/6fa30d06b43c6d3ce4e903b45e8635034e4ecb39/docs/MCP.md",
+          "sha256": "9d948de4ecec0f803821afabca8741bba39461e0ee303ebb467643ce2f3513a2",
+          "bytes": 25368
+        },
+        {
+          "path": "scenario/mcp/protocol.py",
+          "url": "https://github.com/scenario-labs/blender-plugin/blob/6fa30d06b43c6d3ce4e903b45e8635034e4ecb39/scenario/mcp/protocol.py",
+          "sha256": "f41a0283918d116a77888b4d018d0d353ba80162be8c75f029a67ad774fcd976",
+          "bytes": 5454
+        }
+      ]
+    },
+    {
+      "repo": "neka-nat/freecad-mcp",
+      "requested_repo": "neka-nat/freecad-mcp",
+      "commit": "d6bbe4b38be3a622b5981d9d2afa7037ee080534",
+      "commit_date": "2026-09-24T23:02:25Z",
+      "default_branch": "main",
+      "archived": false,
+      "license": "MIT",
+      "description": "FreeCAD MCP(Model Context Protocol) server",
+      "retrieved_files": [
+        {
+          "path": "README.md",
+          "url": "https://github.com/neka-nat/freecad-mcp/blob/d6bbe4b38be3a622b5981d9d2afa7037ee080534/README.md",
+          "sha256": "f8f7e952099d651569ef1e034b663034625c437d9ae2579181ae732b2c806a24"
+        },
+        {
+          "path": "docs/tools.md",
+          "url": "https://github.com/neka-nat/freecad-mcp/blob/d6bbe4b38be3a622b5981d9d2afa7037ee080534/docs/tools.md",
+          "sha256": "58f2ac678788586355c59dcf219aad8bc29e9cedab669c500f6d371fd0eddb21",
+          "bytes": 3270
+        },
+        {
+          "path": "docs/execution.md",
+          "url": "https://github.com/neka-nat/freecad-mcp/blob/d6bbe4b38be3a622b5981d9d2afa7037ee080534/docs/execution.md",
+          "sha256": "2a4c14b9bea0edfa891869b28629ddee9edf35d08a14e0f87c9454e133df2b3e",
+          "bytes": 6458
+        },
+        {
+          "path": "addon/FreeCADMCP/rpc_server/rpc_server.py",
+          "url": "https://github.com/neka-nat/freecad-mcp/blob/d6bbe4b38be3a622b5981d9d2afa7037ee080534/addon/FreeCADMCP/rpc_server/rpc_server.py",
+          "sha256": "833e49d8d90098e95a1139d9f2874954e4fa278e14021457d8e709e0352a6df5",
+          "bytes": 26716
+        }
+      ]
+    },
+    {
+      "repo": "CoplayDev/unity-mcp",
+      "requested_repo": "CoplayDev/unity-mcp",
+      "commit": "8be7d96d95aa3e262894c64412f0df3b432efa05",
+      "commit_date": "2026-09-27T17:56:56Z",
+      "default_branch": "beta",
+      "archived": false,
+      "license": "MIT",
+      "description": "Unity MCP acts as a bridge between AI assistants and your Unity Editor. Give your LLM tools to manage assets, control scenes, edit scripts, and automate tasks within Unity.",
+      "retrieved_files": [
+        {
+          "path": "README.md",
+          "url": "https://github.com/CoplayDev/unity-mcp/blob/8be7d96d95aa3e262894c64412f0df3b432efa05/README.md",
+          "sha256": "eb5d0fc9f6baa1dab43acb69c7e3dc4774e73a1cf9142d2344073bd4309d843b"
+        },
+        {
+          "path": "MCPForUnity/Editor/Tools/Cameras/ManageCamera.cs",
+          "url": "https://github.com/CoplayDev/unity-mcp/blob/8be7d96d95aa3e262894c64412f0df3b432efa05/MCPForUnity/Editor/Tools/Cameras/ManageCamera.cs",
+          "sha256": "7ed66b1ca93993aa21b09c8edd7ec04c7398ff0714f8c8b8eb31437b30e4a032",
+          "bytes": 5537
+        }
+      ]
+    },
+    {
+      "repo": "Chuny1/3DGPT",
+      "requested_repo": "Chuny1/3DGPT",
+      "commit": "590bf71bde9b854582d60913e054cda4d6cb38c2",
+      "commit_date": "2025-03-05T00:36:36Z",
+      "default_branch": "main",
+      "archived": false,
+      "license": null,
+      "description": null,
+      "retrieved_files": [
+        {
+          "path": "README.md",
+          "url": "https://github.com/Chuny1/3DGPT/blob/590bf71bde9b854582d60913e054cda4d6cb38c2/README.md",
+          "sha256": "a4e35ae3f5bb2f69f06bdf5d1bbdb8d0ab7db5d24f07dd23183303ad2fc583f8"
+        }
+      ]
+    },
+    {
+      "repo": "Aztech-Lab/EZ_Blender",
+      "requested_repo": "Aztech-Lab/EZ_Blender",
+      "commit": "7c15b5b20fdd7a8513d75bc26613e955190ffb43",
+      "commit_date": "2026-07-17T03:59:04Z",
+      "default_branch": "main",
+      "archived": false,
+      "license": null,
+      "description": "The official implementation of the paper EZBlender: Efficient 3D Editing with Plan-and-ReAct Agent ",
+      "retrieved_files": [
+        {
+          "path": "README.md",
+          "url": "https://github.com/Aztech-Lab/EZ_Blender/blob/7c15b5b20fdd7a8513d75bc26613e955190ffb43/README.md",
+          "sha256": "a318b4844e4dfb1ac5d9a5dc891028574abdb0a5c2bb38593fb0679bee50d341"
+        }
+      ]
+    },
+    {
+      "repo": "ifBars/blender-agent-studio",
+      "requested_repo": "ifBars/blender-agent-studio",
+      "commit": "ef707f828410ab2059424cad15925e24c975cbd3",
+      "commit_date": "2026-09-28T01:39:17Z",
+      "default_branch": "main",
+      "archived": false,
+      "license": "MIT",
+      "description": "Codex plugin for reproducible Blender modeling, validation, animation, MCP tooling, and agent benchmarking",
+      "retrieved_files": [
+        {
+          "path": "README.md",
+          "url": "https://github.com/ifBars/blender-agent-studio/blob/ef707f828410ab2059424cad15925e24c975cbd3/README.md",
+          "sha256": "74d44472c36cac2e4f575cb481c9c25e8184ed28102c414cbe7754610d4b65fd"
+        }
+      ]
+    },
+    {
+      "repo": "richard-guyunqi/BlenderGym-Open",
+      "requested_repo": "richard-guyunqi/BlenderGym-Open",
+      "commit": "67c8b48bf8c548c701b6873db6fcc6527d756385",
+      "commit_date": "2025-07-08T18:15:53Z",
+      "default_branch": "master",
+      "archived": false,
+      "license": null,
+      "description": null,
+      "retrieved_files": [
+        {
+          "path": "README.md",
+          "url": "https://github.com/richard-guyunqi/BlenderGym-Open/blob/67c8b48bf8c548c701b6873db6fcc6527d756385/README.md",
+          "sha256": "3adfe461b530bb5f1cdc8e17e0412fe658b88fb046dc69b8cc1accd882996e79"
+        }
+      ]
+    },
+    {
+      "repo": "yunlong10/BVB",
+      "requested_repo": "yunlong10/BVB",
+      "commit": "69b7a488e972b648819cc12cd2752256f84efbc3",
+      "commit_date": "2026-09-28T03:16:01Z",
+      "default_branch": "main",
+      "archived": false,
+      "license": "MIT",
+      "description": "BVB: Benchmarking Agentic Video Understanding via Programmatic Reconstruction in Blender",
+      "retrieved_files": [
+        {
+          "path": "README.md",
+          "url": "https://github.com/yunlong10/BVB/blob/69b7a488e972b648819cc12cd2752256f84efbc3/README.md",
+          "sha256": "8d14b6d4f81ae8ddbe9d33f673c8938ccdcf39c15bd8369a8937cc6d77c63e76"
+        }
+      ]
+    }
+  ],
+  "official_documentation_and_papers": [
+    {
+      "name": "Epic Unreal MCP",
+      "url": "https://dev.epicgames.com/documentation/unreal-engine/unreal-mcp-in-unreal-editor",
+      "version": "UE 5.8; experimental; versionless URL"
+    },
+    {
+      "name": "NVIDIA USD Code overview",
+      "url": "https://docs.omniverse.nvidia.com/services/latest/services/usd-code/overview.html",
+      "version": "latest; mutable"
+    },
+    {
+      "name": "NVIDIA USD Code usage",
+      "url": "https://docs.omniverse.nvidia.com/services/latest/services/usd-code/usage.html",
+      "version": "latest; mutable"
+    },
+    {
+      "name": "ChatUSD SceneInfoNetworkNode",
+      "url": "https://docs.omniverse.nvidia.com/kit/docs/omni.ai.chat_usd.bundle/latest/components/scene-info-network-node.html",
+      "version": "latest; mutable"
+    },
+    {
+      "name": "BlenderAlchemy",
+      "url": "https://arxiv.org/html/2404.17672v2",
+      "version": "v2"
+    },
+    {
+      "name": "LL3M",
+      "url": "https://arxiv.org/html/2508.08228v1",
+      "version": "v1"
+    },
+    {
+      "name": "SceneCraft (Hu et al.)",
+      "url": "https://arxiv.org/html/2403.01248v1",
+      "version": "v1; distinct from arXiv 2410.09049"
+    },
+    {
+      "name": "EZBlender",
+      "url": "https://arxiv.org/html/2601.07143v1",
+      "version": "v1"
+    },
+    {
+      "name": "3D-GPT",
+      "url": "https://arxiv.org/html/2310.12945v1",
+      "version": "v1"
+    },
+    {
+      "name": "BlenderGym",
+      "url": "https://blendergym.github.io/",
+      "version": "project page; CVPR 2025"
+    },
+    {
+      "name": "BlenderGym paper",
+      "url": "https://arxiv.org/abs/2504.01786",
+      "version": "abstract URL; mutable latest version"
+    },
+    {
+      "name": "Blender-VideoBench",
+      "url": "https://arxiv.org/abs/2609.15478",
+      "version": "abstract URL; mutable latest version"
+    }
+  ]
+}
