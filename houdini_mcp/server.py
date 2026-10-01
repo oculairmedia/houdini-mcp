@@ -11,6 +11,8 @@ from starlette.responses import JSONResponse
 from . import tools
 from .connection import ensure_connected, get_connection_info, is_connected, ping
 from .tools._common import apply_response_cap
+from .transaction_runtime import run_transactional
+from .transaction_runtime import undo_last_agent_action as undo_last_transaction
 
 # Configure logging
 log_level = os.getenv("LOG_LEVEL", "INFO").upper()
@@ -65,7 +67,13 @@ def create_node(
         - create_node("sphere", "/obj/geo1") -> Creates a sphere SOP inside geo1
         - create_node("cam", name="render_cam") -> Creates a camera named render_cam
     """
-    return tools.create_node(node_type, parent_path, name, HOUDINI_HOST, HOUDINI_PORT)
+    return run_transactional(
+        "create_node",
+        lambda: tools.create_node(node_type, parent_path, name, HOUDINI_HOST, HOUDINI_PORT),
+        host=HOUDINI_HOST,
+        port=HOUDINI_PORT,
+        affected_paths=[parent_path],
+    )
 
 
 @mcp.tool()
@@ -181,7 +189,13 @@ def set_parameter(
         - set_parameter("/obj/cam1", "tx", 10.0)
         - set_parameter("/obj/geo1", "t", [1.0, 2.0, 3.0])  # Vector param
     """
-    return tools.set_parameter(node_path, param_name, value, HOUDINI_HOST, HOUDINI_PORT)
+    return run_transactional(
+        "set_parameter",
+        lambda: tools.set_parameter(node_path, param_name, value, HOUDINI_HOST, HOUDINI_PORT),
+        host=HOUDINI_HOST,
+        port=HOUDINI_PORT,
+        affected_paths=[node_path],
+    )
 
 
 @mcp.tool()
@@ -245,7 +259,23 @@ def delete_node(node_path: str) -> dict[str, Any]:
 
     Warning: This operation cannot be undone via this API.
     """
-    return tools.delete_node(node_path, HOUDINI_HOST, HOUDINI_PORT)
+    return run_transactional(
+        "delete_node",
+        lambda: tools.delete_node(node_path, HOUDINI_HOST, HOUDINI_PORT),
+        host=HOUDINI_HOST,
+        port=HOUDINI_PORT,
+        affected_paths=[node_path],
+    )
+
+
+@mcp.tool()
+def undo_last_agent_action() -> dict[str, Any]:
+    """Undo the latest committed agent transaction if no human edit intervened.
+
+    Returns a structured conflict instead of undoing when the scene revision or
+    Houdini undo-stack top no longer matches the recorded agent transaction.
+    """
+    return undo_last_transaction(HOUDINI_HOST, HOUDINI_PORT)
 
 
 @mcp.tool()
@@ -814,8 +844,14 @@ def connect_nodes(
         connect_nodes("/obj/geo1/grid1", "/obj/geo1/noise1")
         connect_nodes("/obj/geo1/grid1", "/obj/geo1/merge1", dst_input_index=1)
     """
-    return tools.connect_nodes(
-        src_path, dst_path, dst_input_index, src_output_index, HOUDINI_HOST, HOUDINI_PORT
+    return run_transactional(
+        "connect_nodes",
+        lambda: tools.connect_nodes(
+            src_path, dst_path, dst_input_index, src_output_index, HOUDINI_HOST, HOUDINI_PORT
+        ),
+        host=HOUDINI_HOST,
+        port=HOUDINI_PORT,
+        affected_paths=[src_path, dst_path],
     )
 
 
@@ -835,7 +871,13 @@ def disconnect_node_input(node_path: str, input_index: int = 0) -> dict[str, Any
         disconnect_node_input("/obj/geo1/noise1")  # Disconnect first input
         disconnect_node_input("/obj/geo1/merge1", input_index=1)  # Disconnect second input
     """
-    return tools.disconnect_node_input(node_path, input_index, HOUDINI_HOST, HOUDINI_PORT)
+    return run_transactional(
+        "disconnect_node_input",
+        lambda: tools.disconnect_node_input(node_path, input_index, HOUDINI_HOST, HOUDINI_PORT),
+        host=HOUDINI_HOST,
+        port=HOUDINI_PORT,
+        affected_paths=[node_path],
+    )
 
 
 @mcp.tool()
@@ -865,7 +907,15 @@ def set_node_flags(
         set_node_flags("/obj/geo1/noise1", bypass=True)
         set_node_flags("/obj/geo1/mountain1", display=True)  # Only set display
     """
-    return tools.set_node_flags(node_path, display, render, bypass, HOUDINI_HOST, HOUDINI_PORT)
+    return run_transactional(
+        "set_node_flags",
+        lambda: tools.set_node_flags(
+            node_path, display, render, bypass, HOUDINI_HOST, HOUDINI_PORT
+        ),
+        host=HOUDINI_HOST,
+        port=HOUDINI_PORT,
+        affected_paths=[node_path],
+    )
 
 
 @mcp.tool()
@@ -887,7 +937,13 @@ def reorder_inputs(node_path: str, new_order: list[int]) -> dict[str, Any]:
         reorder_inputs("/obj/geo1/merge1", [1, 0, 2, 3])  # Swap first two inputs
         reorder_inputs("/obj/geo1/merge1", [2, 1, 0])  # Reverse three inputs
     """
-    return tools.reorder_inputs(node_path, new_order, HOUDINI_HOST, HOUDINI_PORT)
+    return run_transactional(
+        "reorder_inputs",
+        lambda: tools.reorder_inputs(node_path, new_order, HOUDINI_HOST, HOUDINI_PORT),
+        host=HOUDINI_HOST,
+        port=HOUDINI_PORT,
+        affected_paths=[node_path],
+    )
 
 
 @mcp.tool()
@@ -1089,8 +1145,14 @@ def create_material(
         create_material("principledshader", "red_metal",
                        parameters={"basecolor": [1, 0, 0], "metallic": 1.0})
     """
-    return tools.create_material(
-        material_type, name, parent_path, parameters, HOUDINI_HOST, HOUDINI_PORT
+    return run_transactional(
+        "create_material",
+        lambda: tools.create_material(
+            material_type, name, parent_path, parameters, HOUDINI_HOST, HOUDINI_PORT
+        ),
+        host=HOUDINI_HOST,
+        port=HOUDINI_PORT,
+        affected_paths=[parent_path],
     )
 
 
@@ -1118,7 +1180,15 @@ def assign_material(
         assign_material("/obj/geo1", "/mat/red_metal")
         assign_material("/obj/geo1", "/mat/gold", group="top_faces")
     """
-    return tools.assign_material(geometry_path, material_path, group, HOUDINI_HOST, HOUDINI_PORT)
+    return run_transactional(
+        "assign_material",
+        lambda: tools.assign_material(
+            geometry_path, material_path, group, HOUDINI_HOST, HOUDINI_PORT
+        ),
+        host=HOUDINI_HOST,
+        port=HOUDINI_PORT,
+        affected_paths=[geometry_path, material_path],
+    )
 
 
 @mcp.tool()
@@ -1169,8 +1239,14 @@ def layout_children(
         layout_children("/obj/geo1")
         layout_children("/obj/geo1", horizontal_spacing=3.0, vertical_spacing=2.0)
     """
-    return tools.layout_children(
-        node_path, horizontal_spacing, vertical_spacing, HOUDINI_HOST, HOUDINI_PORT
+    return run_transactional(
+        "layout_children",
+        lambda: tools.layout_children(
+            node_path, horizontal_spacing, vertical_spacing, HOUDINI_HOST, HOUDINI_PORT
+        ),
+        host=HOUDINI_HOST,
+        port=HOUDINI_PORT,
+        affected_paths=[node_path],
     )
 
 
@@ -1190,7 +1266,13 @@ def set_node_color(node_path: str, color: list[float]) -> dict[str, Any]:
         set_node_color("/obj/geo1/sphere1", [1, 0, 0])  # Red
         set_node_color("/obj/geo1/important", [1, 1, 0])  # Yellow
     """
-    return tools.set_node_color(node_path, color, HOUDINI_HOST, HOUDINI_PORT)
+    return run_transactional(
+        "set_node_color",
+        lambda: tools.set_node_color(node_path, color, HOUDINI_HOST, HOUDINI_PORT),
+        host=HOUDINI_HOST,
+        port=HOUDINI_PORT,
+        affected_paths=[node_path],
+    )
 
 
 @mcp.tool()
@@ -1210,7 +1292,13 @@ def set_node_position(node_path: str, x: float, y: float) -> dict[str, Any]:
         set_node_position("/obj/geo1/sphere1", 0, 0)
         set_node_position("/obj/geo1/sphere1", 5.0, -3.0)
     """
-    return tools.set_node_position(node_path, x, y, HOUDINI_HOST, HOUDINI_PORT)
+    return run_transactional(
+        "set_node_position",
+        lambda: tools.set_node_position(node_path, x, y, HOUDINI_HOST, HOUDINI_PORT),
+        host=HOUDINI_HOST,
+        port=HOUDINI_PORT,
+        affected_paths=[node_path],
+    )
 
 
 @mcp.tool()
@@ -1237,8 +1325,14 @@ def create_network_box(
     Examples:
         create_network_box("/obj/geo1", ["/obj/geo1/sphere1", "/obj/geo1/noise1"], "Deform")
     """
-    return tools.create_network_box(
-        parent_path, node_paths, label, color, HOUDINI_HOST, HOUDINI_PORT
+    return run_transactional(
+        "create_network_box",
+        lambda: tools.create_network_box(
+            parent_path, node_paths, label, color, HOUDINI_HOST, HOUDINI_PORT
+        ),
+        host=HOUDINI_HOST,
+        port=HOUDINI_PORT,
+        affected_paths=[parent_path, *node_paths],
     )
 
 
